@@ -11,10 +11,13 @@
     tags they use. Views are always organized according to its owner class,
     so it should be straightforward to find them.
   -->
+
+  <!-- Frank: put in comments to test if this breaks the loading of the plugin
   <f:section title="Hello World Frank">
     <f:entry title="French" field="useFrench" description="Check if we should say hello in French">
       <f:checkbox />
     </f:entry>
-    
   </f:section>
+  -->
+  
 </j:jelly>

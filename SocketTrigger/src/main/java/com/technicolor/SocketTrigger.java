@@ -1,5 +1,7 @@
-package com.technicolor.eloyente;
+package com.technicolor;
 
+import hudson.Extension;
+import hudson.model.BuildableItem;
 import hudson.model.Item;
 import hudson.model.Project;
 import hudson.triggers.Trigger;
@@ -11,19 +13,19 @@ import org.kohsuke.stapler.DataBoundConstructor;
  *
  * @author pardogonzalezj
  */
-public class HelloWorldBuilder extends Trigger<Project> {
+public class SocketTrigger extends Trigger<Project> {
 
     private final boolean activeJob;
-    private static Socket socket = null;
+    private static Socket socket;
     private static Item project;
 
     @DataBoundConstructor
-    public HelloWorldBuilder(boolean activeJob) {
+    public SocketTrigger(boolean activeJob) {
         this.activeJob = activeJob;
     }
 
     public String getMyString() {
-        return "Hello Milagros!";
+        return "Hola Milagros!";
     }
 
     public boolean getActiveJob() {
@@ -32,7 +34,8 @@ public class HelloWorldBuilder extends Trigger<Project> {
 
     @Override
     public void start(Project project, boolean newInstance) {
-        System.out.println("El principio de start " + project.getUrl());
+        System.out.println("El principio de start");
+
         this.project = project;
 
         super.start(project, newInstance);
@@ -40,46 +43,12 @@ public class HelloWorldBuilder extends Trigger<Project> {
         if (this.getActiveJob()) {
             System.out.println("Activado");
             socket = new Socket(this);
-            System.out.println("Socket created");
+            System.out.println("Socket creado");
         } else {
             System.out.println("No activado");
         }
     }
 
-//    @Override
-//    public void start(BuildableItem project, boolean newInstance) {
-//        System.out.println("El principio de start " + project.getUrl());
-//
-//        this.project = project;
-//
-//        super.start(project, newInstance);
-//
-//        if (this.getActiveJob()) {
-//            System.out.println("Activado");
-//            socket = new Socket(this);
-//            System.out.println("Socket created");
-//        } else {
-//            System.out.println("No activado");
-//        }
-//    }
-
-//    @Override
-//    public void start(Item project, boolean newInstance) {
-//        System.out.println("El principio de start " + project.getUrl());
-//
-//        this.project = project;
-//
-//        super.start(project, newInstance);
-//
-//
-//        if (this.getActiveJob()) {
-//            System.out.println("Activado");
-//            socket = new Socket(this);
-//            System.out.println("Socket created");
-//        } else {
-//            System.out.println("No activado");
-//        }
-//    }
     @Override
     public void run() {
         super.run();
@@ -103,6 +72,10 @@ public class HelloWorldBuilder extends Trigger<Project> {
         super.stop();
     }
 
+    /**
+     *
+     */
+    @Extension
     public static final class DescriptorImpl extends TriggerDescriptor {
 
         @Override
@@ -112,7 +85,6 @@ public class HelloWorldBuilder extends Trigger<Project> {
 
         @Override
         public String getDisplayName() {
-            System.out.println("Entra en el getDisplayName");
             return "Trigger by socket event";
         }
     }

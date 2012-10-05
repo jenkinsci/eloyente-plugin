@@ -1,10 +1,8 @@
-package com.technicolor.eloyente;
+package com.technicolor;
 
 import hudson.triggers.Trigger;
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class Socket extends Thread {
 
@@ -15,7 +13,7 @@ public class Socket extends Thread {
         try {
             trigger = tr;
             echoServer = new ServerSocket(2222);
-            this.start();
+            this.start();      
         } catch (IOException e) {
             System.out.println("Exception in constructor: " + e);
         }
