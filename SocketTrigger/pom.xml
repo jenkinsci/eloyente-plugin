@@ -7,7 +7,7 @@
   </parent>
 
   <groupId>com.technicolor</groupId>
-  <artifactId>eloyente</artifactId>
+  <artifactId>sockettrigger</artifactId>
   <version>1.0</version>
   <packaging>hpi</packaging>
 
