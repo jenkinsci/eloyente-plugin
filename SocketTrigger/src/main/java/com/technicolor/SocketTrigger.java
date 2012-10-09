@@ -1,7 +1,6 @@
 package com.technicolor;
 
 import hudson.Extension;
-import hudson.model.BuildableItem;
 import hudson.model.Item;
 import hudson.model.Project;
 import hudson.triggers.Trigger;
@@ -9,10 +8,6 @@ import hudson.triggers.TriggerDescriptor;
 import java.util.Iterator;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-/**
- *
- * @author pardogonzalezj
- */
 public class SocketTrigger extends Trigger<Project> {
 
     private final boolean activeJob;
@@ -58,23 +53,14 @@ public class SocketTrigger extends Trigger<Project> {
         while (iterator.hasNext()) {
             System.out.println(iterator.next());
             job.scheduleBuild(null);
-
         }
     }
 
     @Override
     public void stop() {
-//        try {
-//            socket.closeSocket();
-//        } catch (IOException ex) {
-//            System.err.println("No se puede cerrar la conexion");
-//        }
         super.stop();
     }
 
-    /**
-     *
-     */
     @Extension
     public static final class DescriptorImpl extends TriggerDescriptor {
 
