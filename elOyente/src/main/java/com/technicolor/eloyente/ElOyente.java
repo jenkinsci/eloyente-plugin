@@ -6,7 +6,9 @@ import hudson.model.Project;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
 import java.util.Iterator;
+import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.StaplerRequest;
 
 /**
  *
@@ -15,16 +17,10 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class ElOyente extends Trigger<Project> {
 
     private final boolean activeJob;
-    private static String server;
-    private static String user;
-    private static String password;
     private static Item project;
 
     @DataBoundConstructor
-    public ElOyente(String server, String user, String password, boolean activeJob) {
-        ElOyente.server = server;
-        ElOyente.user = user;
-        ElOyente.password = password;
+    public ElOyente(boolean activeJob) {
         this.activeJob = activeJob;
 
     }
@@ -33,27 +29,14 @@ public class ElOyente extends Trigger<Project> {
         return activeJob;
     }
 
-    public String getServer() {
-        return server;
-    }
-
-    public String getUser() {
-        return user;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
     @Override
     public void start(Project project, boolean newInstance) {
         System.out.println("El principio de start");
+        
 
         this.project = project;
 
         super.start(project, newInstance);
-
-
     }
 
     @Override
@@ -62,9 +45,9 @@ public class ElOyente extends Trigger<Project> {
         System.out.println("El principio de run");
         Iterator iterator = project.getAllJobs().iterator();
 
+
         while (iterator.hasNext()) {
             System.out.println(iterator.next());
-            
             job.scheduleBuild(null);
         }
     }
@@ -74,8 +57,17 @@ public class ElOyente extends Trigger<Project> {
         super.stop();
     }
 
+    @Override
+    public DescriptorImpl getDescriptor() {
+        return (DescriptorImpl) super.getDescriptor();
+    }
+
     @Extension
     public static final class DescriptorImpl extends TriggerDescriptor {
+
+        private String server;
+        private String user;
+        private String password;
 
         @Override
         public boolean isApplicable(Item item) {
@@ -84,7 +76,33 @@ public class ElOyente extends Trigger<Project> {
 
         @Override
         public String getDisplayName() {
-            return "Trigger by socket event";
+            return "Trigger jobs by XMPP";
+        }
+
+        public String getServer() {
+            return server;
+        }
+
+        public String getUser() {
+            return user;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        @Override
+        public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
+            // To persist global configuration information,
+            // set that to properties and call save().
+            server = formData.getString("server");
+            user = formData.getString("user");
+            password = formData.getString("password");
+            System.out.println("Servidor: " + server + " Usuario: " + user + " Password: " + password);
+            // ^Can also use req.bindJSON(this, formData);
+            //  (easier when there are many fields; need set* methods for this, like setUseFrench)
+            save();
+            return super.configure(req, formData);
         }
     }
 }

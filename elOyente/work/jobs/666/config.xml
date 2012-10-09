@@ -9,7 +9,12 @@
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
-  <triggers class="vector"/>
+  <triggers class="vector">
+    <com.technicolor.eloyente.ElOyente>
+      <spec></spec>
+      <activeJob>true</activeJob>
+    </com.technicolor.eloyente.ElOyente>
+  </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders/>
   <publishers/>
