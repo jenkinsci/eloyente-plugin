@@ -7,6 +7,10 @@ import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
 import java.util.Iterator;
 import net.sf.json.JSONObject;
+import org.jivesoftware.smack.Connection;
+import org.jivesoftware.smack.ConnectionConfiguration;
+import org.jivesoftware.smack.XMPPConnection;
+import org.jivesoftware.smack.XMPPException;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -26,13 +30,17 @@ public class ElOyente extends Trigger<Project> {
     }
 
     public boolean getActiveJob() {
-        return activeJob;
+        try {
+            return activeJob;
+        } catch (NullPointerException e) {
+            return false;
+        }
     }
 
     @Override
     public void start(Project project, boolean newInstance) {
         System.out.println("El principio de start");
-        
+
 
         this.project = project;
 
@@ -42,9 +50,9 @@ public class ElOyente extends Trigger<Project> {
     @Override
     public void run() {
         super.run();
+
         System.out.println("El principio de run");
         Iterator iterator = project.getAllJobs().iterator();
-
 
         while (iterator.hasNext()) {
             System.out.println(iterator.next());
@@ -68,6 +76,7 @@ public class ElOyente extends Trigger<Project> {
         private String server;
         private String user;
         private String password;
+        private Connection con;
 
         @Override
         public boolean isApplicable(Item item) {
@@ -102,6 +111,24 @@ public class ElOyente extends Trigger<Project> {
             // ^Can also use req.bindJSON(this, formData);
             //  (easier when there are many fields; need set* methods for this, like setUseFrench)
             save();
+
+            System.out.println("Conneting to " + server);
+            ConnectionConfiguration config = new ConnectionConfiguration(server);
+            con = new XMPPConnection(config);
+            try {
+                con.connect();
+            } catch (XMPPException ex) {
+                System.err.println("Couldn't stablish the connection, or already connected");
+            }
+            System.out.println("Login as " + user);
+            try {
+                con.login(user, password);
+            } catch (XMPPException ex) {
+                System.err.println("User or password doesn't exist");
+            }
+
+
+
             return super.configure(req, formData);
         }
     }
