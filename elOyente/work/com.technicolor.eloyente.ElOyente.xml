@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <com.technicolor.eloyente.ElOyente_-DescriptorImpl>
   <helpRedirect/>
-  <server>cplx129.edegem.eu.thmulti.com</server>
+  <server>localhost</server>
   <user>admin</user>
-  <password>oyente</password>
+  <password></password>
 </com.technicolor.eloyente.ElOyente_-DescriptorImpl>

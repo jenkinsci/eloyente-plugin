@@ -1,10 +1,17 @@
 package com.technicolor.eloyente;
 
 import hudson.Extension;
+import hudson.Util;
 import hudson.model.Item;
 import hudson.model.Project;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
+import hudson.util.StreamTaskListener;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.text.DateFormat;
+import java.util.Date;
 import java.util.Iterator;
 import net.sf.json.JSONObject;
 import org.jivesoftware.smack.Connection;
@@ -13,6 +20,8 @@ import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -41,14 +50,15 @@ public class ElOyente extends Trigger<Project> {
     public void start(Project project, boolean newInstance) {
         System.out.println("El principio de start");
 
-
         this.project = project;
 
         super.start(project, newInstance);
+
     }
 
     @Override
     public void run() {
+        System.out.println("El principio de run");
         super.run();
 
         System.out.println("El principio de run");
@@ -123,6 +133,9 @@ public class ElOyente extends Trigger<Project> {
             System.out.println("Login as " + user);
             try {
                 con.login(user, password);
+                Logger logger = Logger.getLogger(user);
+                logger.log(Level.OFF, "{0}ESTE ES EL MESAJITO", user);
+                System.err.println("ESTE ES EL MESAJITO__________________________________________________");
             } catch (XMPPException ex) {
                 System.err.println("User or password doesn't exist");
             }
