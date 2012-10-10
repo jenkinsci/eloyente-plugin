@@ -13,7 +13,7 @@ public class Socket extends Thread {
         try {
             trigger = tr;
             echoServer = new ServerSocket(2222);
-            this.start();      
+            this.start();
         } catch (IOException e) {
             System.out.println("Exception in constructor: " + e);
         }
@@ -32,5 +32,5 @@ public class Socket extends Thread {
             System.out.println("Exception in run loop: " + e);
         }
     }
-    
+
 }
