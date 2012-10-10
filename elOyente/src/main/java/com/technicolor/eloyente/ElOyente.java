@@ -30,11 +30,7 @@ public class ElOyente extends Trigger<Project> {
     }
 
     public boolean getActiveJob() {
-        try {
-            return activeJob;
-        } catch (NullPointerException e) {
-            return false;
-        }
+           return activeJob;
     }
 
     @Override
