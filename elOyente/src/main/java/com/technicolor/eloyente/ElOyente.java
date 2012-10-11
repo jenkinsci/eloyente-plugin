@@ -6,7 +6,9 @@ import hudson.model.Item;
 import hudson.model.Project;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
+import java.io.IOException;
 import java.util.Iterator;
+import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.sf.json.JSONObject;
@@ -17,8 +19,6 @@ import org.jivesoftware.smack.XMPPException;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
-
-
 /**
  *
  * @author pardogonzalezj
@@ -27,7 +27,6 @@ public class ElOyente extends Trigger<Project> {
 
     private final boolean activeJob;
     private static Item project;
-    private final static Logger logger = Logger.getLogger(ElOyente.class .getName()); 
 
     @DataBoundConstructor
     public ElOyente(boolean activeJob) {
@@ -36,7 +35,7 @@ public class ElOyente extends Trigger<Project> {
     }
 
     public boolean getActiveJob() {
-           return activeJob;
+        return activeJob;
     }
 
     @Override
@@ -80,6 +79,7 @@ public class ElOyente extends Trigger<Project> {
         private String user;
         private String password;
         private Connection con;
+        private final static Logger logger = Logger.getLogger(ElOyente.class.getName());
 
         @Override
         public boolean isApplicable(Item item) {
@@ -126,8 +126,15 @@ public class ElOyente extends Trigger<Project> {
             System.out.println("Login as " + user);
             try {
                 con.login(user, password);
-                 logger.log(Level.OFF, "MENSAJES PARA DIOS");         
-              
+                try {
+                    logger.addHandler(new FileHandler("%t/jenkins.log"));
+                } catch (IOException ex) {
+                    Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (SecurityException ex) {
+                    Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                logger.info("MENSAJES PARA DIOS");
+
             } catch (XMPPException ex) {
                 System.err.println("User or password doesn't exist");
             }
