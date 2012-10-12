@@ -3,6 +3,7 @@ package com.technicolor.eloyente;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.Item;
+import hudson.model.Job;
 import hudson.model.Project;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
@@ -30,6 +31,7 @@ public class ElOyente extends Trigger<Project> {
 
     @DataBoundConstructor
     public ElOyente(boolean activeJob) {
+        super();
         this.activeJob = activeJob;
 
     }
@@ -51,15 +53,22 @@ public class ElOyente extends Trigger<Project> {
     @Override
     public void run() {
         System.out.println("El principio de run");
-        super.run();
 
-        System.out.println("El principio de run");
-        Iterator iterator = project.getAllJobs().iterator();
+  
+        if(!project.getAllJobs().isEmpty()){
+            Iterator iterator = project.getAllJobs().iterator();
 
-        while (iterator.hasNext()) {
-            System.out.println(iterator.next());
-            job.scheduleBuild(null);
+
+            while (iterator.hasNext()) {
+                //System.out.println(iterator.next());
+                ((Project) iterator.next()).scheduleBuild(null);
+                //job.scheduleBuild(null);
+            }
+            //System.out.println("El principio de run");
+            //super.run();
         }
+        else{}
+        
     }
 
     @Override
@@ -133,7 +142,7 @@ public class ElOyente extends Trigger<Project> {
                 } catch (SecurityException ex) {
                     Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
                 }
-                logger.info("MENSAJES PARA DIOS");
+                logger.log(Level.ALL, "MENSAJES PARA DIOS");
 
             } catch (XMPPException ex) {
                 System.err.println("User or password doesn't exist");
