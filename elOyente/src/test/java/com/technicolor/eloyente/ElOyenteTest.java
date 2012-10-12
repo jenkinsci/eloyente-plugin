@@ -1,12 +1,7 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.technicolor.eloyente;
 
 import hudson.model.Project;
 import java.util.ArrayList;
-import java.util.List;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -37,7 +32,7 @@ public class ElOyenteTest {
     }
 
     @Before
-    public void setUp() { 
+    public void setUp() {
     }
 
     @After
@@ -62,10 +57,10 @@ public class ElOyenteTest {
      */
     @Test
     public void testStart() {
-        verify(mockOyente, atLeastOnce()).start(mockProject,true);
-        
-        verify(mockOyente).start(mockProject,false);
-        verify(mockOyente).start(mockProject,true);
+
+        verify(mockOyente, atLeastOnce()).start(mockProject, true);
+        verify(mockOyente, atLeastOnce()).start(mockProject, false);
+
     }
 
     /**
@@ -79,7 +74,7 @@ public class ElOyenteTest {
         ArrayList lst = new ArrayList();
         lst.add(mockPrj1);
         lst.add(mockPrj2);
-        
+
         when(mockProject.getAllJobs()).thenReturn(lst);
         when(mockProject.getParent().getFullName()).thenReturn("fonske");
 
@@ -87,20 +82,6 @@ public class ElOyenteTest {
         oyente.run();
         verify(mockPrj1).scheduleBuild(null);
         verify(mockPrj2).scheduleBuild(null);
-        verify(mockPrj0).scheduleBuild(null);
-    }
-    
-        @Test
-    public void testRunNull() {
-        
-        when(mockProject.getAllJobs()).thenReturn(null);
-  
-//        when(mockProject.getParent().getFullName()).thenReturn("fonske");
-
-        oyente.start(mockProject, false);
-        oyente.run();
-        
-
     }
 
     /**
@@ -108,7 +89,6 @@ public class ElOyenteTest {
      */
     @Test
     public void testStop() {
-        
     }
 
     /**
