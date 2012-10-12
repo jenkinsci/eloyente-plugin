@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<log>
+  <name>el oyente</name>
+  <targets>
+    <target>
+      <name>com.technicolor.eloyente.ElOyente</name>
+      <level>400</level>
+    </target>
+    <target>
+      <name>com.technicolor.eloyente.ElOyente</name>
+      <level>800</level>
+    </target>
+    <target>
+      <name>foo</name>
+      <level>800</level>
+    </target>
+  </targets>
+</log>
