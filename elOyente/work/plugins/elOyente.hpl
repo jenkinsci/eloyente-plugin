@@ -6,8 +6,8 @@ Url: http://jenkins-ci.org/plugin/elOyente/
 Plugin-Version: 1.0
 Hudson-Version: 1.466
 Jenkins-Version: 1.466
-Plugin-Dependencies: ui-samples-plugin:1.466,maven-plugin:1.466,subver
- sion:1.26,javadoc:1.0,ant:1.1
+Plugin-Dependencies: javadoc:1.0,ui-samples-plugin:1.466,maven-plugin:
+ 1.466,subversion:1.26,ant:1.1
 Plugin-Developers: 
 Libraries: /home/users/pardogonzalezj/NetBeansProjects/eloyente/elOyen
  te/target/classes,/home/users/pardogonzalezj/.m2/repository/junit/jun

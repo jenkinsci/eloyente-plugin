@@ -1,6 +1,7 @@
 package com.technicolor.eloyente;
 
 import hudson.model.Project;
+import hudson.triggers.Trigger;
 import java.util.ArrayList;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -16,9 +17,9 @@ import static org.mockito.Mockito.*;
  */
 public class ElOyenteTest {
 
-    public static ElOyente oyente = new ElOyente(true);
-    public static ElOyente mockOyente = mock(ElOyente.class);
-    public static Project mockProject = mock(Project.class, RETURNS_DEEP_STUBS);
+    public static ElOyente oyente;
+    public static ElOyente mockOyente;
+    public static Project mockProject;
 
     public ElOyenteTest() {
     }
@@ -33,6 +34,10 @@ public class ElOyenteTest {
 
     @Before
     public void setUp() {
+        oyente = new ElOyente(true);
+        mockOyente = mock(ElOyente.class);
+        mockProject = mock(Project.class, RETURNS_DEEP_STUBS);
+        when(mockProject.getParent().getFullName()).thenReturn("ElOyente");
     }
 
     @After
@@ -57,10 +62,6 @@ public class ElOyenteTest {
      */
     @Test
     public void testStart() {
-
-        verify(mockOyente, atLeastOnce()).start(mockProject, true);
-        verify(mockOyente, atLeastOnce()).start(mockProject, false);
-
     }
 
     /**
@@ -68,20 +69,43 @@ public class ElOyenteTest {
      */
     @Test
     public void testRun() {
+
         Project mockPrj0 = mock(Project.class);
         Project mockPrj1 = mock(Project.class);
         Project mockPrj2 = mock(Project.class);
         ArrayList lst = new ArrayList();
-        lst.add(mockPrj1);
-        lst.add(mockPrj2);
 
         when(mockProject.getAllJobs()).thenReturn(lst);
-        when(mockProject.getParent().getFullName()).thenReturn("fonske");
 
         oyente.start(mockProject, false);
         oyente.run();
-        verify(mockPrj1).scheduleBuild(null);
-        verify(mockPrj2).scheduleBuild(null);
+        verify(mockPrj0,never()).scheduleBuild(null);
+        verify(mockPrj1,never()).scheduleBuild(null);
+        verify(mockPrj2,never()).scheduleBuild(null);
+
+        lst.add(mockPrj0);
+        
+        oyente.start(mockProject, false);
+        oyente.run();
+        verify(mockPrj0,times(1)).scheduleBuild(null);
+        verify(mockPrj1,never()).scheduleBuild(null);
+        verify(mockPrj2,never()).scheduleBuild(null);
+        
+        lst.add(mockPrj1);
+        
+        oyente.start(mockProject, false);
+        oyente.run();
+        verify(mockPrj0,times(2)).scheduleBuild(null);
+        verify(mockPrj1,times(1)).scheduleBuild(null);
+        verify(mockPrj2,never()).scheduleBuild(null);
+
+        lst.add(mockPrj2);
+
+        oyente.start(mockProject, false);
+        oyente.run();
+        verify(mockPrj0,times(3)).scheduleBuild(null);
+        verify(mockPrj1,times(2)).scheduleBuild(null);
+        verify(mockPrj2,times(1)).scheduleBuild(null);
     }
 
     /**

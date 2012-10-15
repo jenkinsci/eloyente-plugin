@@ -5,7 +5,11 @@ import hudson.model.Item;
 import hudson.model.Project;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
+import java.io.IOException;
 import java.util.Iterator;
+import java.util.logging.FileHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import net.sf.json.JSONObject;
 import org.jivesoftware.smack.Connection;
 import org.jivesoftware.smack.ConnectionConfiguration;
@@ -52,7 +56,6 @@ public class ElOyente extends Trigger<Project> {
         if(!project.getAllJobs().isEmpty()){
             Iterator iterator = project.getAllJobs().iterator();
 
-
             while (iterator.hasNext()) {
                 //System.out.println(iterator.next());
                 ((Project) iterator.next()).scheduleBuild(null);
@@ -63,11 +66,6 @@ public class ElOyente extends Trigger<Project> {
         }
         else{}
         
-    }
-
-    @Override
-    public void stop() {
-        super.stop();
     }
 
     @Override
