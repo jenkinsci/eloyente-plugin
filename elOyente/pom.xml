@@ -30,7 +30,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>cobertura-maven-plugin</artifactId>
-                <version>2.4</version>
+                <version>2.5.2</version>
             </plugin>
         </plugins>
     </reporting>
@@ -93,4 +93,26 @@
             <version>1.466</version>
         </dependency>
     </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>cobertura-maven-plugin</artifactId>
+                <version>2.5.2</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <formats>
+                        <format>html</format>
+                        <format>xml</format>
+                    </formats>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
