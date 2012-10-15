@@ -86,6 +86,12 @@
             <type>jar</type>
             <version>1.466</version>
         </dependency>
+        <dependency>
+            <artifactId>jenkins-test-harness</artifactId>
+            <groupId>org.jenkins-ci.main</groupId>
+            <type>jar</type>
+            <version>1.466</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
