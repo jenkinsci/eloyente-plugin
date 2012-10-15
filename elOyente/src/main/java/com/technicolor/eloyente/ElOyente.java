@@ -2,13 +2,14 @@ package com.technicolor.eloyente;
 
 import hudson.Extension;
 import hudson.model.Item;
+import hudson.model.Job;
 import hudson.model.Project;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
-
+import java.io.IOException;
 import java.util.Iterator;
-import java.util.logging.*;
-
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import net.sf.json.JSONObject;
 
 import org.jivesoftware.smack.Connection;
@@ -33,6 +34,7 @@ public class ElOyente extends Trigger<Project> {
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"    
     @DataBoundConstructor
     public ElOyente(boolean activeJob) {
+        super();
         this.activeJob = activeJob;
     }
     
@@ -57,14 +59,17 @@ public class ElOyente extends Trigger<Project> {
     @Override
     public void run() {
         System.out.println("El principio de run");
-        super.run();
-        
-        Iterator iterator = project.getAllJobs().iterator();
-        
-        while (iterator.hasNext()) {
-            System.out.println(iterator.next());
-            job.scheduleBuild(null);
+  
+        if(!project.getAllJobs().isEmpty()){
+            Iterator iterator = project.getAllJobs().iterator();
+
+            while (iterator.hasNext()) {
+                //System.out.println(iterator.next());
+                ((Project) iterator.next()).scheduleBuild(null);
+                //job.scheduleBuild(null);
+            }
         }
+       //super.run(); TODO: intentar si funciona activandolo !!!!!!!        
     }
     
     @Override
@@ -85,10 +90,7 @@ public class ElOyente extends Trigger<Project> {
         private String user;
         private String password;
         private Connection con;
-        
-        /**
-         *
-         */
+
         public DescriptorImpl() {
             load();
         }
@@ -140,6 +142,7 @@ public class ElOyente extends Trigger<Project> {
             System.out.println("Loging...");
             try {
                 con.login(user, password);
+
                 logger.log(Level.INFO, "{0} has been logged to openfire!", user);
                 System.out.println(user +" logged!");
                 
