@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<log>
+  <name>isabel</name>
+  <targets>
+    <target>
+      <name>com.technicolor.eloyente</name>
+      <level>800</level>
+    </target>
+  </targets>
+</log>
