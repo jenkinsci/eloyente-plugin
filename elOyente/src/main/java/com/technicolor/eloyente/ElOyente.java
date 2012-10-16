@@ -129,14 +129,15 @@ public class ElOyente extends Trigger<Project> {
             System.out.println("Servidor: " + server + " Usuario: " + user + " Password: " + password);
             System.out.println("Conneting to " + server);
 
-            ConnectionConfiguration config = new ConnectionConfiguration(server);
+            ConnectionConfiguration config = new ConnectionConfiguration(server);           
             con = new XMPPConnection(config);
-
+            
             try {
                 con.connect();
-                logger.log(Level.INFO, "Connection stabished");
+                logger.log(Level.INFO, "Connection established");
             } catch (XMPPException ex) {
                 System.err.println("Couldn't stablish the connection, or already connected");
+                ex.printStackTrace(System.err);
             }
 
             System.out.println("Loging...");

@@ -1,0 +1,28 @@
+                             C O D E   R E V I E W
+================================================================================
+Reviewer name    : Isabel Fernández Díaz
+Review date      : 16/10/2012
+Reviewed file    : TA22: Connection to the XMPP server
+Reviewed version : 2c3275e902c8b39c4c26a6dc70bcf222499caa22
+--------------------------------------------------------------------------------
+Review comments  :
+
+Write review comments here (code style, complexity, correctness,
+
+-In the catchs, we should write more information about the error:"ex.printStackTrace(System.err);". In a secon step use only one try catch.
+
+-The disconection has to be implemented, check when it should be called.
+
+-The arguments are not persistant so we can not check if the it connects automatically when jenkins start-> This is a bloquing task so I suggest to work both together and try to solve it as soon as possible.
+
+-Note: I think the methode configure is only called when you click "save" in de configuration so probably is better to extract all the connection code in a sepparate function "connection()" and call it in the configure and in other methode that runs once jenkins start.
+
+
+
+
+--------------------------------------------------------------------------------
+Reworked version : (use: git show <file> | grep commit)
+Rework comments  :
+
+
+================================================================================
