@@ -1,0 +1,21 @@
+                             C O D E   R E V I E W
+================================================================================
+Reviewer name    : Isabel Fernández Díaz
+Review date      : 17/10/2012
+Reviewed file    : TA18: Javacode for the main configuration
+Reviewed version : 2c3275e902c8b39c4c26a6dc70bcf222499caa22
+--------------------------------------------------------------------------------
+Review comments  :
+
+Write review comments here (code style, complexity, correctness,
+
+-Every thing is clear and works fine. The only comment would be to include the java documentation.
+
+
+
+--------------------------------------------------------------------------------
+Reworked version : (use: git show <file> | grep commit)
+Rework comments  :
+
+
+================================================================================
