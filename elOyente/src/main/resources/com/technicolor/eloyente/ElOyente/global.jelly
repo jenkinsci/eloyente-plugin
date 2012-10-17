@@ -11,6 +11,11 @@
       tags they use. Views are always organized according to its owner class,
       so it should be straightforward to find them.
     -->
+    
+    <st:once>
+          <script type="text/javascript" src="${resURL}/plugin/elOyente/js/elOyente.js"></script>
+    </st:once>
+    
     <f:section title="XMPP job triggering">
         <f:entry title="Server" field="server" >
             <f:textbox />
@@ -20,6 +25,11 @@
         </f:entry>
         <f:entry title="Password" field="password">
             <f:password />
+        </f:entry>
+        <!--  <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="password,user" />
+        -->
+        <f:entry>
+            <input type="button" value="Click here!" onClick="sayHi();"/>
         </f:entry>
     </f:section>
 </j:jelly>

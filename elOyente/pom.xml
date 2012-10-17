@@ -87,10 +87,10 @@
             <version>1.466</version>
         </dependency>
         <dependency>
-            <artifactId>jenkins-test-harness</artifactId>
-            <groupId>org.jenkins-ci.main</groupId>
+            <groupId>org.jvnet.hudson</groupId>
+            <artifactId>ec2-launcher</artifactId>
+            <version>1.0</version>
             <type>jar</type>
-            <version>1.466</version>
         </dependency>
     </dependencies>
     <build>
