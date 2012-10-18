@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.enterprise.inject.New;
 import net.sf.json.JSONObject;
 
 import org.jivesoftware.smack.Connection;
@@ -93,6 +94,12 @@ public class ElOyente extends Trigger<Project> {
         private Connection con;
         private PubSubManager mgr;
         private String jid;
+        Logger logger = Logger.getLogger("com.technicolor.eloyente");
+
+        public DescriptorImpl() {
+            super(ElOyente.class);
+            load();
+        }
 
         @Override
         public boolean isApplicable(Item item) {
@@ -116,61 +123,74 @@ public class ElOyente extends Trigger<Project> {
             return password;
         }
 
+        public void setServer(String server) {
+            this.server = server;
+        }
+
+        public void setUser(String user) {
+            this.user = user;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
+        }
+
         @Override
         public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
             // To persist global configuration information,
             // set that to properties and call save().
-            Logger logger = Logger.getLogger("com.technicolor.eloyente");
 
-            server = formData.getString("server");
-            user = formData.getString("user");
-            password = formData.getString("password");
+            server = req.getParameter("server");
+            user = req.getParameter("user");
+            password = req.getParameter("password");
 
             System.out.println("Servidor: " + server + " Usuario: " + user + " Password: " + password);
             System.out.println("Conneting to " + server);
 
-            ConnectionConfiguration config = new ConnectionConfiguration(server);           
+            ConnectionConfiguration config = new ConnectionConfiguration(server);
             con = new XMPPConnection(config);
-            
+
             try {
                 con.connect();
                 logger.log(Level.INFO, "Connection established");
+                System.out.println("Loging...");
+                try {
+                    con.login(user, password);
+                    jid = con.getUser();
+                    logger.log(Level.INFO, "JID: {0}", jid);
+                    logger.log(Level.INFO, "{0} has been logged to openfire!", user);
+                    System.out.println(user + " logged!");
+                    save();
+
+                    try {
+                        mgr = new PubSubManager(con);
+                        DiscoverItems items = mgr.discoverNodes(null);
+                        Iterator<DiscoverItems.Item> iter = items.getItems();
+
+
+                        logger.log(Level.INFO, "NODES: ---------------------------------");
+
+                        while (iter.hasNext()) {
+                            DiscoverItems.Item i = iter.next();
+                            logger.log(Level.INFO, "Node: {0}", i.getNode());
+                            System.out.println("Node: " + i.toXML());
+                            System.out.println("NodeName: " + i.getNode());
+                        }
+                        logger.log(Level.INFO, "END NODES: -----------------------------");
+                    } catch (XMPPException ex) {
+                        System.out.println("List of nodes no available");
+                        ex.printStackTrace(System.err);
+                    }
+
+                } catch (XMPPException ex) {
+                    System.err.println("User or password doesn't exist");
+                    ex.printStackTrace(System.err);
+                }
             } catch (XMPPException ex) {
                 System.err.println("Couldn't stablish the connection, or already connected");
                 ex.printStackTrace(System.err);
             }
 
-            System.out.println("Loging...");
-            try {
-                con.login(user, password);
-                jid = con.getUser();
-                logger.log(Level.INFO, "JID: {0}", jid);
-                logger.log(Level.INFO, "{0} has been logged to openfire!", user);
-                System.out.println(user + " logged!");
-                //save();
-
-            } catch (XMPPException ex) {
-                System.err.println("User or password doesn't exist");
-            }
-            logger.log(Level.INFO, "NODES: ---------------------------------");
-            try {
-                mgr = new PubSubManager(con);
-                DiscoverItems items = mgr.discoverNodes(null);
-                Iterator<DiscoverItems.Item> iter = items.getItems();
-
-                while (iter.hasNext()) {
-                    DiscoverItems.Item i = iter.next();
-                    logger.log(Level.INFO, "Node: {0}", i.getNode());
-                    System.out.println("Node: " + i.toXML());
-                    System.out.println("NodeName: " + i.getNode());
-                }
-            } catch (XMPPException ex) {
-                System.out.println("Node list empty");
-            }
-
-            // ^Can also use req.bindJSON(this, formData);
-            //  (easier when there are many fields; need set* methods for this, like setUseFrench)
-            logger.log(Level.INFO, "FIN NODES: ---------------------------------");
             return super.configure(req, formData);
         }
     }

@@ -12,14 +12,14 @@
       so it should be straightforward to find them.
     -->
     <f:section title="XMPP job triggering">
-        <f:entry title="Server" field="server" >
-            <f:textbox />
+        <f:entry title="Server"  >
+            <f:textbox name="server" field="server" value="${server}"/>
         </f:entry>
-        <f:entry title="User" field="user" >
-            <f:textbox />
+        <f:entry title="User" >
+            <f:textbox name="user" field="user" value="${user}"/>
         </f:entry>
-        <f:entry title="Password" field="password">
-            <f:password />
+        <f:entry title="Password" >
+            <f:password name="password" field="password" value="${password}"/>
         </f:entry>
     </f:section>
 </j:jelly>
