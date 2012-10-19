@@ -11,25 +11,47 @@
       tags they use. Views are always organized according to its owner class,
       so it should be straightforward to find them.
     -->
-    
+    <!--
     <st:once>
-          <script type="text/javascript" src="${resURL}/plugin/elOyente/js/elOyente.js"></script>
+        <script type="text/javascript" src="${resURL}/plugin/elOyente/js/elOyente.js"></script>
     </st:once>
-    
+    -->
     <f:section title="XMPP job triggering">
-        <f:entry title="Server" field="server" >
+
+        
+        <f:entry title="${%Server}" field="server">
+            <f:textbox/>
+        </f:entry>
+        
+        <f:entry title="${%User}" field="user">
+            <f:textbox/>
+        </f:entry>
+        
+        <f:entry title="${%Password}" field="password">
+            <f:textbox/>
+        </f:entry>
+        
+      <!--  
+        <f:entry title="${%Sherpa}" field="sherpa">
+            <f:textbox onBlur="sayHi();"/>
+        </f:entry>
+-->
+             <!--
+        
+        <f:entry title="${%User}" field="user">
             <f:textbox />
         </f:entry>
-        <f:entry title="User" field="user" >
+        <f:entry title="${%Password}" field="password" onBlur="sayHi();">
             <f:textbox />
         </f:entry>
-        <f:entry title="Password" field="password">
-            <f:password />
-        </f:entry>
-        <!--  <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="password,user" />
-        -->
+        <f:validateButton
+            title="${%Test Login}" progress="${%Trying to login...}" method="testLogin" with="password,user,server" />
+        
+        
         <f:entry>
             <input type="button" value="Click here!" onClick="sayHi();"/>
         </f:entry>
+        
+        -->
     </f:section>
 </j:jelly>

@@ -21,7 +21,6 @@ import org.jivesoftware.smackx.pubsub.PubSubManager;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
-import com.xerox.amazonws.common.AWSException;
 import com.xerox.amazonws.ec2.EC2Exception;
 
 /**
@@ -173,6 +172,79 @@ public class ElOyente extends Trigger<Project> {
             //  (easier when there are many fields; need set* methods for this, like setUseFrench)
             logger.log(Level.INFO, "FIN NODES: ---------------------------------");
             return super.configure(req, formData);
+        }
+//        public FormValidation doTestConnection( @QueryParameter("server") final String server) throws ServletException {
+//
+//            ConnectionConfiguration config = new ConnectionConfiguration(server);
+//            con = new XMPPConnection(config);
+//            try {
+//                con.connect();
+//                con.disconnect();
+//
+//                return FormValidation.okWithMarkup("Connection available");
+//
+//            } catch (XMPPException ex) {
+//                return FormValidation.errorWithMarkup("Couldn't connect");
+//            }
+//        }
+//
+//        public FormValidation doTestLogin(@QueryParameter("user") final String user,
+//                @QueryParameter("password") final String password,@QueryParameter("server") final String server) throws ServletException {
+//
+//            ConnectionConfiguration config = new ConnectionConfiguration(server);
+//            con = new XMPPConnection(config);
+//            try {
+//                con.connect();
+//                con.login(user, password);
+//                con.disconnect();
+//
+//                return FormValidation.okWithMarkup("Success");
+//
+//            } catch (XMPPException ex) {
+//                return FormValidation.errorWithMarkup("Couldn't connect");
+//            }
+//        }
+
+        public FormValidation doCheckServer(@QueryParameter String server) {
+
+            ConnectionConfiguration config = new ConnectionConfiguration(server);
+            con = new XMPPConnection(config);
+
+
+            try {
+                con.connect();
+                con.disconnect();
+
+                this.server = server;
+                return FormValidation.okWithMarkup("Connection available");
+
+            } catch (XMPPException ex) {
+                return FormValidation.errorWithMarkup("Couldn't connect");
+            }
+        }
+
+        public FormValidation doCheckPassword(@QueryParameter String user, @QueryParameter String password) {
+
+            ConnectionConfiguration config = new ConnectionConfiguration(server);
+            con = new XMPPConnection(config);
+
+            try {
+                con.connect();
+                con.login(user, password);
+
+                if (con.isAuthenticated()) {
+                    con.disconnect();
+                    return FormValidation.okWithMarkup("Authentication succed");
+                } else {
+                    return FormValidation.warningWithMarkup("Not authenticated");
+                }
+            } catch (XMPPException ex) {
+                return FormValidation.errorWithMarkup("Authentication failed");
+            }
+        }
+
+        public String getMyString() {
+            return "Hello Jenkins!";
         }
     }
 }
