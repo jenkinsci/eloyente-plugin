@@ -19,10 +19,6 @@ public class SocketTrigger extends Trigger<Project> {
         this.activeJob = activeJob;
     }
 
-    public String getMyString() {
-        return "Hola Milagros!";
-    }
-
     public boolean getActiveJob() {
         return activeJob;
     }
