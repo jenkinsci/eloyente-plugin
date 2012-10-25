@@ -1,44 +1,42 @@
 package com.technicolor.eloyente;
 
 import hudson.Extension;
+import hudson.model.Descriptor;
 import hudson.model.Item;
 import hudson.model.Project;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
 import hudson.util.FormValidation;
-import java.io.IOException;
 import java.util.Iterator;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.servlet.ServletException;
 import net.sf.json.JSONObject;
 import org.jivesoftware.smack.Connection;
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
-import org.jivesoftware.smackx.packet.DiscoverItems;
-import org.jivesoftware.smackx.pubsub.PubSubManager;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
-import com.xerox.amazonws.ec2.EC2Exception;
 
 /**
- *
- * @author pardogonzalezj
- * @author fernandezdiazi
+ * @author Juan Luis Pardo Gonzalez
+ * @author Isabel Fernandez Diaz
  */
 public class ElOyente extends Trigger<Project> {
 
     private final boolean activeJob;
+    private String server;
+    private String user;
+    private String password;
     private static Item project;
-//    private static Logger logger;
-
-    // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"    
+ 
+    // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
     public ElOyente(boolean activeJob) {
         super();
         this.activeJob = activeJob;
+        server = this.getDescriptor().server;
+        user = this.getDescriptor().user;
+        password = this.getDescriptor().password;
     }
 
     /**
@@ -48,52 +46,135 @@ public class ElOyente extends Trigger<Project> {
         return activeJob;
     }
 
+   
+    
     @Override
     public void start(Project project, boolean newInstance) {
-        System.out.println("Class: " + this.getClass().getName());
-        Logger logger = Logger.getLogger("com.technicolor.eloyente");
-        System.out.println("Logger: " + logger);
 
-        this.project = project;
-        super.start(project, newInstance);
-
+        //super.start(project, newInstance);
+        //if (this.getDescriptor().doCheckActiveJob(activeJob).kind.toString().equals("OK")) {
+        if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
+//            if (newInstance) {
+                try {
+                    ConnectionConfiguration config = new ConnectionConfiguration(server);
+                    Connection con = new XMPPConnection(config);
+                    con.connect();
+                    if (con.isConnected()) {
+                        try {
+                            con.login(user, password, project.getName());
+                        } catch (XMPPException ex) {
+                            System.err.println("Login error");
+                            ex.printStackTrace(System.err);
+                        }
+                    }
+                } catch (XMPPException ex) {
+                    System.err.println("Couldn't establish the connection, or already connected");
+                    ex.printStackTrace(System.err);
+                }
+//            } else {
+//                this.getDescriptor().save();
+//            }
+        }
     }
-
-    @Override
+    
+     @Override
     public void run() {
-        System.out.println("El principio de run");
-
         if (!project.getAllJobs().isEmpty()) {
             Iterator iterator = project.getAllJobs().iterator();
-
             while (iterator.hasNext()) {
-                //System.out.println(iterator.next());
                 ((Project) iterator.next()).scheduleBuild(null);
-                //job.scheduleBuild(null);
             }
         }
         //super.run(); TODO: intentar si funciona activandolo !!!!!!!        
     }
 
     @Override
-    public void stop() {
-        super.stop();
-    }
-
-    @Override
-    public DescriptorImpl getDescriptor() {
+    public final DescriptorImpl getDescriptor() {
         return (DescriptorImpl) super.getDescriptor();
     }
 
+    /**
+     * Descriptor for {@link HelloWorldBuilder}. Used as a singleton. The class
+     * is marked as public so that it can be accessed from views.
+     *
+     * <p> See
+     * <tt>src/main/resources/hudson/plugins/hello_world/HelloWorldBuilder/*.jelly</tt>
+     * for the actual HTML fragment for the configuration screen.
+     */
     @Extension // This indicates to Jenkins that this is an implementation of an extension point.
     public static final class DescriptorImpl extends TriggerDescriptor {
 
+        /**
+         * To persist global configuration information, simply store it in a
+         * field and call save().
+         *
+         * <p> If you don't want fields to be persisted, use <tt>transient</tt>.
+         */
         private String server;
         private String user;
         private String password;
-        private Connection con;
-        private PubSubManager mgr;
-        private String jid;
+
+        public DescriptorImpl() {
+            load();
+        }
+
+        /**
+         * Performs on-the-fly validation of the form field 'name'.
+         *
+         * @param value This parameter receives the value that the user has
+         * typed.
+         * @return Indicates the outcome of the validation. This is sent to the
+         * browser.
+         */
+        public FormValidation doCheckServer(@QueryParameter String server) {
+            
+            try {
+                ConnectionConfiguration config = new ConnectionConfiguration(server);
+                Connection con = new XMPPConnection(config);
+
+                if (server.isEmpty()) {
+                    return FormValidation.warningWithMarkup("No server specified");
+                }
+                con.connect();
+                if (con.isConnected()) {
+                    con.disconnect();
+                    return FormValidation.okWithMarkup("Connection available");
+                }
+                return FormValidation.errorWithMarkup("Couldn't connect");
+            } catch (XMPPException ex) {
+                return FormValidation.errorWithMarkup("Couldn't connect");
+            }
+        }
+
+        public FormValidation doCheckPassword(@QueryParameter String user, @QueryParameter String password, @QueryParameter String server) {
+            ConnectionConfiguration config = new ConnectionConfiguration(server);
+            Connection con = new XMPPConnection(config);
+            if ((user.isEmpty() || password.isEmpty()) || server.isEmpty()) {
+                return FormValidation.warningWithMarkup("Not authenticated");
+            }
+            try {
+                con.connect();
+                con.login(user, password);
+                if (con.isAuthenticated()) {
+                    con.disconnect();
+                    return FormValidation.okWithMarkup("Authentication succed");
+                }
+                return FormValidation.warningWithMarkup("Not authenticated");
+            } catch (XMPPException ex) {
+                return FormValidation.errorWithMarkup("Authentication failed");
+            }
+        }
+
+        public FormValidation doCheckActiveJob(@QueryParameter boolean activeJob) {
+            server = this.getServer();
+            user = this.getUser();
+            password = this.getPassword();
+
+            if (server == null || server.isEmpty() || user == null || user.isEmpty() || password == null || password.isEmpty()) {
+                return FormValidation.errorWithMarkup("No information about the server in the main configuration");
+            }
+            return FormValidation.okWithMarkup("Server: " + server);
+        }
 
         @Override
         public boolean isApplicable(Item item) {
@@ -102,9 +183,36 @@ public class ElOyente extends Trigger<Project> {
 
         @Override
         public String getDisplayName() {
-            return "Trigger jobs by XMPP";
+            return "XMPP triggered plugin";
         }
 
+        @Override
+        public boolean configure(StaplerRequest req, JSONObject formData) throws Descriptor.FormException {
+            // To persist global configuration information,
+            // set that to properties and call save().
+            server = formData.getString("server");
+            user = formData.getString("user");
+            password = formData.getString("password");
+            // ^Can also use req.bindJSON(this, formData);
+            //  (easier when there are many fields; need set* methods for this, like setUseFrench)
+
+            save();
+            return super.configure(req, formData);
+        }
+
+        @Override
+        public synchronized void save() {
+            super.save();
+        }
+
+        /**
+         * This method returns true if the global configuration says we should
+         * speak French.
+         *
+         * The method name is bit awkward because global.jelly calls this method
+         * to determine the initial state of the checkbox by the naming
+         * convention.
+         */
         public String getServer() {
             return server;
         }
@@ -115,136 +223,6 @@ public class ElOyente extends Trigger<Project> {
 
         public String getPassword() {
             return password;
-        }
-
-        @Override
-        public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
-            // To persist global configuration information,
-            // set that to properties and call save().
-            Logger logger = Logger.getLogger("com.technicolor.eloyente");
-
-            server = formData.getString("server");
-            user = formData.getString("user");
-            password = formData.getString("password");
-
-            System.out.println("Servidor: " + server + " Usuario: " + user + " Password: " + password);
-            System.out.println("Conneting to " + server);
-
-            ConnectionConfiguration config = new ConnectionConfiguration(server);
-            con = new XMPPConnection(config);
-
-            try {
-                con.connect();
-                logger.log(Level.INFO, "Connection stabished");
-            } catch (XMPPException ex) {
-                System.err.println("Couldn't stablish the connection, or already connected");
-            }
-
-            System.out.println("Loging...");
-            try {
-                con.login(user, password);
-                jid = con.getUser();
-                logger.log(Level.INFO, "JID: {0}", jid);
-                logger.log(Level.INFO, "{0} has been logged to openfire!", user);
-                System.out.println(user + " logged!");
-                //save();
-
-            } catch (XMPPException ex) {
-                System.err.println("User or password doesn't exist");
-            }
-            logger.log(Level.INFO, "NODES: ---------------------------------");
-            try {
-                mgr = new PubSubManager(con);
-                DiscoverItems items = mgr.discoverNodes(null);
-                Iterator<DiscoverItems.Item> iter = items.getItems();
-
-                while (iter.hasNext()) {
-                    DiscoverItems.Item i = iter.next();
-                    logger.log(Level.INFO, "Node: {0}", i.getNode());
-                    System.out.println("Node: " + i.toXML());
-                    System.out.println("NodeName: " + i.getNode());
-                }
-            } catch (XMPPException ex) {
-                System.out.println("Node list empty");
-            }
-
-            // ^Can also use req.bindJSON(this, formData);
-            //  (easier when there are many fields; need set* methods for this, like setUseFrench)
-            logger.log(Level.INFO, "FIN NODES: ---------------------------------");
-            return super.configure(req, formData);
-        }
-//        public FormValidation doTestConnection( @QueryParameter("server") final String server) throws ServletException {
-//
-//            ConnectionConfiguration config = new ConnectionConfiguration(server);
-//            con = new XMPPConnection(config);
-//            try {
-//                con.connect();
-//                con.disconnect();
-//
-//                return FormValidation.okWithMarkup("Connection available");
-//
-//            } catch (XMPPException ex) {
-//                return FormValidation.errorWithMarkup("Couldn't connect");
-//            }
-//        }
-//
-//        public FormValidation doTestLogin(@QueryParameter("user") final String user,
-//                @QueryParameter("password") final String password,@QueryParameter("server") final String server) throws ServletException {
-//
-//            ConnectionConfiguration config = new ConnectionConfiguration(server);
-//            con = new XMPPConnection(config);
-//            try {
-//                con.connect();
-//                con.login(user, password);
-//                con.disconnect();
-//
-//                return FormValidation.okWithMarkup("Success");
-//
-//            } catch (XMPPException ex) {
-//                return FormValidation.errorWithMarkup("Couldn't connect");
-//            }
-//        }
-
-        public FormValidation doCheckServer(@QueryParameter String server) {
-
-            ConnectionConfiguration config = new ConnectionConfiguration(server);
-            con = new XMPPConnection(config);
-
-
-            try {
-                con.connect();
-                con.disconnect();
-
-                this.server = server;
-                return FormValidation.okWithMarkup("Connection available");
-
-            } catch (XMPPException ex) {
-                return FormValidation.errorWithMarkup("Couldn't connect");
-            }
-        }
-
-        public FormValidation doCheckPassword(@QueryParameter String user, @QueryParameter String password) {
-
-            ConnectionConfiguration config = new ConnectionConfiguration(server);
-            con = new XMPPConnection(config);
-
-            try {
-                con.connect();
-                con.login(user, password);
-
-                if (con.isAuthenticated()) {
-                    con.disconnect();
-                    return FormValidation.okWithMarkup("Authentication succed");
-                } else {
-                    return FormValidation.warningWithMarkup("Not authenticated");
-                }
-            } catch (XMPPException ex) {
-                return FormValidation.errorWithMarkup("Authentication failed");
-            }
-        }
-
-        public String getMyString() {
-            return "Hello Jenkins!";
         }
     }
 }
