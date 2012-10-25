@@ -34,7 +34,7 @@ public class ElOyenteTest {
 
     @Before
     public void setUp() {
-        oyente = new ElOyente(true);
+        oyente = new ElOyente();
         mockOyente = mock(ElOyente.class);
         mockProject = mock(Project.class, RETURNS_DEEP_STUBS);
         when(mockProject.getParent().getFullName()).thenReturn("ElOyente");
@@ -42,19 +42,6 @@ public class ElOyenteTest {
 
     @After
     public void tearDown() {
-    }
-
-    /**
-     * Test of getActiveJob method, of class ElOyente.
-     */
-    @Test
-    public void testGetActiveJob() {
-
-        ElOyente notActiveJob = when(mockOyente.getActiveJob()).thenReturn(Boolean.FALSE).getMock();
-        ElOyente ActiveJob = when(mockOyente.getActiveJob()).thenReturn(Boolean.TRUE).getMock();
-
-        assertEquals(oyente.getActiveJob(), ActiveJob.getActiveJob());
-        assertEquals(oyente.getActiveJob(), notActiveJob.getActiveJob());
     }
 
     /**
