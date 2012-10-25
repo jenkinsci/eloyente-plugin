@@ -148,6 +148,12 @@ public class ElOyente extends Trigger<Project> {
             return super.configure(req, formData);
         }
 
+        /**
+         * Used for logging to the log file.
+         * 
+         * This method reports information related to XMPP events like "Available Nodes", connection information, etc.
+         *
+         */
         public void report() {
             Logger logger = Logger.getLogger("com.technicolor.eloyente");
             //Logger loger =  Logger.getLogger(ElOyente.class.getName());
