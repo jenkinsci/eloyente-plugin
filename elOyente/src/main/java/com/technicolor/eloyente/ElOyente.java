@@ -10,7 +10,6 @@ import hudson.util.FormValidation;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.enterprise.inject.New;
 import net.sf.json.JSONObject;
 import org.jivesoftware.smack.Connection;
 import org.jivesoftware.smack.ConnectionConfiguration;
@@ -34,7 +33,10 @@ public class ElOyente extends Trigger<Project> {
     private static Item project;
 
     /**
-     *
+     *Constructor for elOyente.
+     * 
+     * It uses the Descriptor to set the fields required later on. The Descriptor will bring the
+     * information set in the main configuration to the particular job.
      */
     @DataBoundConstructor
     public ElOyente() {
@@ -44,6 +46,18 @@ public class ElOyente extends Trigger<Project> {
         password = this.getDescriptor().password;
     }
 
+    /**
+     * Method used for starting a job.
+     * 
+     * This method is called when the Save button is pressed in a job configuration in case this
+     * plugin is activated.
+     * 
+     * It checks if there is all the information required for an XMPP connection in the main configuration
+     * and creates the connection.
+     * 
+     * @param Project
+     * @param boolean
+     */
     @Override
     public void start(Project project, boolean newInstance) {
 
@@ -76,21 +90,28 @@ public class ElOyente extends Trigger<Project> {
                 ((Project) iterator.next()).scheduleBuild(null);
             }
         }
-        //super.run(); TODO: intentar si funciona activandolo !!!!!!!        
+        //super.run();      
     }
 
+    /**
+     * Retrieves the descriptor for the plugin elOyente.
+     *
+     * Used by the plugin to set and work with the main configuration.
+     * 
+     * @return DescriptorImpl
+     */
     @Override
     public final DescriptorImpl getDescriptor() {
         return (DescriptorImpl) super.getDescriptor();
     }
 
     /**
-     * Descriptor for {@link HelloWorldBuilder}. Used as a singleton. The class
-     * is marked as public so that it can be accessed from views.
+     * Descriptor for {@link elOyente}. Used as a singleton. The class is marked
+     * as public so that it can be accessed from views.
      *
      * <p> See
-     * <tt>src/main/resources/hudson/plugins/hello_world/HelloWorldBuilder/*.jelly</tt>
-     * for the actual HTML fragment for the configuration screen.
+     * <tt>src/main/resources/hudson/plugins/eloyente/elOyente/*.jelly</tt> for
+     * the actual HTML fragment for the configuration screen.
      */
     @Extension // This indicates to Jenkins that this is an implementation of an extension point.
     public static final class DescriptorImpl extends TriggerDescriptor {
@@ -106,17 +127,38 @@ public class ElOyente extends Trigger<Project> {
         private String password;
 
         /**
+         * Brings the persisted configuration in the main configuration.
          *
+         * Brings the persisted configuration in the main configuration.
          */
         public DescriptorImpl() {
             load();
         }
 
+        /**
+         * Used to persist the global configuration.
+         *
+         *
+         * This method is used to set the field for the checkbox that activates
+         * the plugin in the job configuration.
+         *
+         * @return boolean
+         * @param Item
+         */
         @Override
         public boolean isApplicable(Item item) {
             return true;
         }
 
+        /**
+         * Used to persist the global configuration.
+         *
+         *
+         * This method is used to set the field for the checkbox that activates
+         * the plugin in the job configuration.
+         *
+         * @return String
+         */
         @Override
         public String getDisplayName() {
             return "XMPP triggered plugin";
@@ -142,7 +184,7 @@ public class ElOyente extends Trigger<Project> {
             password = formData.getString("password");
             // ^Can also use req.bindJSON(this, formData);
             //  (easier when there are many fields; need set* methods for this)
-            
+
             report();
 
             save();
@@ -151,8 +193,12 @@ public class ElOyente extends Trigger<Project> {
 
         /**
          * Used for logging to the log file.
-         * 
-         * This method reports information related to XMPP events like "Available Nodes", connection information, etc.
+         *
+         * This method reports information related to XMPP events like
+         * "Available Nodes", connection information, etc. It creates a
+         * connection to take the required data for reporting and it closes it
+         * after. It is used in the main configuration every time the Save or
+         * Apply buttons are pressed.
          *
          */
         public void report() {
