@@ -2,7 +2,7 @@
 ================================================================================
 Reviewer name    : Juan Luis Pardo González
 Review date      : 26/10/2012
-Reviewed file    : elOyente.java
+Reviewed file    : ElOyente.java
 Reviewed version : f74e8dfcbb5205d4f21aa3ffd75d7612de5698eb
 --------------------------------------------------------------------------------
 Review comments  :
@@ -12,10 +12,11 @@ you the exception number and the message it provides.
 
 try {
 
-...
+	...
 
-	} catch (XMPPException ex) {
-	                    System.err.println(ex.getXMPPError().getCode() + ex.getXMPPError().getMessage());}
+} catch (XMPPException ex) {
+	System.err.println(ex.getXMPPError().getMessage());
+}
 
 
 
