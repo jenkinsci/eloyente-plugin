@@ -39,11 +39,12 @@ public class ElOyente extends Trigger<Project> {
      * information set in the main configuration to the particular job.
      */
     @DataBoundConstructor
-    public ElOyente() {
+    public ElOyente(Item project) {
         super();
         server = this.getDescriptor().server;
         user = this.getDescriptor().user;
         password = this.getDescriptor().password;
+        ElOyente.project = project;
     }
 
     /**
