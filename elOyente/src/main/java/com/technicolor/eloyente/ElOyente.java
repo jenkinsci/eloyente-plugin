@@ -56,8 +56,8 @@ public class ElOyente extends Trigger<Project> {
      * It checks if there is all the information required for an XMPP connection in the main configuration
      * and creates the connection.
      * 
-     * @param Project
-     * @param boolean
+     * @param project
+     * @param newInstance
      */
     @Override
     public void start(Project project, boolean newInstance) {
@@ -107,7 +107,7 @@ public class ElOyente extends Trigger<Project> {
     }
 
     /**
-     * Descriptor for {@link elOyente}. Used as a singleton. The class is marked
+     * Descriptor for {@link ElOyente}. Used as a singleton. The class is marked
      * as public so that it can be accessed from views.
      *
      * <p> See
@@ -144,7 +144,7 @@ public class ElOyente extends Trigger<Project> {
          * the plugin in the job configuration.
          *
          * @return boolean
-         * @param Item
+         * @param item
          */
         @Override
         public boolean isApplicable(Item item) {
