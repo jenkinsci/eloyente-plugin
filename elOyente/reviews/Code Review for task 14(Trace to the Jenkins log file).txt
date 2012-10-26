@@ -1,0 +1,47 @@
+                             C O D E   R E V I E W
+================================================================================
+Reviewer name    : Isabel Fernández Díaz / Juan Luis Pardo González
+Review date      :
+Reviewed file    :
+Reviewed version : (use: git show <file> | grep commit)
+--------------------------------------------------------------------------------
+Review comments  :
+
+Too many nested try and catch for XMMPException, we should use just one try and catch that shows
+you the exception number and the message it provides.
+
+try {
+
+...
+
+	} catch (XMPPException ex) {
+	                    System.err.println(ex.getXMPPError().getCode() + ex.getXMPPError().getMessage());}
+
+
+
+Code	Description
+302	 Redirect
+400	 Bad Request
+401	 Unauthorized
+402	 Payment Required
+403	 Forbidden
+404	 Not Found
+405	 Not Allowed
+406	 Not Acceptable
+407	 Registration Required
+408	 Request Timeout
+409	 Conflict
+500	 Internal Server XMPPError
+501	 Not Implemented
+502	 Remote Server Error
+503	 Service Unavailable
+504	 Remote Server Timeout
+
+
+--------------------------------------------------------------------------------
+Reworked version : (use: git show <file> | grep commit)
+Rework comments  :
+
+
+================================================================================
+
