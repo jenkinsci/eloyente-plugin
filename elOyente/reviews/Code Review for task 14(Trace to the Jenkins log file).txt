@@ -1,9 +1,9 @@
                              C O D E   R E V I E W
 ================================================================================
-Reviewer name    : Isabel Fernández Díaz / Juan Luis Pardo González
-Review date      :
-Reviewed file    :
-Reviewed version : (use: git show <file> | grep commit)
+Reviewer name    : Juan Luis Pardo González
+Review date      : 26/10/2012
+Reviewed file    : elOyente.java
+Reviewed version : f74e8dfcbb5205d4f21aa3ffd75d7612de5698eb
 --------------------------------------------------------------------------------
 Review comments  :
 

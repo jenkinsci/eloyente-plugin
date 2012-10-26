@@ -1,6 +1,7 @@
 package com.technicolor.eloyente;
 
 import hudson.Extension;
+import hudson.Plugin;
 import hudson.model.Descriptor;
 import hudson.model.Item;
 import hudson.model.Project;
@@ -126,7 +127,7 @@ public class ElOyente extends Trigger<Project> {
         private String server;
         private String user;
         private String password;
-
+        
         /**
          * Brings the persisted configuration in the main configuration.
          *
@@ -185,7 +186,7 @@ public class ElOyente extends Trigger<Project> {
             password = formData.getString("password");
             // ^Can also use req.bindJSON(this, formData);
             //  (easier when there are many fields; need set* methods for this)
-
+            
             report();
 
             save();

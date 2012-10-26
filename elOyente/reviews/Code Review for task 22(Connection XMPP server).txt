@@ -24,5 +24,12 @@ Write review comments here (code style, complexity, correctness,
 Reworked version : (use: git show <file> | grep commit)
 Rework comments  :
 
+Too old version reviewed.
+
+- Try and catch solved
+- Disconnection when a job is deleted? by now this is not solved, about the 
+disconnect method of the smack libray, it is working and used around in the proper places.
+- Done!! :) And THEY(the jobs) do connect automatically!
+- Brand new clean configure method done. 
 
 ================================================================================
