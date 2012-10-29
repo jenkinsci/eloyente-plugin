@@ -34,10 +34,11 @@ public class ElOyente extends Trigger<Project> {
     private static Item project;
 
     /**
-     *Constructor for elOyente.
-     * 
-     * It uses the Descriptor to set the fields required later on. The Descriptor will bring the
-     * information set in the main configuration to the particular job.
+     * Constructor for elOyente.
+     *
+     * It uses the Descriptor to set the fields required later on. The
+     * Descriptor will bring the information set in the main configuration to
+     * the particular job.
      */
     @DataBoundConstructor
     public ElOyente(Item project) {
@@ -50,13 +51,13 @@ public class ElOyente extends Trigger<Project> {
 
     /**
      * Method used for starting a job.
-     * 
-     * This method is called when the Save button is pressed in a job configuration in case this
-     * plugin is activated.
-     * 
-     * It checks if there is all the information required for an XMPP connection in the main configuration
-     * and creates the connection.
-     * 
+     *
+     * This method is called when the Save button is pressed in a job
+     * configuration in case this plugin is activated.
+     *
+     * It checks if there is all the information required for an XMPP connection
+     * in the main configuration and creates the connection.
+     *
      * @param project
      * @param newInstance
      */
@@ -99,7 +100,7 @@ public class ElOyente extends Trigger<Project> {
      * Retrieves the descriptor for the plugin elOyente.
      *
      * Used by the plugin to set and work with the main configuration.
-     * 
+     *
      * @return DescriptorImpl
      */
     @Override
@@ -127,7 +128,7 @@ public class ElOyente extends Trigger<Project> {
         private String server;
         private String user;
         private String password;
-        
+
         /**
          * Brings the persisted configuration in the main configuration.
          *
@@ -186,7 +187,7 @@ public class ElOyente extends Trigger<Project> {
             password = formData.getString("password");
             // ^Can also use req.bindJSON(this, formData);
             //  (easier when there are many fields; need set* methods for this)
-            
+
             report();
 
             save();
@@ -211,47 +212,39 @@ public class ElOyente extends Trigger<Project> {
 
             if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
                 try {
+                    //Connection
                     ConnectionConfiguration config = new ConnectionConfiguration(server);
                     PubSubManager mgr;
                     Connection con = new XMPPConnection(config);
                     con.connect();
                     logger.log(Level.INFO, "Connection established");
                     if (con.isConnected()) {
-                        try {
-                            con.login(user, password, "Global");
-                            logger.log(Level.INFO, "JID: {0}", con.getUser());
-                            logger.log(Level.INFO, "{0} has been logged to openfire!", user);
 
-                            try {
-                                mgr = new PubSubManager(con);
-                                DiscoverItems items = mgr.discoverNodes(null);
-                                Iterator<DiscoverItems.Item> iter = items.getItems();
+                        //Login
+                        con.login(user, password, "Global");
+                        logger.log(Level.INFO, "JID: {0}", con.getUser());
+                        logger.log(Level.INFO, "{0} has been logged to openfire!", user);
 
-                                logger.log(Level.INFO, "NODES: ---------------------------------");
+                        //Log the availables nodes
+                        mgr = new PubSubManager(con);
+                        DiscoverItems items = mgr.discoverNodes(null);
+                        Iterator<DiscoverItems.Item> iter = items.getItems();
 
-                                while (iter.hasNext()) {
-                                    DiscoverItems.Item i = iter.next();
-                                    logger.log(Level.INFO, "Node: {0}", i.getNode());
-                                    System.out.println("Node: " + i.toXML());
-                                    System.out.println("NodeName: " + i.getNode());
-                                }
-                                logger.log(Level.INFO, "END NODES: -----------------------------");
-
-                                con.disconnect();
-
-                            } catch (XMPPException ex) {
-                                System.out.println("List of nodes no available");
-                                ex.printStackTrace(System.err);
-                            }
-
-                        } catch (XMPPException ex) {
-                            System.err.println("Login error");
-                            ex.printStackTrace(System.err);
+                        logger.log(Level.INFO, "NODES: ---------------------------------");
+                        while (iter.hasNext()) {
+                            DiscoverItems.Item i = iter.next();
+                            logger.log(Level.INFO, "Node: {0}", i.getNode());
+                            System.out.println("Node: " + i.toXML());
+                            System.out.println("NodeName: " + i.getNode());
                         }
+                        logger.log(Level.INFO, "END NODES: -----------------------------");
+
+                        //Disconnection
+                        con.disconnect();
+
                     }
                 } catch (XMPPException ex) {
-                    System.err.println("Couldn't establish the connection, or already connected");
-                    ex.printStackTrace(System.err);
+                    System.err.println(ex.getXMPPError().getMessage());
                 }
             }
         }

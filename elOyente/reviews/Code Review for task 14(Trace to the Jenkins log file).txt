@@ -40,8 +40,8 @@ Code	Description
 
 
 --------------------------------------------------------------------------------
-Reworked version : (use: git show <file> | grep commit)
-Rework comments  :
+Reworked version : 7101ac3961c21180f720ce2a92abf6af91147da3
+Rework comments  : Done
 
 
 ================================================================================
