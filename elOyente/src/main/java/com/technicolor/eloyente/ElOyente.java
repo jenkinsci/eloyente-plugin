@@ -1,7 +1,6 @@
 package com.technicolor.eloyente;
 
 import hudson.Extension;
-import hudson.Plugin;
 import hudson.model.Descriptor;
 import hudson.model.Item;
 import hudson.model.Project;
@@ -80,7 +79,7 @@ public class ElOyente extends Trigger<Project> {
             } catch (XMPPException ex) {
                 System.err.println("Couldn't establish the connection, or already connected");
                 ex.printStackTrace(System.err);
-            }
+            }       
         }
     }
 
@@ -186,9 +185,9 @@ public class ElOyente extends Trigger<Project> {
             password = formData.getString("password");
             // ^Can also use req.bindJSON(this, formData);
             //  (easier when there are many fields; need set* methods for this)
-            
+                  
             report();
-
+   
             save();
             return super.configure(req, formData);
         }
