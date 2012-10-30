@@ -1,20 +1,28 @@
 package com.technicolor.eloyente;
 
 import hudson.Extension;
+import hudson.model.AbstractItem;
 import hudson.model.Descriptor;
 import hudson.model.Item;
+import hudson.model.Items;
 import hudson.model.Project;
+import hudson.model.TopLevelItem;
+import hudson.tasks.Builder;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
 import hudson.util.FormValidation;
+import java.io.File;
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.jivesoftware.smack.Connection;
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smackx.packet.DiscoverItems;
 import org.jivesoftware.smackx.pubsub.PubSubManager;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -63,7 +71,17 @@ public class ElOyente extends Trigger<Project> {
     @Override
     public void start(Project project, boolean newInstance) {
 
-        //if (this.getDescriptor().doCheckActiveJob(activeJob).kind.toString().equals("OK")) {
+        server = this.getDescriptor().server;
+        user = this.getDescriptor().user;
+        password = this.getDescriptor().password;
+
+        if (server != null || user != null || password != null) {
+            ConnectionConfiguration config = new ConnectionConfiguration(server);
+            Connection con = new XMPPConnection(config);
+
+            con.disconnect(new Presence(Presence.Type.unavailable));
+        }
+
         if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
             try {
                 ConnectionConfiguration config = new ConnectionConfiguration(server);
@@ -71,6 +89,7 @@ public class ElOyente extends Trigger<Project> {
                 con.connect();
                 if (con.isConnected()) {
                     try {
+
                         con.login(user, password, project.getName());
                     } catch (XMPPException ex) {
                         System.err.println("Login error");
@@ -80,8 +99,9 @@ public class ElOyente extends Trigger<Project> {
             } catch (XMPPException ex) {
                 System.err.println("Couldn't establish the connection, or already connected");
                 ex.printStackTrace(System.err);
-            }       
+            }
         }
+
     }
 
     @Override
@@ -124,9 +144,9 @@ public class ElOyente extends Trigger<Project> {
          *
          * <p> If you don't want fields to be persisted, use <tt>transient</tt>.
          */
-        private String server;
-        private String user;
-        private String password;
+        private String server, oldserver;
+        private String user, olduser;
+        private String password, oldpassword;
 
         /**
          * Brings the persisted configuration in the main configuration.
@@ -135,6 +155,9 @@ public class ElOyente extends Trigger<Project> {
          */
         public DescriptorImpl() {
             load();
+            oldserver = this.getServer();
+            olduser = this.getUser();
+            oldpassword = this.getPassword();
         }
 
         /**
@@ -187,9 +210,22 @@ public class ElOyente extends Trigger<Project> {
             // ^Can also use req.bindJSON(this, formData);
             //  (easier when there are many fields; need set* methods for this)
 
-            report();
-   
+            //report();
+
             save();
+
+            if (!server.equals(oldserver) || !user.equals(olduser) || !password.equals(oldpassword)) {
+                try {
+
+                    AbstractItem item = (AbstractItem) Jenkins.getInstance().getItem("Prueba1");
+                    File directoryConfigXml = item.getConfigFile().getFile().getParentFile();
+                    System.out.println(Items.load(item.getParent(), directoryConfigXml));
+                } catch (IOException ex) {
+                    Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
+                    System.out.println("NO EXISTE EL JOB PRUEBA1");
+                }
+            }
+
             return super.configure(req, formData);
         }
 
@@ -203,51 +239,50 @@ public class ElOyente extends Trigger<Project> {
          * Apply buttons are pressed.
          *
          */
-        public void report() {
-            Logger logger = Logger.getLogger("com.technicolor.eloyente");
-            //Logger loger =  Logger.getLogger(ElOyente.class.getName());
-
-
-
-            if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
-                try {
-                    //Connection
-                    ConnectionConfiguration config = new ConnectionConfiguration(server);
-                    PubSubManager mgr;
-                    Connection con = new XMPPConnection(config);
-                    con.connect();
-                    logger.log(Level.INFO, "Connection established");
-                    if (con.isConnected()) {
-
-                        //Login
-                        con.login(user, password, "Global");
-                        logger.log(Level.INFO, "JID: {0}", con.getUser());
-                        logger.log(Level.INFO, "{0} has been logged to openfire!", user);
-
-                        //Log the availables nodes
-                        mgr = new PubSubManager(con);
-                        DiscoverItems items = mgr.discoverNodes(null);
-                        Iterator<DiscoverItems.Item> iter = items.getItems();
-
-                        logger.log(Level.INFO, "NODES: ---------------------------------");
-                        while (iter.hasNext()) {
-                            DiscoverItems.Item i = iter.next();
-                            logger.log(Level.INFO, "Node: {0}", i.getNode());
-                            System.out.println("Node: " + i.toXML());
-                            System.out.println("NodeName: " + i.getNode());
-                        }
-                        logger.log(Level.INFO, "END NODES: -----------------------------");
-
-                        //Disconnection
-                        con.disconnect();
-
-                    }
-                } catch (XMPPException ex) {
-                    System.err.println(ex.getXMPPError().getMessage());
-                }
-            }
-        }
-
+//        public void report() {
+//            Logger logger = Logger.getLogger("com.technicolor.eloyente");
+//            //Logger loger =  Logger.getLogger(ElOyente.class.getName());
+//
+//
+//
+//            if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
+//                try {
+//                    //Connection
+//                    ConnectionConfiguration config = new ConnectionConfiguration(server);
+//                    PubSubManager mgr;
+//                    Connection con = new XMPPConnection(config);
+//                    con.connect();
+//                    logger.log(Level.INFO, "Connection established");
+//                    if (con.isConnected()) {
+//
+//                        //Login
+//                        con.login(user, password, "Global");
+//                        logger.log(Level.INFO, "JID: {0}", con.getUser());
+//                        logger.log(Level.INFO, "{0} has been logged to openfire!", user);
+//
+//                        //Log the availables nodes
+//                        mgr = new PubSubManager(con);
+//                        DiscoverItems items = mgr.discoverNodes(null);
+//                        Iterator<DiscoverItems.Item> iter = items.getItems();
+//
+//                        logger.log(Level.INFO, "NODES: ---------------------------------");
+//                        while (iter.hasNext()) {
+//                            DiscoverItems.Item i = iter.next();
+//                            logger.log(Level.INFO, "Node: {0}", i.getNode());
+//                            System.out.println("Node: " + i.toXML());
+//                            System.out.println("NodeName: " + i.getNode());
+//                        }
+//                        logger.log(Level.INFO, "END NODES: -----------------------------");
+//
+//                        //Disconnection
+//                        con.disconnect();
+//
+//                    }
+//                } catch (XMPPException ex) {
+//                    System.err.println(ex.getXMPPError().getMessage());
+//                }
+//            }
+//        }
         /**
          * This method returns the URL of the XMPP server.
          *
