@@ -1,10 +1,12 @@
 package com.technicolor.eloyente;
 
 import hudson.Extension;
+import hudson.PluginWrapper.Dependency;
 import hudson.model.AbstractItem;
 import hudson.model.Descriptor;
 import hudson.model.Item;
 import hudson.model.Items;
+
 import hudson.model.Project;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
@@ -245,17 +247,40 @@ public class ElOyente extends Trigger<Project> {
 
             save();
 
-            if (!server.equals(oldserver) || !user.equals(olduser) || !password.equals(oldpassword)) {
+            Iterator it = ( Jenkins.getInstance().getItems()).iterator();
+            
+            while(it.hasNext()){
+                AbstractItem item = (AbstractItem)it.next();
                 try {
-
-                    AbstractItem item = (AbstractItem) Jenkins.getInstance().getItem("Prueba1");
-                    File directoryConfigXml = item.getConfigFile().getFile().getParentFile();
-                    Items.load(item.getParent(), directoryConfigXml);
+                    if(item.getConfigFile().asString().contains("ElOyente")){
+                    
+                         System.out.println(item.getName() + ": Yo tengo el plugin");
+                    }
+                    else{
+                        System.out.println(item.getName() + "Yo no tengo el plugin");
+                    }
                 } catch (IOException ex) {
                     Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
-                    System.out.println("NO EXISTE EL JOB PRUEBA1");
                 }
             }
+            
+
+            
+            
+            
+            
+            
+//            if (!server.equals(oldserver) || !user.equals(olduser) || !password.equals(oldpassword)) {
+//                try {
+//
+//                    AbstractItem item = (AbstractItem) Jenkins.getInstance().getItem("Prueba1");
+//                    File directoryConfigXml = item.getConfigFile().getFile().getParentFile();
+//                    Items.load(item.getParent(), directoryConfigXml);
+//                } catch (IOException ex) {
+//                    Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
+//                    System.out.println("NO EXISTE EL JOB PRUEBA1");
+//                }
+//            }
 
             oldserver = server;
             olduser = user;
