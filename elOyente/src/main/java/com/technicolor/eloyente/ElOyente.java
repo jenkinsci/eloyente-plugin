@@ -6,8 +6,6 @@ import hudson.model.Descriptor;
 import hudson.model.Item;
 import hudson.model.Items;
 import hudson.model.Project;
-import hudson.model.TopLevelItem;
-import hudson.tasks.Builder;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
 import hudson.util.FormValidation;
@@ -23,8 +21,9 @@ import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.packet.Presence;
-import org.jivesoftware.smackx.packet.DiscoverItems;
+import org.jivesoftware.smackx.pubsub.Node;
 import org.jivesoftware.smackx.pubsub.PubSubManager;
+import org.jivesoftware.smackx.pubsub.Subscription;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -39,6 +38,7 @@ public class ElOyente extends Trigger<Project> {
     private String user;
     private String password;
     private static Item project;
+    private static String connectionID;
 
     /**
      * Constructor for elOyente.
@@ -75,12 +75,10 @@ public class ElOyente extends Trigger<Project> {
         user = this.getDescriptor().user;
         password = this.getDescriptor().password;
 
-        if (server != null || user != null || password != null) {
-            ConnectionConfiguration config = new ConnectionConfiguration(server);
-            Connection con = new XMPPConnection(config);
 
-            con.disconnect(new Presence(Presence.Type.unavailable));
-        }
+
+
+        //Si cambiamos user ok, si cambiamos server o contrasena no, porque no se como desconectarlo. Reiniciar soluciona todo.
 
         if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
             try {
@@ -89,8 +87,8 @@ public class ElOyente extends Trigger<Project> {
                 con.connect();
                 if (con.isConnected()) {
                     try {
-
                         con.login(user, password, project.getName());
+                        reloadSubscriptions(con, user);
                     } catch (XMPPException ex) {
                         System.err.println("Login error");
                         ex.printStackTrace(System.err);
@@ -102,6 +100,31 @@ public class ElOyente extends Trigger<Project> {
             }
         }
 
+    }
+
+    public void reloadSubscriptions(Connection con, String newUser) throws XMPPException {
+        PubSubManager mgr = new PubSubManager(con);
+        Iterator it = mgr.getSubscriptions().iterator();
+        String newJID;
+          while (it.hasNext()) {
+            Subscription sub = (Subscription) it.next();
+            String JID = sub.getJid();
+            String user = JID.split("@")[0];
+
+            if (JID.split("@")[1].contains("/")) {
+                String resource = JID.split("@")[1].split("/")[1];
+                System.out.println("Usuario: " + user + "\nResource: " + resource + "\nNodo: " + sub.getNode() + "\n\n");
+                newJID = user + "@" + this.server + "/" + resource;
+            }
+            else{
+                System.out.println("Usuario: " + user + "\nResource: No resource \nNodo: " + sub.getNode()+ "\n\n");
+                newJID = user + "@" + this.server;
+            }
+
+            Node node = mgr.getNode(sub.getNode());
+            node.unsubscribe(JID);
+            node.subscribe("frank");
+        }
     }
 
     @Override
@@ -207,6 +230,8 @@ public class ElOyente extends Trigger<Project> {
             server = formData.getString("server");
             user = formData.getString("user");
             password = formData.getString("password");
+
+
             // ^Can also use req.bindJSON(this, formData);
             //  (easier when there are many fields; need set* methods for this)
 
@@ -219,12 +244,16 @@ public class ElOyente extends Trigger<Project> {
 
                     AbstractItem item = (AbstractItem) Jenkins.getInstance().getItem("Prueba1");
                     File directoryConfigXml = item.getConfigFile().getFile().getParentFile();
-                    System.out.println(Items.load(item.getParent(), directoryConfigXml));
+                    Items.load(item.getParent(), directoryConfigXml);
                 } catch (IOException ex) {
                     Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
                     System.out.println("NO EXISTE EL JOB PRUEBA1");
                 }
             }
+
+            oldserver = server;
+            olduser = user;
+            oldpassword = password;
 
             return super.configure(req, formData);
         }
