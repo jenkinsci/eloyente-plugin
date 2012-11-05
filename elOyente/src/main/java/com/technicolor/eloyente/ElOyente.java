@@ -88,7 +88,7 @@ public class ElOyente extends Trigger<Project> {
                 if (con.isConnected()) {
                     try {
                         con.login(user, password, project.getName());
-                        reloadSubscriptions(con, user);
+                        //reloadSubscriptions(con, user);
                     } catch (XMPPException ex) {
                         System.err.println("Login error");
                         ex.printStackTrace(System.err);
@@ -102,30 +102,36 @@ public class ElOyente extends Trigger<Project> {
 
     }
 
-    public void reloadSubscriptions(Connection con, String newUser) throws XMPPException {
-        PubSubManager mgr = new PubSubManager(con);
-        Iterator it = mgr.getSubscriptions().iterator();
-        String newJID;
-          while (it.hasNext()) {
-            Subscription sub = (Subscription) it.next();
-            String JID = sub.getJid();
-            String user = JID.split("@")[0];
-
-            if (JID.split("@")[1].contains("/")) {
-                String resource = JID.split("@")[1].split("/")[1];
-                System.out.println("Usuario: " + user + "\nResource: " + resource + "\nNodo: " + sub.getNode() + "\n\n");
-                newJID = user + "@" + this.server + "/" + resource;
-            }
-            else{
-                System.out.println("Usuario: " + user + "\nResource: No resource \nNodo: " + sub.getNode()+ "\n\n");
-                newJID = user + "@" + this.server;
-            }
-
-            Node node = mgr.getNode(sub.getNode());
-            node.unsubscribe(JID);
-            node.subscribe("frank");
-        }
-    }
+    /*
+     * - No funciona bien, se ha cargado todas las subscripciones
+     * - newJID (user@server/resource o user@server) no estoy seguro de que se llame asi a subscribe y unsubscribe
+     * - Para subscribirse a algo con user y RESOURCE posiblemente haya que logearse con cada user y resource y hacer la suscripcion.
+     * - 
+    */
+//    public void reloadSubscriptions(Connection con, String newUser) throws XMPPException {
+//        PubSubManager mgr = new PubSubManager(con);
+//        Iterator it = mgr.getSubscriptions().iterator();
+//        String newJID;
+//          while (it.hasNext()) {
+//            Subscription sub = (Subscription) it.next();
+//            String JID = sub.getJid();
+//            String user = JID.split("@")[0];
+//
+//            if (JID.split("@")[1].contains("/")) {
+//                String resource = JID.split("@")[1].split("/")[1];
+//                System.out.println("Usuario: " + user + "\nResource: " + resource + "\nNodo: " + sub.getNode() + "\n\n");
+//                newJID = user + "@" + this.server + "/" + resource;
+//            }
+//            else{
+//                System.out.println("Usuario: " + user + "\nResource: No resource \nNodo: " + sub.getNode()+ "\n\n");
+//                newJID = user + "@" + this.server;
+//            }
+//
+//            Node node = mgr.getNode(sub.getNode());
+//            node.unsubscribe(JID);
+//            node.subscribe(newJID);
+//        }
+//    }
 
     @Override
     public void run() {
