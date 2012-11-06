@@ -1,14 +1,10 @@
 package com.technicolor.eloyente;
 
 import hudson.Extension;
-import hudson.Plugin;
-import hudson.PluginWrapper.Dependency;
-import hudson.model.AbstractItem;
 import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
 import hudson.model.Item;
 import hudson.model.Items;
-import hudson.model.Job;
 
 import hudson.model.Project;
 import hudson.triggers.Trigger;
@@ -17,7 +13,6 @@ import hudson.util.FormValidation;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
@@ -26,10 +21,8 @@ import org.jivesoftware.smack.Connection;
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
-import org.jivesoftware.smack.packet.Presence;
-import org.jivesoftware.smackx.pubsub.Node;
+import org.jivesoftware.smackx.packet.DiscoverItems;
 import org.jivesoftware.smackx.pubsub.PubSubManager;
-import org.jivesoftware.smackx.pubsub.Subscription;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -246,107 +239,109 @@ public class ElOyente extends Trigger<Project> {
             // ^Can also use req.bindJSON(this, formData);
             //  (easier when there are many fields; need set* methods for this)
 
-            //report();
-
+            report();
             save();
+            reloadJobs();
 
-            // Checking if the plugin is using the elOyente plugin
-            Iterator it2 = (Jenkins.getInstance().getItems()).iterator();
-            while (it2.hasNext()) {
-                AbstractProject job = (AbstractProject) it2.next();
-                Object instance = (ElOyente) job.getTriggers().get(this);
-                if (instance != null) {
-                    System.out.println(job.getName() + ": Yo tengo el plugin");
-                } else {
-                    System.out.println(job.getName() + ": Yo no tengo el plugin");
-                }
-            }
+            oldserver = server;
+            olduser = user;
+            oldpassword = password;
 
-            if (!server.equals(oldserver) || !user.equals(olduser) || !password.equals(oldpassword)) {
-                try {
+            return super.configure(req, formData);
+        }
 
-                    AbstractItem item = (AbstractItem) Jenkins.getInstance().getItem("Prueba1");
-                    File directoryConfigXml = item.getConfigFile().getFile().getParentFile();
-                    Items.load(item.getParent(), directoryConfigXml);
-                } catch (IOException ex) {
-                    Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
-                    System.out.println("NO EXISTE EL JOB PRUEBA1");
-                }
-            }
-            
-
-                oldserver = server;
-                olduser = user;
-                oldpassword = password;
-
-                return super.configure(req, formData);
-            }
-
-            /**
-             * Used for logging to the log file.
-             *
-             * This method reports information related to XMPP events like
-             * "Available Nodes", connection information, etc. It creates a
-             * connection to take the required data for reporting and it closes
-             * it after. It is used in the main configuration every time the
-             * Save or Apply buttons are pressed.
-             *
-             */
-//        public void report() {
-//            Logger logger = Logger.getLogger("com.technicolor.eloyente");
-//            //Logger loger =  Logger.getLogger(ElOyente.class.getName());
-//
-//
-//
-//            if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
-//                try {
-//                    //Connection
-//                    ConnectionConfiguration config = new ConnectionConfiguration(server);
-//                    PubSubManager mgr;
-//                    Connection con = new XMPPConnection(config);
-//                    con.connect();
-//                    logger.log(Level.INFO, "Connection established");
-//                    if (con.isConnected()) {
-//
-//                        //Login
-//                        con.login(user, password, "Global");
-//                        logger.log(Level.INFO, "JID: {0}", con.getUser());
-//                        logger.log(Level.INFO, "{0} has been logged to openfire!", user);
-//
-//                        //Log the availables nodes
-//                        mgr = new PubSubManager(con);
-//                        DiscoverItems items = mgr.discoverNodes(null);
-//                        Iterator<DiscoverItems.Item> iter = items.getItems();
-//
-//                        logger.log(Level.INFO, "NODES: ---------------------------------");
-//                        while (iter.hasNext()) {
-//                            DiscoverItems.Item i = iter.next();
-//                            logger.log(Level.INFO, "Node: {0}", i.getNode());
-//                            System.out.println("Node: " + i.toXML());
-//                            System.out.println("NodeName: " + i.getNode());
-//                        }
-//                        logger.log(Level.INFO, "END NODES: -----------------------------");
-//
-//                        //Disconnection
-//                        con.disconnect();
-//
-//                    }
-//                } catch (XMPPException ex) {
-//                    System.err.println(ex.getXMPPError().getMessage());
-//                }
-//            }
-//        }
-            /**
-             * This method returns the URL of the XMPP server.
-             *
-             *
-             * global.jelly calls this method to obtain the value of field
-             * server.
-             *
-             * @return server
-             */
         
+        /**
+         * This method reloads the jobs that are using ElOyente applying the new main configuration.
+         * 
+         * Checks if the parameters username, password and server of the main configuration have changed, if so
+         * it calls the method start() of all those jobs that are using ElOyente in order to connect to the server
+         * with the new credentials.
+         */
+        public void reloadJobs() {
+            if (!server.equals(oldserver) || !user.equals(olduser) || !password.equals(oldpassword)) {
+                Iterator it2 = (Jenkins.getInstance().getItems()).iterator();
+                while (it2.hasNext()) {
+                    AbstractProject job = (AbstractProject) it2.next();
+                    Object instance = (ElOyente) job.getTriggers().get(this);
+                    if (instance != null) {
+                        System.out.println(job.getName() + ": Yo tengo el plugin");
+                        File directoryConfigXml = job.getConfigFile().getFile().getParentFile();
+                        try {
+                            Items.load(job.getParent(), directoryConfigXml);
+                        } catch (IOException ex) {
+                            Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    } else {
+                        System.out.println(job.getName() + ": Yo no tengo el plugin");
+                    }
+                }
+            }
+        }
 
+        /**
+         * Used for logging to the log file.
+         *
+         * This method reports information related to XMPP events like
+         * "Available Nodes", connection information, etc. It creates a
+         * connection to take the required data for reporting and it closes it
+         * after. It is used in the main configuration every time the Save or
+         * Apply buttons are pressed.
+         *
+         */
+        public void report() {
+            Logger logger = Logger.getLogger("com.technicolor.eloyente");
+            //Logger loger =  Logger.getLogger(ElOyente.class.getName());
+
+
+
+            if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
+                try {
+                    //Connection
+                    ConnectionConfiguration config = new ConnectionConfiguration(server);
+                    PubSubManager mgr;
+                    Connection con = new XMPPConnection(config);
+                    con.connect();
+                    logger.log(Level.INFO, "Connection established");
+                    if (con.isConnected()) {
+
+                        //Login
+                        con.login(user, password, "Global");
+                        logger.log(Level.INFO, "JID: {0}", con.getUser());
+                        logger.log(Level.INFO, "{0} has been logged to openfire!", user);
+
+                        //Log the availables nodes
+                        mgr = new PubSubManager(con);
+                        DiscoverItems items = mgr.discoverNodes(null);
+                        Iterator<DiscoverItems.Item> iter = items.getItems();
+
+                        logger.log(Level.INFO, "NODES: ---------------------------------");
+                        while (iter.hasNext()) {
+                            DiscoverItems.Item i = iter.next();
+                            logger.log(Level.INFO, "Node: {0}", i.getNode());
+                            System.out.println("Node: " + i.toXML());
+                            System.out.println("NodeName: " + i.getNode());
+                        }
+                        logger.log(Level.INFO, "END NODES: -----------------------------");
+
+                        //Disconnection
+                        con.disconnect();
+
+                    }
+                } catch (XMPPException ex) {
+                    System.err.println(ex.getXMPPError().getMessage());
+                }
+            }
+        }
+
+        /**
+         * This method returns the URL of the XMPP server.
+         *
+         *
+         * global.jelly calls this method to obtain the value of field server.
+         *
+         * @return server
+         */
         public String getServer() {
             return server;
         }
