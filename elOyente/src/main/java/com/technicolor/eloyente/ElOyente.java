@@ -1,11 +1,14 @@
 package com.technicolor.eloyente;
 
 import hudson.Extension;
+import hudson.Plugin;
 import hudson.PluginWrapper.Dependency;
 import hudson.model.AbstractItem;
+import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
 import hudson.model.Item;
 import hudson.model.Items;
+import hudson.model.Job;
 
 import hudson.model.Project;
 import hudson.triggers.Trigger;
@@ -14,6 +17,7 @@ import hudson.util.FormValidation;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
@@ -109,7 +113,7 @@ public class ElOyente extends Trigger<Project> {
      * - newJID (user@server/resource o user@server) no estoy seguro de que se llame asi a subscribe y unsubscribe
      * - Para subscribirse a algo con user y RESOURCE posiblemente haya que logearse con cada user y resource y hacer la suscripcion.
      * - 
-    */
+     */
 //    public void reloadSubscriptions(Connection con, String newUser) throws XMPPException {
 //        PubSubManager mgr = new PubSubManager(con);
 //        Iterator it = mgr.getSubscriptions().iterator();
@@ -134,7 +138,6 @@ public class ElOyente extends Trigger<Project> {
 //            node.subscribe(newJID);
 //        }
 //    }
-
     @Override
     public void run() {
         if (!project.getAllJobs().isEmpty()) {
@@ -247,58 +250,48 @@ public class ElOyente extends Trigger<Project> {
 
             save();
 
-            Iterator it = ( Jenkins.getInstance().getItems()).iterator();
-            
-            while(it.hasNext()){
-                AbstractItem item = (AbstractItem)it.next();
+            // Checking if the plugin is using the elOyente plugin
+            Iterator it2 = (Jenkins.getInstance().getItems()).iterator();
+            while (it2.hasNext()) {
+                AbstractProject job = (AbstractProject) it2.next();
+                Object instance = (ElOyente) job.getTriggers().get(this);
+                if (instance != null) {
+                    System.out.println(job.getName() + ": Yo tengo el plugin");
+                } else {
+                    System.out.println(job.getName() + ": Yo no tengo el plugin");
+                }
+            }
+
+            if (!server.equals(oldserver) || !user.equals(olduser) || !password.equals(oldpassword)) {
                 try {
-                    if(item.getConfigFile().asString().contains("ElOyente")){
-                    
-                         System.out.println(item.getName() + ": Yo tengo el plugin");
-                    }
-                    else{
-                        System.out.println(item.getName() + "Yo no tengo el plugin");
-                    }
+
+                    AbstractItem item = (AbstractItem) Jenkins.getInstance().getItem("Prueba1");
+                    File directoryConfigXml = item.getConfigFile().getFile().getParentFile();
+                    Items.load(item.getParent(), directoryConfigXml);
                 } catch (IOException ex) {
                     Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
+                    System.out.println("NO EXISTE EL JOB PRUEBA1");
                 }
             }
             
 
-            
-            
-            
-            
-            
-//            if (!server.equals(oldserver) || !user.equals(olduser) || !password.equals(oldpassword)) {
-//                try {
-//
-//                    AbstractItem item = (AbstractItem) Jenkins.getInstance().getItem("Prueba1");
-//                    File directoryConfigXml = item.getConfigFile().getFile().getParentFile();
-//                    Items.load(item.getParent(), directoryConfigXml);
-//                } catch (IOException ex) {
-//                    Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
-//                    System.out.println("NO EXISTE EL JOB PRUEBA1");
-//                }
-//            }
+                oldserver = server;
+                olduser = user;
+                oldpassword = password;
 
-            oldserver = server;
-            olduser = user;
-            oldpassword = password;
+                return super.configure(req, formData);
+            }
 
-            return super.configure(req, formData);
-        }
-
-        /**
-         * Used for logging to the log file.
-         *
-         * This method reports information related to XMPP events like
-         * "Available Nodes", connection information, etc. It creates a
-         * connection to take the required data for reporting and it closes it
-         * after. It is used in the main configuration every time the Save or
-         * Apply buttons are pressed.
-         *
-         */
+            /**
+             * Used for logging to the log file.
+             *
+             * This method reports information related to XMPP events like
+             * "Available Nodes", connection information, etc. It creates a
+             * connection to take the required data for reporting and it closes
+             * it after. It is used in the main configuration every time the
+             * Save or Apply buttons are pressed.
+             *
+             */
 //        public void report() {
 //            Logger logger = Logger.getLogger("com.technicolor.eloyente");
 //            //Logger loger =  Logger.getLogger(ElOyente.class.getName());
@@ -343,14 +336,17 @@ public class ElOyente extends Trigger<Project> {
 //                }
 //            }
 //        }
-        /**
-         * This method returns the URL of the XMPP server.
-         *
-         *
-         * global.jelly calls this method to obtain the value of field server.
-         *
-         * @return server
-         */
+            /**
+             * This method returns the URL of the XMPP server.
+             *
+             *
+             * global.jelly calls this method to obtain the value of field
+             * server.
+             *
+             * @return server
+             */
+        
+
         public String getServer() {
             return server;
         }
