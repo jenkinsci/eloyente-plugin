@@ -12,20 +12,28 @@ import hudson.triggers.TriggerDescriptor;
 import hudson.util.FormValidation;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.jivesoftware.smack.Connection;
 import org.jivesoftware.smack.ConnectionConfiguration;
+import org.jivesoftware.smack.Roster;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smackx.packet.DiscoverItems;
+import org.jivesoftware.smackx.pubsub.Node;
 import org.jivesoftware.smackx.pubsub.PubSubManager;
+import org.jivesoftware.smackx.pubsub.Subscription;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import org.jivesoftware.smack.*;
 
 /**
  * @author Juan Luis Pardo Gonzalez
@@ -37,7 +45,7 @@ public class ElOyente extends Trigger<Project> {
     private String user;
     private String password;
     private static Item project;
-    private static String connectionID;
+    private final static Map<String, Connection> connections = new HashMap<String, Connection>();
 
     /**
      * Constructor for elOyente.
@@ -53,6 +61,7 @@ public class ElOyente extends Trigger<Project> {
         user = this.getDescriptor().user;
         password = this.getDescriptor().password;
         ElOyente.project = project;
+
     }
 
     /**
@@ -73,64 +82,120 @@ public class ElOyente extends Trigger<Project> {
         server = this.getDescriptor().server;
         user = this.getDescriptor().user;
         password = this.getDescriptor().password;
-
-
+        ArrayList nodes = null;
 
 
         //Si cambiamos user ok, si cambiamos server o contrasena no, porque no se como desconectarlo. Reiniciar soluciona todo.
 
-        if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
-            try {
+
+
+        System.out.println("Con datos: " + !connections.isEmpty());
+        System.out.println("Conexion existente: " + connections.containsKey(project.getName()));
+        System.out.println("Reloading: " + getDescriptor().reloading);
+
+        try {
+
+            if (!connections.isEmpty() && connections.containsKey(project.getName()) && getDescriptor().reloading) {
+                nodes = deleteSubscriptions(connections.get(project.getName()), this.getDescriptor().olduser,project.getName());
+                connections.get(project.getName()).disconnect();
+            }
+
+            if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
                 ConnectionConfiguration config = new ConnectionConfiguration(server);
                 Connection con = new XMPPConnection(config);
                 con.connect();
                 if (con.isConnected()) {
                     try {
                         con.login(user, password, project.getName());
-                        //reloadSubscriptions(con, user);
+                        connections.put(project.getName(), con);
+                        if (getDescriptor().reloading) {
+                            createSubscription(connections.get(project.getName()), user, nodes, project.getName());
+                        }
+
                     } catch (XMPPException ex) {
                         System.err.println("Login error");
                         ex.printStackTrace(System.err);
                     }
                 }
-            } catch (XMPPException ex) {
-                System.err.println("Couldn't establish the connection, or already connected");
-                ex.printStackTrace(System.err);
+            }
+        } catch (XMPPException ex) {
+            System.err.println("Couldn't establish the connection, or already connected");
+            ex.printStackTrace(System.err);
+        }
+    }
+
+    //Mirar que suscripciones se borran
+    public ArrayList deleteSubscriptions(Connection con, String olduser,String resource) throws XMPPException {
+        ArrayList nodes = new ArrayList();
+        PubSubManager mgr = new PubSubManager(con);
+        Iterator it = mgr.getSubscriptions().iterator();
+
+        while (it.hasNext()) {
+            Subscription sub = (Subscription) it.next();
+            String JID = sub.getJid();
+            String JIDuser = JID.split("@")[0];
+            String JIDresource = JID.split("@")[1].split("/")[1];
+
+            if (JIDuser.equals(olduser) && JIDresource.equals(resource)) {
+                Node node = mgr.getNode(sub.getNode());
+                node.unsubscribe(JID);
+                nodes.add(node.getId());
             }
         }
+        return nodes;
+    }
+//Cuidao con el resource
 
+    public void createSubscription(Connection con, String newuser, ArrayList nodes, String resource) throws XMPPException {
+        PubSubManager mgr = new PubSubManager(con);
+        Iterator it = nodes.iterator();
+        while(it.hasNext()){
+            Node node = mgr.getNode((String) it.next());
+            String mierda = newuser + "@" + con.getHost() + "/" + resource;
+            node.subscribe(mierda);
+        }  
     }
 
     /*
      * - No funciona bien, se ha cargado todas las subscripciones
-     * - newJID (user@server/resource o user@server) no estoy seguro de que se llame asi a subscribe y unsubscribe
+     * - newJID (user@server/resource o user@server) no estoy seguro de que"frank" se llame asi a subscribe y unsubscribe
      * - Para subscribirse a algo con user y RESOURCE posiblemente haya que logearse con cada user y resource y hacer la suscripcion.
      * - 
      */
-//    public void reloadSubscriptions(Connection con, String newUser) throws XMPPException {
-//        PubSubManager mgr = new PubSubManager(con);
-//        Iterator it = mgr.getSubscriptions().iterator();
-//        String newJID;
-//          while (it.hasNext()) {
-//            Subscription sub = (Subscription) it.next();
-//            String JID = sub.getJid();
-//            String user = JID.split("@")[0];
+//        public void reloadSubscriptions(String newUser) throws XMPPException {
+//            ConnectionConfiguration config = new ConnectionConfiguration(server);
+//            Connection con = new XMPPConnection(config);
 //
-//            if (JID.split("@")[1].contains("/")) {
-//                String resource = JID.split("@")[1].split("/")[1];
-//                System.out.println("Usuario: " + user + "\nResource: " + resource + "\nNodo: " + sub.getNode() + "\n\n");
-//                newJID = user + "@" + this.server + "/" + resource;
-//            }
-//            else{
-//                System.out.println("Usuario: " + user + "\nResource: No resource \nNodo: " + sub.getNode()+ "\n\n");
-//                newJID = user + "@" + this.server;
-//            }
+//            con.connect();
 //
-//            Node node = mgr.getNode(sub.getNode());
-//            node.unsubscribe(JID);
-//            node.subscribe(newJID);
+//            if (con.isConnected()) {
+//"frank"
+//                con.login(user, password, project.getName());
+//
+//                PubSubManager mgr = new PubSubManager(con);
+//                Iterator it = mgr.getSubscriptions().iterator();
+//                String newJID;
+//                
+//                while (it.hasNext()) {
+//                    Subscription sub = (Subscription) it.next();
+//                    String JID = sub.getJid();
+//                    String user = JID.split("@")[0];
+//
+//                    if (JID.split("@")[1].contains("/")) {
+//                        String resource = JID.split("@")[1].split("/")[1];
+//                        System.out.println("Usuario: " + user + "\nResource: " + resource + "\nNodo: " + sub.getNode() + "\n\n");
+//                        newJID = user + "@" + this.server + "/" + resource;
+//                    } else {
+//                        System.out.println("Usuario: " + user + "\nResource: No resource \nNodo: " + sub.getNode() + "\n\n");
+//                        newJID = user + "@" + this.server;
+//                    }
+//
+//                    Node node = mgr.getNode(sub.getNode());
+//                    node.unsubscribe(JID);
+//                    node.subscribe(newJID);
+//                }
+//            }
 //        }
-//    }
     @Override
     public void run() {
         if (!project.getAllJobs().isEmpty()) {
@@ -174,6 +239,7 @@ public class ElOyente extends Trigger<Project> {
         private String server, oldserver;
         private String user, olduser;
         private String password, oldpassword;
+        private boolean reloading = false;
 
         /**
          * Brings the persisted configuration in the main configuration.
@@ -220,7 +286,8 @@ public class ElOyente extends Trigger<Project> {
          * Used to persist the global configuration.
          *
          *
-         * global.jelly calls this method to obtain the value of field server.
+         * global.jelly calls this method to obtain the value of field
+         * server.admin
          *
          * @param req
          * @param formData
@@ -239,9 +306,11 @@ public class ElOyente extends Trigger<Project> {
             // ^Can also use req.bindJSON(this, formData);
             //  (easier when there are many fields; need set* methods for this)
 
-            report();
+            //report();
             save();
+
             reloadJobs();
+
 
             oldserver = server;
             olduser = user;
@@ -250,12 +319,13 @@ public class ElOyente extends Trigger<Project> {
             return super.configure(req, formData);
         }
 
-        
         /**
-         * This method reloads the jobs that are using ElOyente applying the new main configuration.
-         * 
-         * Checks if the parameters username, password and server of the main configuration have changed, if so
-         * it calls the method start() of all those jobs that are using ElOyente in order to connect to the server
+         * This method reloads the jobs that are using ElOyente applying the new
+         * main configuration.
+         *
+         * Checks if the parameters username, password and server of the main
+         * configuration have changed, if so it calls the method start() of all
+         * those jobs that are using ElOyente in order to connect to the server
          * with the new credentials.
          */
         public void reloadJobs() {
@@ -266,15 +336,18 @@ public class ElOyente extends Trigger<Project> {
                     Object instance = (ElOyente) job.getTriggers().get(this);
                     if (instance != null) {
                         System.out.println(job.getName() + ": Yo tengo el plugin");
+                        reloading = true;
                         File directoryConfigXml = job.getConfigFile().getFile().getParentFile();
                         try {
                             Items.load(job.getParent(), directoryConfigXml);
+
                         } catch (IOException ex) {
                             Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
                         }
                     } else {
                         System.out.println(job.getName() + ": Yo no tengo el plugin");
                     }
+                    reloading = false;
                 }
             }
         }
@@ -282,7 +355,7 @@ public class ElOyente extends Trigger<Project> {
         /**
          * Used for logging to the log file.
          *
-         * This method reports information related to XMPP events like
+         * This method reports information related to XMPPadmin events like
          * "Available Nodes", connection information, etc. It creates a
          * connection to take the required data for reporting and it closes it
          * after. It is used in the main configuration every time the Save or
@@ -368,6 +441,22 @@ public class ElOyente extends Trigger<Project> {
          */
         public String getPassword() {
             return password;
+        }
+
+        public boolean getReloading() {
+            return reloading;
+        }
+
+        public String getOldServer() {
+            return oldserver;
+        }
+
+        public String getOldUser() {
+            return olduser;
+        }
+
+        public String getOldPassword() {
+            return oldpassword;
         }
 
         /**
