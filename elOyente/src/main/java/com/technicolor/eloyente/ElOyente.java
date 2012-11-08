@@ -5,7 +5,6 @@ import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
 import hudson.model.Item;
 import hudson.model.Items;
-
 import hudson.model.Project;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
@@ -15,7 +14,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -23,7 +21,6 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.jivesoftware.smack.Connection;
 import org.jivesoftware.smack.ConnectionConfiguration;
-import org.jivesoftware.smack.Roster;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smackx.packet.DiscoverItems;
@@ -33,7 +30,6 @@ import org.jivesoftware.smackx.pubsub.Subscription;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
-import org.jivesoftware.smack.*;
 
 /**
  * @author Juan Luis Pardo Gonzalez
@@ -84,11 +80,6 @@ public class ElOyente extends Trigger<Project> {
         password = this.getDescriptor().password;
         ArrayList nodes = null;
 
-
-        //Si cambiamos user ok, si cambiamos server o contrasena no, porque no se como desconectarlo. Reiniciar soluciona todo.
-
-
-
         System.out.println("Con datos: " + !connections.isEmpty());
         System.out.println("Conexion existente: " + connections.containsKey(project.getName()));
         System.out.println("Reloading: " + getDescriptor().reloading);
@@ -124,7 +115,16 @@ public class ElOyente extends Trigger<Project> {
         }
     }
 
-    //Mirar que suscripciones se borran
+    /**
+     *
+     * Deletes the subscriptions that a job has when the parameters are changed in the main configuration. 
+     * 
+     * @param con
+     * @param olduser
+     * @param resource
+     * @return
+     * @throws XMPPException
+     */
     public ArrayList deleteSubscriptions(Connection con, String olduser,String resource) throws XMPPException {
         ArrayList nodes = new ArrayList();
         PubSubManager mgr = new PubSubManager(con);
@@ -144,8 +144,17 @@ public class ElOyente extends Trigger<Project> {
         }
         return nodes;
     }
-//Cuidao con el resource
 
+    /**
+     * Recreates the subscriptions with the new parameters introduced in the main config.
+     * 
+     * 
+     * @param con
+     * @param newuser
+     * @param nodes
+     * @param resource
+     * @throws XMPPException
+     */
     public void createSubscription(Connection con, String newuser, ArrayList nodes, String resource) throws XMPPException {
         PubSubManager mgr = new PubSubManager(con);
         Iterator it = nodes.iterator();
@@ -156,46 +165,6 @@ public class ElOyente extends Trigger<Project> {
         }  
     }
 
-    /*
-     * - No funciona bien, se ha cargado todas las subscripciones
-     * - newJID (user@server/resource o user@server) no estoy seguro de que"frank" se llame asi a subscribe y unsubscribe
-     * - Para subscribirse a algo con user y RESOURCE posiblemente haya que logearse con cada user y resource y hacer la suscripcion.
-     * - 
-     */
-//        public void reloadSubscriptions(String newUser) throws XMPPException {
-//            ConnectionConfiguration config = new ConnectionConfiguration(server);
-//            Connection con = new XMPPConnection(config);
-//
-//            con.connect();
-//
-//            if (con.isConnected()) {
-//"frank"
-//                con.login(user, password, project.getName());
-//
-//                PubSubManager mgr = new PubSubManager(con);
-//                Iterator it = mgr.getSubscriptions().iterator();
-//                String newJID;
-//                
-//                while (it.hasNext()) {
-//                    Subscription sub = (Subscription) it.next();
-//                    String JID = sub.getJid();
-//                    String user = JID.split("@")[0];
-//
-//                    if (JID.split("@")[1].contains("/")) {
-//                        String resource = JID.split("@")[1].split("/")[1];
-//                        System.out.println("Usuario: " + user + "\nResource: " + resource + "\nNodo: " + sub.getNode() + "\n\n");
-//                        newJID = user + "@" + this.server + "/" + resource;
-//                    } else {
-//                        System.out.println("Usuario: " + user + "\nResource: No resource \nNodo: " + sub.getNode() + "\n\n");
-//                        newJID = user + "@" + this.server;
-//                    }
-//
-//                    Node node = mgr.getNode(sub.getNode());
-//                    node.unsubscribe(JID);
-//                    node.subscribe(newJID);
-//                }
-//            }
-//        }
     @Override
     public void run() {
         if (!project.getAllJobs().isEmpty()) {
