@@ -78,7 +78,7 @@ public class ElOyente extends Trigger<Project> {
         server = this.getDescriptor().server;
         user = this.getDescriptor().user;
         password = this.getDescriptor().password;
-        ArrayList nodes = null;
+        ArrayList nodes = new ArrayList();
 
         System.out.println("Con datos: " + !connections.isEmpty());
         System.out.println("Conexion existente: " + connections.containsKey(project.getName()));
@@ -87,7 +87,7 @@ public class ElOyente extends Trigger<Project> {
         try {
 
             if (!connections.isEmpty() && connections.containsKey(project.getName()) && getDescriptor().reloading) {
-                nodes = deleteSubscriptions(connections.get(project.getName()), this.getDescriptor().olduser,project.getName());
+                nodes = deleteSubscriptions(connections.get(project.getName()), this.getDescriptor().olduser, project.getName());
                 connections.get(project.getName()).disconnect();
             }
 
@@ -99,6 +99,17 @@ public class ElOyente extends Trigger<Project> {
                     try {
                         con.login(user, password, project.getName());
                         connections.put(project.getName(), con);
+//                        ////////////////////////////////////////////////////
+//                        ////////////////////////////////////////////////////                        
+//                        ////////////////////////////////////////////////////
+//                        ////////////////////////////////////////////////////
+//                        //ESTO DEBE CAMBIAR CUANDO PODAMOS SUSCRIBIRNOS MEDIANTE LA INTERFAZ
+//                        PubSubManager mgr = new PubSubManager(connections.get(project.getName()));
+//                        listen(mgr.getNode("Kristl"),this);
+//                        ////////////////////////////////////////////////////
+//                        ////////////////////////////////////////////////////                        
+//                        ////////////////////////////////////////////////////
+//                        ////////////////////////////////////////////////////
                         if (getDescriptor().reloading) {
                             createSubscription(connections.get(project.getName()), user, nodes, project.getName());
                         }
@@ -117,15 +128,16 @@ public class ElOyente extends Trigger<Project> {
 
     /**
      *
-     * Deletes the subscriptions that a job has when the parameters are changed in the main configuration. 
-     * 
+     * Deletes the subscriptions that a job has when the parameters are changed
+     * in the main configuration.
+     *
      * @param con
      * @param olduser
      * @param resource
      * @return
      * @throws XMPPException
      */
-    public ArrayList deleteSubscriptions(Connection con, String olduser,String resource) throws XMPPException {
+    public ArrayList deleteSubscriptions(Connection con, String olduser, String resource) throws XMPPException {
         ArrayList nodes = new ArrayList();
         PubSubManager mgr = new PubSubManager(con);
         Iterator it = mgr.getSubscriptions().iterator();
@@ -146,9 +158,10 @@ public class ElOyente extends Trigger<Project> {
     }
 
     /**
-     * Recreates the subscriptions with the new parameters introduced in the main config.
-     * 
-     * 
+     * Recreates the subscriptions with the new parameters introduced in the
+     * main config.
+     *
+     *
      * @param con
      * @param newuser
      * @param nodes
@@ -158,22 +171,37 @@ public class ElOyente extends Trigger<Project> {
     public void createSubscription(Connection con, String newuser, ArrayList nodes, String resource) throws XMPPException {
         PubSubManager mgr = new PubSubManager(con);
         Iterator it = nodes.iterator();
-        while(it.hasNext()){
+        while (it.hasNext()) {
             Node node = mgr.getNode((String) it.next());
-            String mierda = newuser + "@" + con.getHost() + "/" + resource;
-            node.subscribe(mierda);
-        }  
+            String JID = newuser + "@" + con.getHost() + "/" + resource;
+            node.subscribe(JID);
+            //listen(node,this);
+        }
     }
+
+//    public void listen(Node node, Trigger trigger) {
+//        ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(node.getId(), trigger);
+//        node.addItemEventListener(itemEventCoordinator);
+//    }
 
     @Override
     public void run() {
+        // super.run();
         if (!project.getAllJobs().isEmpty()) {
             Iterator iterator = project.getAllJobs().iterator();
             while (iterator.hasNext()) {
                 ((Project) iterator.next()).scheduleBuild(null);
             }
         }
-        //super.run();      
+        //super.run();    
+
+//           System.out.println("El principio de run");
+//        Iterator iterator = project.getAllJobs().iterator();
+//
+//        while (iterator.hasNext()) {
+//            System.out.println(iterator.next());
+//            job.scheduleBuild(null);
+//        }
     }
 
     /**
