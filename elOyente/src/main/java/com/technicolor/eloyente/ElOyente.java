@@ -10,8 +10,11 @@ import hudson.model.Project;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
+import java.awt.Image;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -19,6 +22,7 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.jivesoftware.smack.Connection;
 import org.jivesoftware.smack.ConnectionConfiguration;
+import org.jivesoftware.smack.RosterEntry;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smackx.packet.DiscoverItems;
@@ -235,7 +239,6 @@ public class ElOyente extends Trigger<Project> {
             user = formData.getString("user");
             password = formData.getString("password");
 
-
             // ^Can also use req.bindJSON(this, formData);
             //  (easier when there are many fields; need set* methods for this)
 
@@ -250,12 +253,13 @@ public class ElOyente extends Trigger<Project> {
             return super.configure(req, formData);
         }
 
-        
         /**
-         * This method reloads the jobs that are using ElOyente applying the new main configuration.
-         * 
-         * Checks if the parameters username, password and server of the main configuration have changed, if so
-         * it calls the method start() of all those jobs that are using ElOyente in order to connect to the server
+         * This method reloads the jobs that are using ElOyente applying the new
+         * main configuration.
+         *
+         * Checks if the parameters username, password and server of the main
+         * configuration have changed, if so it calls the method start() of all
+         * those jobs that are using ElOyente in order to connect to the server
          * with the new credentials.
          */
         public void reloadJobs() {
@@ -427,6 +431,62 @@ public class ElOyente extends Trigger<Project> {
             } catch (XMPPException ex) {
                 return FormValidation.errorWithMarkup("Authentication failed");
             }
+        }
+
+        public ListBoxModel doFillGoalTypeItems() throws XMPPException {
+            System.out.println("Fill Goal called");
+            ListBoxModel items = new ListBoxModel();
+
+            ConnectionConfiguration config = new ConnectionConfiguration(server);
+            Connection con = new XMPPConnection(config);
+            System.out.println("id" + con.getConnectionID());
+            System.out.println("user" + user);
+           
+            Iterator<RosterEntry> entries = con.getRoster().getEntries().iterator();
+            while (entries.hasNext()) {
+                 System.out.println("Steven-toString()" + entries.next().toString());
+                 System.out.println("Steven -.getUser()" + entries.next().getUser());
+                 System.out.println("Steven -getName()" + entries.next().getName());
+                 System.out.println("Steven -getStatus().toString()" + entries.next().getStatus().toString());
+                 System.out.println("Steven -getType().toString()" + entries.next().getType().toString());
+            }
+           
+//            PubSubManager mgr = new PubSubManager(con);
+//            DiscoverItems it = mgr.discoverNodes(null);
+//            Iterator<DiscoverItems.Item> iter = it.getItems();
+            items.add("Nodo1");
+
+            if (con.isAuthenticated()) {
+                System.out.println("Logeado");
+//                    System.out.println("Connection: " + con.getConnectionID());
+//                    System.out.println("Host: " + con.getHost());
+//                    System.out.println("ServiceName: " + con.getServiceName());
+//                    System.out.println("User: " + con.getUser());
+
+//                while (iter.hasNext()) {
+//                    DiscoverItems.Item i = iter.next();
+//                    items.add(i.getNode());
+//                    System.out.println("Node added: " + i.getNode());
+//                }
+
+
+                items.add("Nodo2");
+                items.add("Nodo3");
+
+            }
+//                else {
+//                    System.out.println("No Logeado");
+//                    System.out.println("Connection: " + con.getConnectionID());
+//                    System.out.println("Host: " + con.getHost());
+//                    System.out.println("ServiceName: " + con.getServiceName());
+//                    System.out.println("User: " + con.getUser());
+//                }
+//
+
+//                else {
+//                System.out.println("No conectado");
+//            }
+            return items;
         }
     }
 }
