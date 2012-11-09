@@ -22,7 +22,6 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.jivesoftware.smack.Connection;
 import org.jivesoftware.smack.ConnectionConfiguration;
-import org.jivesoftware.smack.RosterEntry;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smackx.packet.DiscoverItems;
@@ -63,7 +62,7 @@ public class ElOyente extends Trigger<Project> {
     /**
      * Method used for starting a job.
      *
-     * This method is called when the Save button is pressed in a job
+     * This method is called when the Save or Apply button are pressed in a job
      * configuration in case this plugin is activated.
      *
      * It checks if there is all the information required for an XMPP connection
@@ -86,12 +85,19 @@ public class ElOyente extends Trigger<Project> {
         System.out.println("Reloading: " + getDescriptor().reloading);
 
         try {
+            /* If there are old connections, and there is a connection for this job, and it's reloading then 
+             we stop the connection, delete the old subscription and store the node name in order to recreate the connection later
+             with the new parameters.
+             */
 
             if (!connections.isEmpty() && connections.containsKey(project.getName()) && getDescriptor().reloading) {
                 nodes = deleteSubscriptions(connections.get(project.getName()), this.getDescriptor().olduser, project.getName());
                 connections.get(project.getName()).disconnect();
             }
 
+            /* If parameters are not empty it will create a connection and add it to the Map that stores the connections for later uses.
+             * It will also recreate the subscription based on the saved nodes and the new parameters.
+             */
             if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
                 ConnectionConfiguration config = new ConnectionConfiguration(server);
                 Connection con = new XMPPConnection(config);
@@ -111,8 +117,10 @@ public class ElOyente extends Trigger<Project> {
 //                        ////////////////////////////////////////////////////                        
 //                        ////////////////////////////////////////////////////
 //                        ////////////////////////////////////////////////////
+
+
                         if (getDescriptor().reloading) {
-                            createSubscription(connections.get(project.getName()), user, nodes, project.getName());
+                            recreateSubscription(connections.get(project.getName()), user, nodes, project.getName());
                         }
 
                     } catch (XMPPException ex) {
@@ -132,6 +140,9 @@ public class ElOyente extends Trigger<Project> {
      * Deletes the subscriptions that a job has when the parameters are changed
      * in the main configuration.
      *
+     * This method deletes the subscriptions of a user from the nodes it is subscribed, and
+     * saves the name of those nodes in order to create new subscriptions for the new user.
+     * 
      * @param con
      * @param olduser
      * @param resource
@@ -169,7 +180,7 @@ public class ElOyente extends Trigger<Project> {
      * @param resource
      * @throws XMPPException
      */
-    public void createSubscription(Connection con, String newuser, ArrayList nodes, String resource) throws XMPPException {
+    public void recreateSubscription(Connection con, String newuser, ArrayList nodes, String resource) throws XMPPException {
         PubSubManager mgr = new PubSubManager(con);
         Iterator it = nodes.iterator();
         while (it.hasNext()) {
@@ -194,14 +205,6 @@ public class ElOyente extends Trigger<Project> {
             }
         }
         //super.run();    
-
-//           System.out.println("El principio de run");
-//        Iterator iterator = project.getAllJobs().iterator();
-//
-//        while (iterator.hasNext()) {
-//            System.out.println(iterator.next());
-//            job.scheduleBuild(null);
-//        }
     }
 
     /**
@@ -518,13 +521,7 @@ public class ElOyente extends Trigger<Project> {
             System.out.println("Fill Goal called");
             ListBoxModel items = new ListBoxModel();
 
-
-
-            System.out.println("Mapa de con " + ElOyente.connections);
-
-            System.out.println("project.getName() " + ElOyente.project.getName());
-
-            Connection con = ElOyente.connections.get(ElOyente.project.getName());
+            Connection con = connections.get(project.getName());
             PubSubManager mgr = new PubSubManager(con);
             DiscoverItems it = mgr.discoverNodes(null);
             Iterator<DiscoverItems.Item> iter = it.getItems();
@@ -535,14 +532,10 @@ public class ElOyente extends Trigger<Project> {
                     items.add(i.getNode());
                     System.out.println("Node added: " + i.getNode());
                 }
-
             } else {
                 System.out.println("No Logeado");
             }
-
             return items;
         }
-        
-        
     }
 }

@@ -19,4 +19,7 @@
     <f:entry field="goalType" title="Choose Goal Type">
         <f:select />
     </f:entry>
+    <f:entry field="subscribe" title="Click to subscribe">
+        <f:submit value="Subscribe" />
+    </f:entry>
 </j:jelly>
