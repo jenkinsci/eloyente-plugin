@@ -10,7 +10,6 @@ import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import java.awt.Image;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -43,7 +42,7 @@ public class ElOyente extends Trigger<Project> {
     private String server;
     private String user;
     private String password;
-    private static Item project;
+    private static Project project;
     private final static Map<String, Connection> connections = new HashMap<String, Connection>();
 
     /**
@@ -54,13 +53,11 @@ public class ElOyente extends Trigger<Project> {
      * the particular job.
      */
     @DataBoundConstructor
-    public ElOyente(Item project) {
+    public ElOyente() {
         super();
         server = this.getDescriptor().server;
         user = this.getDescriptor().user;
         password = this.getDescriptor().password;
-        ElOyente.project = project;
-
     }
 
     /**
@@ -81,6 +78,7 @@ public class ElOyente extends Trigger<Project> {
         server = this.getDescriptor().server;
         user = this.getDescriptor().user;
         password = this.getDescriptor().password;
+        ElOyente.project = project;
         ArrayList nodes = new ArrayList();
 
         System.out.println("Con datos: " + !connections.isEmpty());
@@ -186,7 +184,6 @@ public class ElOyente extends Trigger<Project> {
 //        ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(node.getId(), trigger);
 //        node.addItemEventListener(itemEventCoordinator);
 //    }
-
     @Override
     public void run() {
         // super.run();
@@ -521,56 +518,31 @@ public class ElOyente extends Trigger<Project> {
             System.out.println("Fill Goal called");
             ListBoxModel items = new ListBoxModel();
 
-            ConnectionConfiguration config = new ConnectionConfiguration(server);
-            Connection con = new XMPPConnection(config);
-            System.out.println("id" + con.getConnectionID());
-            System.out.println("user" + user);
-           
-            Iterator<RosterEntry> entries = con.getRoster().getEntries().iterator();
-            while (entries.hasNext()) {
-                 System.out.println("Steven-toString()" + entries.next().toString());
-                 System.out.println("Steven -.getUser()" + entries.next().getUser());
-                 System.out.println("Steven -getName()" + entries.next().getName());
-                 System.out.println("Steven -getStatus().toString()" + entries.next().getStatus().toString());
-                 System.out.println("Steven -getType().toString()" + entries.next().getType().toString());
-            }
-           
-//            PubSubManager mgr = new PubSubManager(con);
-//            DiscoverItems it = mgr.discoverNodes(null);
-//            Iterator<DiscoverItems.Item> iter = it.getItems();
-            items.add("Nodo1");
+
+
+            System.out.println("Mapa de con " + ElOyente.connections);
+
+            System.out.println("project.getName() " + ElOyente.project.getName());
+
+            Connection con = ElOyente.connections.get(ElOyente.project.getName());
+            PubSubManager mgr = new PubSubManager(con);
+            DiscoverItems it = mgr.discoverNodes(null);
+            Iterator<DiscoverItems.Item> iter = it.getItems();
 
             if (con.isAuthenticated()) {
-                System.out.println("Logeado");
-//                    System.out.println("Connection: " + con.getConnectionID());
-//                    System.out.println("Host: " + con.getHost());
-//                    System.out.println("ServiceName: " + con.getServiceName());
-//                    System.out.println("User: " + con.getUser());
+                while (iter.hasNext()) {
+                    DiscoverItems.Item i = iter.next();
+                    items.add(i.getNode());
+                    System.out.println("Node added: " + i.getNode());
+                }
 
-//                while (iter.hasNext()) {
-//                    DiscoverItems.Item i = iter.next();
-//                    items.add(i.getNode());
-//                    System.out.println("Node added: " + i.getNode());
-//                }
-
-
-                items.add("Nodo2");
-                items.add("Nodo3");
-
+            } else {
+                System.out.println("No Logeado");
             }
-//                else {
-//                    System.out.println("No Logeado");
-//                    System.out.println("Connection: " + con.getConnectionID());
-//                    System.out.println("Host: " + con.getHost());
-//                    System.out.println("ServiceName: " + con.getServiceName());
-//                    System.out.println("User: " + con.getUser());
-//                }
-//
 
-//                else {
-//                System.out.println("No conectado");
-//            }
             return items;
         }
+        
+        
     }
 }
