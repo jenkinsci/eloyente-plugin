@@ -1,0 +1,24 @@
+                             C O D E   R E V I E W
+================================================================================
+Reviewer name    : Juan Luis Pardo González
+Review date      : 06/11/2012
+Reviewed file    : ElOyente.java
+Reviewed version : bf55805d589bade1504c145e7459da9bfcadd52d
+--------------------------------------------------------------------------------
+Review comments  :
+
+-Every thing is clear and works fine. Maybe more comments around this code.
+
+
+
+
+
+
+
+
+--------------------------------------------------------------------------------
+Reworked version : (use: git show <file> | grep commit)
+Rework comments  :
+
+
+================================================================================
