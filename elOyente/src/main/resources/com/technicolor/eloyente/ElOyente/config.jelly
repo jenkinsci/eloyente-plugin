@@ -16,10 +16,9 @@
     </f:entry>
     -->
     
-    <f:entry field="goalType" title="Choose Goal Type">
+    <f:entry field="nodesAvailable" title="Nodes available">
         <f:select />
     </f:entry>
-    <f:entry field="subscribe" title="Click to subscribe">
-        <f:submit value="Subscribe" />
-    </f:entry>
+    
+    <f:validateButton title="${%Subscribe}" progress="${%Subscribing ...}" method="subscribe" with="nodesAvailable" />
 </j:jelly>

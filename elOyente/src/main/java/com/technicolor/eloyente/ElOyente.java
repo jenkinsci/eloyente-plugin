@@ -25,6 +25,7 @@ import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smackx.packet.DiscoverItems;
+import org.jivesoftware.smackx.pubsub.LeafNode;
 import org.jivesoftware.smackx.pubsub.Node;
 import org.jivesoftware.smackx.pubsub.PubSubManager;
 import org.jivesoftware.smackx.pubsub.Subscription;
@@ -140,9 +141,10 @@ public class ElOyente extends Trigger<Project> {
      * Deletes the subscriptions that a job has when the parameters are changed
      * in the main configuration.
      *
-     * This method deletes the subscriptions of a user from the nodes it is subscribed, and
-     * saves the name of those nodes in order to create new subscriptions for the new user.
-     * 
+     * This method deletes the subscriptions of a user from the nodes it is
+     * subscribed, and saves the name of those nodes in order to create new
+     * subscriptions for the new user.
+     *
      * @param con
      * @param olduser
      * @param resource
@@ -185,8 +187,8 @@ public class ElOyente extends Trigger<Project> {
         Iterator it = nodes.iterator();
         while (it.hasNext()) {
             Node node = mgr.getNode((String) it.next());
-            String JID = newuser + "@" + con.getHost() + "/" + resource;
-            node.subscribe(JID);
+            String JID1 = con.getUser();
+            node.subscribe(JID1);
             //listen(node,this);
         }
     }
@@ -517,8 +519,7 @@ public class ElOyente extends Trigger<Project> {
             }
         }
 
-        public ListBoxModel doFillGoalTypeItems() throws XMPPException {
-            System.out.println("Fill Goal called");
+        public ListBoxModel doFillNodesAvailableItems() throws XMPPException {
             ListBoxModel items = new ListBoxModel();
 
             Connection con = connections.get(project.getName());
@@ -530,12 +531,29 @@ public class ElOyente extends Trigger<Project> {
                 while (iter.hasNext()) {
                     DiscoverItems.Item i = iter.next();
                     items.add(i.getNode());
-                    System.out.println("Node added: " + i.getNode());
+                    System.out.println("Node shown: " + i.getNode());
                 }
             } else {
                 System.out.println("No Logeado");
             }
             return items;
+        }
+
+        public FormValidation doSubscribe(@QueryParameter("nodesAvailable") final String nodesAvailable) {
+            Connection con = connections.get(project.getName());
+            PubSubManager mgr = new PubSubManager(con);
+
+            try {
+                LeafNode node = (LeafNode) mgr.getNode(nodesAvailable);
+                ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(nodesAvailable);
+                node.addItemEventListener(itemEventCoordinator);
+                String JID = con.getUser();
+                node.subscribe(JID);
+                return FormValidation.ok("Subscribed to " + nodesAvailable);
+            } catch (Exception e) {
+
+                return FormValidation.error("Couldn't subscribe to " + nodesAvailable);
+            }
         }
     }
 }

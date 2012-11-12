@@ -86,6 +86,12 @@
             <type>jar</type>
             <version>1.466</version>
         </dependency>
+        <dependency>
+            <groupId>org.jvnet.hudson</groupId>
+            <artifactId>typica</artifactId>
+            <version>1.4.1</version>
+            <type>jar</type>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
