@@ -100,6 +100,13 @@ public class ElOyente extends Trigger<Project> {
              * It will also recreate the subscription based on the saved nodes and the new parameters.
              */
             if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
+                if (connections.containsKey(project.getName()) && connections.get(project.getName()).getUser().split("@")[0].equals(user)) {
+                    System.err.println("\n\n\nproject.getName() = " + project.getName());
+                    System.err.println("\n\n\nuser = " + user);
+                    System.err.println(connections.get(project.getName()).getUser().split("@")[0]);
+                    connections.get(project.getName()).disconnect();
+                }
+
                 ConnectionConfiguration config = new ConnectionConfiguration(server);
                 Connection con = new XMPPConnection(config);
                 con.connect();
@@ -107,18 +114,6 @@ public class ElOyente extends Trigger<Project> {
                     try {
                         con.login(user, password, project.getName());
                         connections.put(project.getName(), con);
-//                        ////////////////////////////////////////////////////
-//                        ////////////////////////////////////////////////////                        
-//                        ////////////////////////////////////////////////////
-//                        ////////////////////////////////////////////////////
-//                        //ESTO DEBE CAMBIAR CUANDO PODAMOS SUSCRIBIRNOS MEDIANTE LA INTERFAZ
-//                        PubSubManager mgr = new PubSubManager(connections.get(project.getName()));
-//                        listen(mgr.getNode("Kristl"),this);
-//                        ////////////////////////////////////////////////////
-//                        ////////////////////////////////////////////////////                        
-//                        ////////////////////////////////////////////////////
-//                        ////////////////////////////////////////////////////
-
 
                         if (getDescriptor().reloading) {
                             recreateSubscription(connections.get(project.getName()), user, nodes, project.getName());
@@ -167,6 +162,7 @@ public class ElOyente extends Trigger<Project> {
                 node.unsubscribe(JID);
                 nodes.add(node.getId());
             }
+
         }
         return nodes;
     }
@@ -549,7 +545,7 @@ public class ElOyente extends Trigger<Project> {
                 node.addItemEventListener(itemEventCoordinator);
                 String JID = con.getUser();
                 node.subscribe(JID);
-                return FormValidation.ok("Subscribed to " + nodesAvailable);
+                return FormValidation.ok(con.getUser() + " Subscribed to " + nodesAvailable + " with resource " + project.getName());
             } catch (Exception e) {
                 return FormValidation.error("Couldn't subscribe to " + nodesAvailable);
             }
