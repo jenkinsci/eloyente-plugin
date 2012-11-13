@@ -551,7 +551,6 @@ public class ElOyente extends Trigger<Project> {
                 node.subscribe(JID);
                 return FormValidation.ok("Subscribed to " + nodesAvailable);
             } catch (Exception e) {
-
                 return FormValidation.error("Couldn't subscribe to " + nodesAvailable);
             }
         }

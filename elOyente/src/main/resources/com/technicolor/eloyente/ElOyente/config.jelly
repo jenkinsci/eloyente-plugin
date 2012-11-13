@@ -10,12 +10,6 @@
       When submitted, it will be passed to the corresponding constructor parameter.
     -->
     
-    <!--
-    <f:entry field="activeJob" title="Activate XMPP plugin">
-        <f:checkbox/>
-    </f:entry>
-    -->
-    
     <f:entry field="nodesAvailable" title="Nodes available">
         <f:select />
     </f:entry>
