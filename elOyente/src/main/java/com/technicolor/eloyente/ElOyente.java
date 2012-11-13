@@ -536,7 +536,7 @@ public class ElOyente extends Trigger<Project> {
         }
 
         public FormValidation doSubscribe(@QueryParameter("nodesAvailable") final String nodesAvailable) {
-            Connection con = connections.get(project.getName());
+            Connection con = connections.get(ElOyente.project.getName());
             PubSubManager mgr = new PubSubManager(con);
 
             try {
