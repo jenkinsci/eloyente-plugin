@@ -542,7 +542,5 @@ public class ElOyente extends Trigger<Project> {
 
             return items;
         }
-        
-        
     }
 }
