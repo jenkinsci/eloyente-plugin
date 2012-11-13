@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>1.466</version><!-- which version of Jenkins is this plugin built against? -->
+        <version>1.489</version><!-- which version of Jenkins is this plugin built against? -->
     </parent>
 
     <groupId>com.technicolor</groupId>
@@ -25,22 +25,7 @@
             <url>http://repo.jenkins-ci.org/public/</url>
         </pluginRepository>
     </pluginRepositories>
-    <reporting>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>cobertura-maven-plugin</artifactId>
-                <version>2.5.2</version>
-            </plugin>
-        </plugins>
-    </reporting>
     <dependencies>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.10</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>org.igniterealtime.smack</groupId>
             <artifactId>smack</artifactId>
@@ -62,29 +47,11 @@
             <version>3.2.1</version>
         </dependency>
         <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>1.9.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>1.9.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <artifactId>access-modifier-annotation</artifactId>
             <groupId>org.kohsuke</groupId>
             <type>jar</type>
             <version>1.0</version>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <artifactId>jenkins-test-harness</artifactId>
-            <groupId>org.jenkins-ci.main</groupId>
-            <type>jar</type>
-            <version>1.466</version>
         </dependency>
     </dependencies>
     <build>
@@ -92,7 +59,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>cobertura-maven-plugin</artifactId>
-                <version>2.5.2</version>
+                <version>2.5.1</version>
                 <executions>
                     <execution>
                         <goals>
@@ -101,6 +68,13 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.codehaus.mojo</groupId>
+                            <artifactId>cobertura-maven-plugin</artifactId>
+                            <version>2.5.2</version>
+                        </plugin>
+                    </plugins>     
                     <formats>
                         <format>html</format>
                         <format>xml</format>
