@@ -16,7 +16,10 @@
     </f:entry>
     -->
     
-    <f:entry field="goalType" title="Choose Goal Type">
+    <f:entry field="nodosDisp" title="Nodos disponibles">
+        <f:select />
+    </f:entry>
+    <f:entry field="nodosSub" title="Nodos registrados">
         <f:select />
     </f:entry>
 </j:jelly>
