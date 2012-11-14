@@ -117,7 +117,9 @@ public class ElOyente extends Trigger<Project> {
 
                         if (getDescriptor().reloading) {
                             recreateSubscription(connections.get(project.getName()), user, nodes, project.getName());
+
                         }
+                        addListeners(connections.get(project.getName()),project);
 
                     } catch (XMPPException ex) {
                         System.err.println("Login error");
@@ -128,6 +130,24 @@ public class ElOyente extends Trigger<Project> {
         } catch (XMPPException ex) {
             System.err.println("Couldn't establish the connection, or already connected");
             ex.printStackTrace(System.err);
+        }
+    }
+
+    public void addListeners(Connection con,Project project) throws XMPPException {
+        PubSubManager mgr = new PubSubManager(con);
+        Iterator it = mgr.getSubscriptions().iterator();
+
+        while (it.hasNext()) {
+            Subscription sub = (Subscription) it.next();
+            String JID = sub.getJid();
+            String JIDuser = JID.split("@")[0];
+            String JIDresource = JID.split("@")[1].split("/")[1];
+            System.out.println("project.getName() = " + project.getName());
+            if (JIDuser.equals(user) && JIDresource.equals(ElOyente.DescriptorImpl.getCurrentDescriptorByNameUrl())) {
+                LeafNode node = (LeafNode) mgr.getNode(sub.getNode());
+                ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(sub.getNode(), this);
+                node.addItemEventListener(itemEventCoordinator);
+            }
         }
     }
 
@@ -189,10 +209,6 @@ public class ElOyente extends Trigger<Project> {
         }
     }
 
-//    public void listen(Node node, Trigger trigger) {
-//        ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(node.getId(), trigger);
-//        node.addItemEventListener(itemEventCoordinator);
-//    }
     @Override
     public void run() {
         // super.run();
@@ -288,7 +304,10 @@ public class ElOyente extends Trigger<Project> {
          * server.admin
          *
          * @param req
-         * @param formData
+         * @param formData// public void listen(Node node, Trigger trigger) { //
+         * ItemEventCoordinator itemEventCoordinator = new
+         * ItemEventCoordinator(node.getId(), trigger); //
+         * node.addItemEventListener(itemEventCoordinator); // }
          * @return boolean
          * @throws Descriptor.FormException
          */
@@ -518,6 +537,12 @@ public class ElOyente extends Trigger<Project> {
         public ListBoxModel doFillNodesAvailableItems() throws XMPPException {
             ListBoxModel items = new ListBoxModel();
 
+            System.out.println(this.clazz.getClass());
+            System.out.println(this.clazz.getDeclaredMethods());
+            System.out.println(this.clazz.isInstance(ElOyente.class));
+            System.out.println(this.clazz.getName());
+
+
             Connection con = connections.get(project.getName());
             PubSubManager mgr = new PubSubManager(con);
             DiscoverItems it = mgr.discoverNodes(null);
@@ -538,10 +563,16 @@ public class ElOyente extends Trigger<Project> {
         public FormValidation doSubscribe(@QueryParameter("nodesAvailable") final String nodesAvailable) {
             Connection con = connections.get(ElOyente.project.getName());
             PubSubManager mgr = new PubSubManager(con);
+            Trigger trigger = null;
 
             try {
+                Iterator it2 = (Jenkins.getInstance().getItems()).iterator();
+                while (it2.hasNext()) {
+                    AbstractProject job = (AbstractProject) it2.next();
+                    trigger = (ElOyente) job.getTriggers().get(this);
+                }
                 LeafNode node = (LeafNode) mgr.getNode(nodesAvailable);
-                ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(nodesAvailable);
+                ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(nodesAvailable, trigger);
                 node.addItemEventListener(itemEventCoordinator);
                 String JID = con.getUser();
                 node.subscribe(JID);
