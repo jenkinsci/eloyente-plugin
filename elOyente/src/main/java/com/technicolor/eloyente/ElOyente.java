@@ -42,7 +42,8 @@ public class ElOyente extends Trigger<Project> {
     private String server;
     private String user;
     private String password;
-    private static Project project;
+    private Project project;
+//    private static Project project;
     private final static Map<String, Connection> connections = new HashMap<String, Connection>();
 
     /**
@@ -53,11 +54,11 @@ public class ElOyente extends Trigger<Project> {
      * the particular job.
      */
     @DataBoundConstructor
-    public ElOyente() {
-        super();
-        server = this.getDescriptor().server;
-        user = this.getDescriptor().user;
-        password = this.getDescriptor().password;
+    public ElOyente(Project project, String server, String password, String user) {
+
+        this.server = server;
+        this.password = password;
+        this.user = user;
     }
 
     /**
@@ -75,10 +76,11 @@ public class ElOyente extends Trigger<Project> {
     @Override
     public void start(Project project, boolean newInstance) {
 
-        server = this.getDescriptor().server;
-        user = this.getDescriptor().user;
-        password = this.getDescriptor().password;
-        ElOyente.project = project;
+//        server = this.getDescriptor().server;
+//        user = this.getDescriptor().user;
+//        password = this.getDescriptor().password;
+//        ElOyente.project = project;
+        this.project = project;
         ArrayList nodes = new ArrayList();
 
         System.out.println("Con datos: " + !connections.isEmpty());
@@ -119,7 +121,7 @@ public class ElOyente extends Trigger<Project> {
                             recreateSubscription(connections.get(project.getName()), user, nodes, project.getName());
 
                         }
-                        addListeners(connections.get(project.getName()),project);
+                        addListeners(connections.get(project.getName()), project);
 
                     } catch (XMPPException ex) {
                         System.err.println("Login error");
@@ -133,7 +135,7 @@ public class ElOyente extends Trigger<Project> {
         }
     }
 
-    public void addListeners(Connection con,Project project) throws XMPPException {
+    public void addListeners(Connection con, Project project) throws XMPPException {
         PubSubManager mgr = new PubSubManager(con);
         Iterator it = mgr.getSubscriptions().iterator();
 
@@ -142,8 +144,8 @@ public class ElOyente extends Trigger<Project> {
             String JID = sub.getJid();
             String JIDuser = JID.split("@")[0];
             String JIDresource = JID.split("@")[1].split("/")[1];
-            System.out.println("project.getName() = " + project.getName());
-            if (JIDuser.equals(user) && JIDresource.equals(ElOyente.DescriptorImpl.getCurrentDescriptorByNameUrl())) {
+            System.out.println("this.job.getName() = " + project.getName());
+            if (JIDuser.equals(user) && JIDresource.equals(project.getName())) {
                 LeafNode node = (LeafNode) mgr.getNode(sub.getNode());
                 ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(sub.getNode(), this);
                 node.addItemEventListener(itemEventCoordinator);
@@ -203,8 +205,8 @@ public class ElOyente extends Trigger<Project> {
         Iterator it = nodes.iterator();
         while (it.hasNext()) {
             Node node = mgr.getNode((String) it.next());
-            String JID1 = con.getUser();
-            node.subscribe(JID1);
+            String JID = con.getUser();
+            node.subscribe(JID);
             //listen(node,this);
         }
     }
@@ -321,7 +323,7 @@ public class ElOyente extends Trigger<Project> {
 
             // ^Can also use req.bindJSON(this, formData);
             //  (easier when there are many fields; need set* methods for this)
-
+            
             //report();
             save();
 
@@ -533,17 +535,12 @@ public class ElOyente extends Trigger<Project> {
                 return FormValidation.errorWithMarkup("Authentication failed");
             }
         }
-
         public ListBoxModel doFillNodesAvailableItems() throws XMPPException {
             ListBoxModel items = new ListBoxModel();
 
-            System.out.println(this.clazz.getClass());
-            System.out.println(this.clazz.getDeclaredMethods());
-            System.out.println(this.clazz.isInstance(ElOyente.class));
-            System.out.println(this.clazz.getName());
-
-
-            Connection con = connections.get(project.getName());
+            
+            
+            Connection con = connections.get(ElOyente.project.getName());
             PubSubManager mgr = new PubSubManager(con);
             DiscoverItems it = mgr.discoverNodes(null);
             Iterator<DiscoverItems.Item> iter = it.getItems();
@@ -558,28 +555,28 @@ public class ElOyente extends Trigger<Project> {
                 System.out.println("No Logeado");
             }
             return items;
-        }
 
-        public FormValidation doSubscribe(@QueryParameter("nodesAvailable") final String nodesAvailable) {
-            Connection con = connections.get(ElOyente.project.getName());
-            PubSubManager mgr = new PubSubManager(con);
-            Trigger trigger = null;
-
-            try {
-                Iterator it2 = (Jenkins.getInstance().getItems()).iterator();
-                while (it2.hasNext()) {
-                    AbstractProject job = (AbstractProject) it2.next();
-                    trigger = (ElOyente) job.getTriggers().get(this);
-                }
-                LeafNode node = (LeafNode) mgr.getNode(nodesAvailable);
-                ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(nodesAvailable, trigger);
-                node.addItemEventListener(itemEventCoordinator);
-                String JID = con.getUser();
-                node.subscribe(JID);
-                return FormValidation.ok(con.getUser() + " Subscribed to " + nodesAvailable + " with resource " + project.getName());
-            } catch (Exception e) {
-                return FormValidation.error("Couldn't subscribe to " + nodesAvailable);
-            }
         }
+//        public FormValidation doSubscribe(@QueryParameter("nodesAvailable") final String nodesAvailable) {
+//            Connection con = connections.get(ElOyente.project.getName());
+//            PubSubManager mgr = new PubSubManager(con);
+//            Trigger trigger = null;
+//
+//            try {
+//                Iterator it2 = (Jenkins.getInstance().getItems()).iterator();
+//                while (it2.hasNext()) {
+//                    AbstractProject job = (AbstractProject) it2.next();
+//                    trigger = (ElOyente) job.getTriggers().get(this);
+//                }
+//                LeafNode node = (LeafNode) mgr.getNode(nodesAvailable);
+//                ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(nodesAvailable, trigger);
+//                node.addItemEventListener(itemEventCoordinator);
+//                String JID = con.getUser();
+//                node.subscribe(JID);
+//                return FormValidation.ok(con.getUser() + " Subscribed to " + nodesAvailable + " with resource " + project.getName());
+//            } catch (Exception e) {
+//                return FormValidation.error("Couldn't subscribe to " + nodesAvailable);
+//            }
+//        }
     }
 }
