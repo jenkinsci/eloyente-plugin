@@ -256,6 +256,7 @@ public class ElOyente extends Trigger<Project> {
         private String user, olduser;
         private String password, oldpassword;
         private boolean reloading = false;
+        private String name;
 
         /**
          * Brings the persisted configuration in the main configuration.
@@ -267,6 +268,7 @@ public class ElOyente extends Trigger<Project> {
             oldserver = this.getServer();
             olduser = this.getUser();
             oldpassword = this.getPassword();
+            name = this.getName();
         }
 
         /**
@@ -320,6 +322,7 @@ public class ElOyente extends Trigger<Project> {
             server = formData.getString("server");
             user = formData.getString("user");
             password = formData.getString("password");
+            
 
             // ^Can also use req.bindJSON(this, formData);
             //  (easier when there are many fields; need set* methods for this)
@@ -476,6 +479,10 @@ public class ElOyente extends Trigger<Project> {
         public String getOldPassword() {
             return oldpassword;
         }
+        
+        public String getName(){
+            return name;
+        }
 
         /**
          * Performs on-the-fly validation of the form field 'server'.
@@ -540,7 +547,7 @@ public class ElOyente extends Trigger<Project> {
 
             
             
-            Connection con = connections.get(ElOyente.project.getName());
+            Connection con = connections.get(name);
             PubSubManager mgr = new PubSubManager(con);
             DiscoverItems it = mgr.discoverNodes(null);
             Iterator<DiscoverItems.Item> iter = it.getItems();
@@ -557,26 +564,26 @@ public class ElOyente extends Trigger<Project> {
             return items;
 
         }
-//        public FormValidation doSubscribe(@QueryParameter("nodesAvailable") final String nodesAvailable) {
-//            Connection con = connections.get(ElOyente.project.getName());
-//            PubSubManager mgr = new PubSubManager(con);
-//            Trigger trigger = null;
-//
-//            try {
-//                Iterator it2 = (Jenkins.getInstance().getItems()).iterator();
-//                while (it2.hasNext()) {
-//                    AbstractProject job = (AbstractProject) it2.next();
-//                    trigger = (ElOyente) job.getTriggers().get(this);
-//                }
-//                LeafNode node = (LeafNode) mgr.getNode(nodesAvailable);
-//                ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(nodesAvailable, trigger);
-//                node.addItemEventListener(itemEventCoordinator);
-//                String JID = con.getUser();
-//                node.subscribe(JID);
-//                return FormValidation.ok(con.getUser() + " Subscribed to " + nodesAvailable + " with resource " + project.getName());
-//            } catch (Exception e) {
-//                return FormValidation.error("Couldn't subscribe to " + nodesAvailable);
-//            }
-//        }
+        public FormValidation doSubscribe(@QueryParameter("nodesAvailable") final String nodesAvailable) {
+            Connection con = connections.get(ElOyente.project.getName());
+            PubSubManager mgr = new PubSubManager(con);
+            Trigger trigger = null;
+
+            try {
+                Iterator it2 = (Jenkins.getInstance().getItems()).iterator();
+                while (it2.hasNext()) {
+                    AbstractProject job = (AbstractProject) it2.next();
+                    trigger = (ElOyente) job.getTriggers().get(this);
+                }
+                LeafNode node = (LeafNode) mgr.getNode(nodesAvailable);
+                ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(nodesAvailable, trigger);
+                node.addItemEventListener(itemEventCoordinator);
+                String JID = con.getUser();
+                node.subscribe(JID);
+                return FormValidation.ok(con.getUser() + " Subscribed to " + nodesAvailable + " with resource " + project.getName());
+            } catch (Exception e) {
+                return FormValidation.error("Couldn't subscribe to " + nodesAvailable);
+            }
+        }
     }
 }
