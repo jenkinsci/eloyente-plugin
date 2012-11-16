@@ -482,10 +482,6 @@ public class ElOyente extends Trigger<Project> {
             return oldpassword;
         }
 
-        public String getName() {
-            return name;
-        }
-
         /**
          * Performs on-the-fly validation of the form field 'server'.
          *
@@ -626,11 +622,9 @@ public class ElOyente extends Trigger<Project> {
             return items;
         }
 
-        public FormValidation doSubscribe(@QueryParameter("nodesAvailable") final String nodesAvailable) {
-            String pj;
-
-            pj = ElOyente.DescriptorImpl.getCurrentDescriptorByNameUrl();
-            Connection con = connections.get(pj);
+        public FormValidation doSubscribe(@QueryParameter("nodesAvailable") final String nodesAvailable, @QueryParameter("name") String name) {
+           
+            Connection con = connections.get(name);
             PubSubManager mgr = new PubSubManager(con);
             Trigger trigger = null;
 
@@ -645,7 +639,7 @@ public class ElOyente extends Trigger<Project> {
                 node.addItemEventListener(itemEventCoordinator);
                 String JID = con.getUser();
                 node.subscribe(JID);
-                return FormValidation.ok(con.getUser() + " Subscribed to " + nodesAvailable + " with resource " + pj);
+                return FormValidation.ok(con.getUser() + " Subscribed to " + nodesAvailable + " with resource " + name);
             } catch (Exception e) {
                 return FormValidation.error("Couldn't subscribe to " + nodesAvailable);
             }
