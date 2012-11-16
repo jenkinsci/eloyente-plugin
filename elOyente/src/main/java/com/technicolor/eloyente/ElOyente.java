@@ -33,6 +33,7 @@ import org.jivesoftware.smackx.pubsub.PubSubManager;
 import org.jivesoftware.smackx.pubsub.Subscription;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest;
 
 /**
@@ -70,8 +71,8 @@ public class ElOyente extends Trigger<Project> {
      *
      * It checks if there is all the information required for an XMPP connection
      * in the main configuration and creates the connection.
-     * 
-     * It is also called when restarting a connection because of changes in the 
+     *
+     * It is also called when restarting a connection because of changes in the
      * main configuration
      *
      * @param project
@@ -546,6 +547,9 @@ public class ElOyente extends Trigger<Project> {
             ArrayList nodesSubsArray = new ArrayList();
             String nodeName;
             String pjName = name;
+            Project pj;
+            pj = (Project) Jenkins.getInstance().getItem(name);
+            Object instance = (ElOyente) pj.getTriggers().get(this);
 
 //            pj = ElOyente.DescriptorImpl.getCurrentDescriptorByNameUrl();
 //            pj = pj.substring(5);
@@ -555,38 +559,41 @@ public class ElOyente extends Trigger<Project> {
 //            System.out.println("(\"JENKINS_HOME\"): " + EnvVars.masterEnvVars.get("JENKINS_HOME"));
 
             System.out.println("pjName:" + pjName);
+            if (instance != null) {
 
-            Connection con = connections.get(pjName);
-            PubSubManager mgr = new PubSubManager(con);
+                Connection con = connections.get(pjName);
+                PubSubManager mgr = new PubSubManager(con);
 
-            DiscoverItems it = mgr.discoverNodes(null);
-            Iterator<DiscoverItems.Item> iter = it.getItems();
+                DiscoverItems it = mgr.discoverNodes(null);
+                Iterator<DiscoverItems.Item> iter = it.getItems();
 
-            HashMap<String, Subscription> prueba = new HashMap<String, Subscription>();
-            List<Subscription> listSubs = mgr.getSubscriptions();
+                HashMap<String, Subscription> prueba = new HashMap<String, Subscription>();
+                List<Subscription> listSubs = mgr.getSubscriptions();
 
-            for (int i = 0; i < listSubs.size(); i++) {
-                if (listSubs.get(i).getJid().equals(con.getUser())) {
-                    System.out.println("User: " + listSubs.get(i).getJid() + " es igual a: " + con.getUser());
-                    System.out.println("Suscrito a: " + listSubs.get(i).getNode());
-                    nodeName = listSubs.get(i).getNode();
-                    nodesSubsArray.add(nodeName);
-                }
-            }
-
-            if (con.isAuthenticated()) {
-                while (iter.hasNext()) {
-                    DiscoverItems.Item i = iter.next();
-                    if (!nodesSubsArray.contains(i.getNode())) {
-                        items.add(i.getNode());
-                        System.out.println("Node shown: " + i.getNode());
-                    } else {
-                        System.out.println("Node no shown: " + i.getNode());
+                for (int i = 0; i < listSubs.size(); i++) {
+                    if (listSubs.get(i).getJid().equals(con.getUser())) {
+                        System.out.println("User: " + listSubs.get(i).getJid() + " es igual a: " + con.getUser());
+                        System.out.println("Suscrito a: " + listSubs.get(i).getNode());
+                        nodeName = listSubs.get(i).getNode();
+                        nodesSubsArray.add(nodeName);
                     }
                 }
-                //con.disconnect();
-            } else {
-                System.out.println("No Logeado");
+
+                if (con.isAuthenticated()) {
+                    while (iter.hasNext()) {
+                        DiscoverItems.Item i = iter.next();
+                        if (!nodesSubsArray.contains(i.getNode())) {
+                            items.add(i.getNode());
+                            System.out.println("Node shown: " + i.getNode());
+                        } else {
+                            System.out.println("Node no shown: " + i.getNode());
+                        }
+                    }
+                    //con.disconnect();
+                } else {
+                    items.add("No esta conectado el amigo");
+                    System.out.println("No Logeado");
+                }
             }
             return items;
 
@@ -622,8 +629,11 @@ public class ElOyente extends Trigger<Project> {
             return items;
         }
 
-        public FormValidation doSubscribe(@QueryParameter("nodesAvailable") final String nodesAvailable, @QueryParameter("name") String name) {
-           
+        public FormValidation doSubscribe(@QueryParameter("nodesAvailable") final String nodesAvailable) {
+
+            System.out.println("Stapler: "+Stapler.getCurrentRequest().findAncestor("name"));
+            String name = Stapler.getCurrentRequest().findAncestorObject(AbstractProject.class).getName();
+ 
             Connection con = connections.get(name);
             PubSubManager mgr = new PubSubManager(con);
             Trigger trigger = null;
