@@ -22,6 +22,5 @@
     <f:entry field="nodesSub" title="Nodos registrados">
         <f:select />
     </f:entry>
-    
-    <f:validateButton title="${%Subscribe}" progress="${%Subscribing ...}" method="subscribe" with="nodesAvailable" />
+    <f:validateButton title="${%Subscribe}" progress="${%Subscribing ...}" method="subscribe" with="nodesAvailable, ${instance.name}" />
 </j:jelly>
