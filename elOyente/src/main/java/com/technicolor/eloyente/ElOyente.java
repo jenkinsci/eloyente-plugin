@@ -1,5 +1,6 @@
 package com.technicolor.eloyente;
 
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -80,7 +82,7 @@ public class ElOyente extends Trigger<Project> {
         password = this.getDescriptor().password;
         ElOyente.project = project;
         ArrayList nodes = new ArrayList();
-
+        System.out.println("JOB: " + project.getName());
         System.out.println("Con datos: " + !connections.isEmpty());
         System.out.println("Conexion existente: " + connections.containsKey(project.getName()));
         System.out.println("Reloading: " + getDescriptor().reloading);
@@ -238,6 +240,7 @@ public class ElOyente extends Trigger<Project> {
         private String user, olduser;
         private String password, oldpassword;
         private boolean reloading = false;
+        // private String name;
 
         /**
          * Brings the persisted configuration in the main configuration.
@@ -249,6 +252,7 @@ public class ElOyente extends Trigger<Project> {
             oldserver = this.getServer();
             olduser = this.getUser();
             oldpassword = this.getPassword();
+            //      name = this.getName();
         }
 
         /**
@@ -299,6 +303,7 @@ public class ElOyente extends Trigger<Project> {
             server = formData.getString("server");
             user = formData.getString("user");
             password = formData.getString("password");
+            //name= formData.getString("name");
 
             // ^Can also use req.bindJSON(this, formData);
             //  (easier when there are many fields; need set* methods for this)
@@ -427,6 +432,9 @@ public class ElOyente extends Trigger<Project> {
         public String getUser() {
             return user;
         }
+//         private String getName() {
+//             return name;
+//        }
 
         /**
          * This method returns the password for the XMPP connection.
@@ -515,28 +523,91 @@ public class ElOyente extends Trigger<Project> {
             }
         }
 
-        public ListBoxModel doFillNodesAvailableItems() throws XMPPException {
+        public ListBoxModel doFillNodesAvailableItems(@QueryParameter("name") String name) throws XMPPException, InterruptedException {
             ListBoxModel items = new ListBoxModel();
+            ArrayList nodesSubsArray = new ArrayList();
+            String nodeName;
+            String pjName = name;
 
-            Connection con = connections.get(project.getName());
+//            pj = ElOyente.DescriptorImpl.getCurrentDescriptorByNameUrl();
+//            pj = pj.substring(5);
+//            EnvVars envVars = new EnvVars();
+//            System.out.println("all: " + envVars);
+//            System.out.println("S\"JOB_NAME\"): " + EnvVars.masterEnvVars.get("PATH"));
+//            System.out.println("(\"JENKINS_HOME\"): " + EnvVars.masterEnvVars.get("JENKINS_HOME"));
+
+            System.out.println("pjName:" + pjName);
+
+            Connection con = connections.get(pjName);
             PubSubManager mgr = new PubSubManager(con);
+
             DiscoverItems it = mgr.discoverNodes(null);
             Iterator<DiscoverItems.Item> iter = it.getItems();
+
+            HashMap<String, Subscription> prueba = new HashMap<String, Subscription>();
+            List<Subscription> listSubs = mgr.getSubscriptions();
+
+            for (int i = 0; i < listSubs.size(); i++) {
+                if (listSubs.get(i).getJid().equals(con.getUser())) {
+                    System.out.println("User: " + listSubs.get(i).getJid() + " es igual a: " + con.getUser());
+                    System.out.println("Suscrito a: " + listSubs.get(i).getNode());
+                    nodeName = listSubs.get(i).getNode();
+                    nodesSubsArray.add(nodeName);
+                }
+            }
 
             if (con.isAuthenticated()) {
                 while (iter.hasNext()) {
                     DiscoverItems.Item i = iter.next();
-                    items.add(i.getNode());
-                    System.out.println("Node shown: " + i.getNode());
+                    if (!nodesSubsArray.contains(i.getNode())) {
+                        items.add(i.getNode());
+                        System.out.println("Node shown: " + i.getNode());
+                    } else {
+                        System.out.println("Node no shown: " + i.getNode());
+                    }
                 }
+                //con.disconnect();
             } else {
                 System.out.println("No Logeado");
             }
             return items;
         }
 
+        public ListBoxModel doFillNodesSubItems() throws XMPPException, InterruptedException {
+            ListBoxModel items = new ListBoxModel();
+            String nodeName;
+            String pj;
+
+//            if (semaforo == true) {
+//                wait();
+//            } else {
+//                semaforo = true;
+//                pj = ElOyente.DescriptorImpl.getCurrentDescriptorByNameUrl();
+//                System.out.println("pj " + pj);
+//                Connection con = connections.get(pj);
+//                //PubSubManager mgr=getPubSubManager();
+//                PubSubManager mgr = new PubSubManager(con);
+//
+//                List<Subscription> listSubs = mgr.getSubscriptions();
+//
+//                for (int i = 0; i < listSubs.size(); i++) {
+//                    if (listSubs.get(i).getJid().equals(con.getUser())) {
+//                        nodeName = listSubs.get(i).getNode();
+//                        items.add(nodeName);
+//                    }
+//                }
+//                 //con.disconnect();
+//                semaforo = false;
+//            }
+
+            return items;
+        }
+
         public FormValidation doSubscribe(@QueryParameter("nodesAvailable") final String nodesAvailable) {
-            Connection con = connections.get(ElOyente.project.getName());
+            String pj;
+
+            pj = ElOyente.DescriptorImpl.getCurrentDescriptorByNameUrl();
+            Connection con = connections.get(pj);
             PubSubManager mgr = new PubSubManager(con);
 
             try {
@@ -545,7 +616,7 @@ public class ElOyente extends Trigger<Project> {
                 node.addItemEventListener(itemEventCoordinator);
                 String JID = con.getUser();
                 node.subscribe(JID);
-                return FormValidation.ok(con.getUser() + " Subscribed to " + nodesAvailable + " with resource " + project.getName());
+                return FormValidation.ok(con.getUser() + " Subscribed to " + nodesAvailable + " with resource " + pj);
             } catch (Exception e) {
                 return FormValidation.error("Couldn't subscribe to " + nodesAvailable);
             }

@@ -16,10 +16,10 @@
     </f:entry>
     -->
     
-    <f:entry field="nodosDisp" title="Nodos disponibles">
+    <f:entry field="nodesAvailable" title="Nodos disponibles">
         <f:select />
     </f:entry>
-    <f:entry field="nodosSub" title="Nodos registrados">
+    <f:entry field="nodesSub" title="Nodos registrados">
         <f:select />
     </f:entry>
     
