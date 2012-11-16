@@ -34,8 +34,8 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 /**
- * @author Juan Luis Pardo Gonzalez
- * @author Isabel Fernandez Diaz
+ * @author Juan Luis Pardo González
+ * @author Isabel Fernández Díaz
  */
 public class ElOyente extends Trigger<Project> {
 
@@ -43,7 +43,6 @@ public class ElOyente extends Trigger<Project> {
     private String user;
     private String password;
     private Project project;
-//    private static Project project;
     private final static Map<String, Connection> connections = new HashMap<String, Connection>();
 
     /**
@@ -69,6 +68,9 @@ public class ElOyente extends Trigger<Project> {
      *
      * It checks if there is all the information required for an XMPP connection
      * in the main configuration and creates the connection.
+     * 
+     * It is also called when restarting a connection because of changes in the 
+     * main configuration
      *
      * @param project
      * @param newInstance
@@ -108,7 +110,6 @@ public class ElOyente extends Trigger<Project> {
                     System.err.println(connections.get(project.getName()).getUser().split("@")[0]);
                     connections.get(project.getName()).disconnect();
                 }
-
                 ConnectionConfiguration config = new ConnectionConfiguration(server);
                 Connection con = new XMPPConnection(config);
                 con.connect();
@@ -119,10 +120,8 @@ public class ElOyente extends Trigger<Project> {
 
                         if (getDescriptor().reloading) {
                             recreateSubscription(connections.get(project.getName()), user, nodes, project.getName());
-
                         }
                         addListeners(connections.get(project.getName()), project);
-
                     } catch (XMPPException ex) {
                         System.err.println("Login error");
                         ex.printStackTrace(System.err);
@@ -184,7 +183,6 @@ public class ElOyente extends Trigger<Project> {
                 node.unsubscribe(JID);
                 nodes.add(node.getId());
             }
-
         }
         return nodes;
     }
@@ -207,7 +205,6 @@ public class ElOyente extends Trigger<Project> {
             Node node = mgr.getNode((String) it.next());
             String JID = con.getUser();
             node.subscribe(JID);
-            //listen(node,this);
         }
     }
 
@@ -322,11 +319,11 @@ public class ElOyente extends Trigger<Project> {
             server = formData.getString("server");
             user = formData.getString("user");
             password = formData.getString("password");
-            
+
 
             // ^Can also use req.bindJSON(this, formData);
             //  (easier when there are many fields; need set* methods for this)
-            
+
             //report();
             save();
 
@@ -479,8 +476,8 @@ public class ElOyente extends Trigger<Project> {
         public String getOldPassword() {
             return oldpassword;
         }
-        
-        public String getName(){
+
+        public String getName() {
             return name;
         }
 
@@ -542,11 +539,12 @@ public class ElOyente extends Trigger<Project> {
                 return FormValidation.errorWithMarkup("Authentication failed");
             }
         }
-        public ListBoxModel doFillNodesAvailableItems() throws XMPPException {
+
+        public ListBoxModel doFillNodesAvailableItems(@QueryParameter("name") String name) throws XMPPException {
             ListBoxModel items = new ListBoxModel();
 
-            
-            
+
+
             Connection con = connections.get(name);
             PubSubManager mgr = new PubSubManager(con);
             DiscoverItems it = mgr.discoverNodes(null);
@@ -564,8 +562,9 @@ public class ElOyente extends Trigger<Project> {
             return items;
 
         }
-        public FormValidation doSubscribe(@QueryParameter("nodesAvailable") final String nodesAvailable) {
-            Connection con = connections.get(ElOyente.project.getName());
+
+        public FormValidation doSubscribe(@QueryParameter("nodesAvailable") final String nodesAvailable, @QueryParameter("name") String name) {
+            Connection con = connections.get(name);
             PubSubManager mgr = new PubSubManager(con);
             Trigger trigger = null;
 
@@ -580,7 +579,7 @@ public class ElOyente extends Trigger<Project> {
                 node.addItemEventListener(itemEventCoordinator);
                 String JID = con.getUser();
                 node.subscribe(JID);
-                return FormValidation.ok(con.getUser() + " Subscribed to " + nodesAvailable + " with resource " + project.getName());
+                return FormValidation.ok(con.getUser() + " Subscribed to " + nodesAvailable + " with resource " + name);
             } catch (Exception e) {
                 return FormValidation.error("Couldn't subscribe to " + nodesAvailable);
             }
