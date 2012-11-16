@@ -36,15 +36,15 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 /**
- * @author Juan Luis Pardo Gonzalez
- * @author Isabel Fernandez Diaz
+ * @author Juan Luis Pardo González
+ * @author Isabel Fernández Díaz
  */
 public class ElOyente extends Trigger<Project> {
 
     private String server;
     private String user;
     private String password;
-    private static Project project;
+    private Project project;
     private final static Map<String, Connection> connections = new HashMap<String, Connection>();
 
     /**
@@ -55,11 +55,11 @@ public class ElOyente extends Trigger<Project> {
      * the particular job.
      */
     @DataBoundConstructor
-    public ElOyente() {
-        super();
-        server = this.getDescriptor().server;
-        user = this.getDescriptor().user;
-        password = this.getDescriptor().password;
+    public ElOyente(Project project, String server, String password, String user) {
+
+        this.server = server;
+        this.password = password;
+        this.user = user;
     }
 
     /**
@@ -70,6 +70,9 @@ public class ElOyente extends Trigger<Project> {
      *
      * It checks if there is all the information required for an XMPP connection
      * in the main configuration and creates the connection.
+     * 
+     * It is also called when restarting a connection because of changes in the 
+     * main configuration
      *
      * @param project
      * @param newInstance
@@ -77,10 +80,11 @@ public class ElOyente extends Trigger<Project> {
     @Override
     public void start(Project project, boolean newInstance) {
 
-        server = this.getDescriptor().server;
-        user = this.getDescriptor().user;
-        password = this.getDescriptor().password;
-        ElOyente.project = project;
+//        server = this.getDescriptor().server;
+//        user = this.getDescriptor().user;
+//        password = this.getDescriptor().password;
+//        ElOyente.project = project;
+        this.project = project;
         ArrayList nodes = new ArrayList();
         System.out.println("JOB: " + project.getName());
         System.out.println("Con datos: " + !connections.isEmpty());
@@ -108,7 +112,6 @@ public class ElOyente extends Trigger<Project> {
                     System.err.println(connections.get(project.getName()).getUser().split("@")[0]);
                     connections.get(project.getName()).disconnect();
                 }
-
                 ConnectionConfiguration config = new ConnectionConfiguration(server);
                 Connection con = new XMPPConnection(config);
                 con.connect();
@@ -120,7 +123,7 @@ public class ElOyente extends Trigger<Project> {
                         if (getDescriptor().reloading) {
                             recreateSubscription(connections.get(project.getName()), user, nodes, project.getName());
                         }
-
+                        addListeners(connections.get(project.getName()), project);
                     } catch (XMPPException ex) {
                         System.err.println("Login error");
                         ex.printStackTrace(System.err);
@@ -130,6 +133,24 @@ public class ElOyente extends Trigger<Project> {
         } catch (XMPPException ex) {
             System.err.println("Couldn't establish the connection, or already connected");
             ex.printStackTrace(System.err);
+        }
+    }
+
+    public void addListeners(Connection con, Project project) throws XMPPException {
+        PubSubManager mgr = new PubSubManager(con);
+        Iterator it = mgr.getSubscriptions().iterator();
+
+        while (it.hasNext()) {
+            Subscription sub = (Subscription) it.next();
+            String JID = sub.getJid();
+            String JIDuser = JID.split("@")[0];
+            String JIDresource = JID.split("@")[1].split("/")[1];
+            System.out.println("this.job.getName() = " + project.getName());
+            if (JIDuser.equals(user) && JIDresource.equals(project.getName())) {
+                LeafNode node = (LeafNode) mgr.getNode(sub.getNode());
+                ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(sub.getNode(), this);
+                node.addItemEventListener(itemEventCoordinator);
+            }
         }
     }
 
@@ -164,7 +185,6 @@ public class ElOyente extends Trigger<Project> {
                 node.unsubscribe(JID);
                 nodes.add(node.getId());
             }
-
         }
         return nodes;
     }
@@ -185,16 +205,11 @@ public class ElOyente extends Trigger<Project> {
         Iterator it = nodes.iterator();
         while (it.hasNext()) {
             Node node = mgr.getNode((String) it.next());
-            String JID1 = con.getUser();
-            node.subscribe(JID1);
-            //listen(node,this);
+            String JID = con.getUser();
+            node.subscribe(JID);
         }
     }
 
-//    public void listen(Node node, Trigger trigger) {
-//        ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(node.getId(), trigger);
-//        node.addItemEventListener(itemEventCoordinator);
-//    }
     @Override
     public void run() {
         // super.run();
@@ -292,7 +307,10 @@ public class ElOyente extends Trigger<Project> {
          * server.admin
          *
          * @param req
-         * @param formData
+         * @param formData// public void listen(Node node, Trigger trigger) { //
+         * ItemEventCoordinator itemEventCoordinator = new
+         * ItemEventCoordinator(node.getId(), trigger); //
+         * node.addItemEventListener(itemEventCoordinator); // }
          * @return boolean
          * @throws Descriptor.FormException
          */
@@ -464,6 +482,10 @@ public class ElOyente extends Trigger<Project> {
             return oldpassword;
         }
 
+        public String getName() {
+            return name;
+        }
+
         /**
          * Performs on-the-fly validation of the form field 'server'.
          *
@@ -571,6 +593,7 @@ public class ElOyente extends Trigger<Project> {
                 System.out.println("No Logeado");
             }
             return items;
+
         }
 
         public ListBoxModel doFillNodesSubItems() throws XMPPException, InterruptedException {
@@ -609,10 +632,16 @@ public class ElOyente extends Trigger<Project> {
             pj = ElOyente.DescriptorImpl.getCurrentDescriptorByNameUrl();
             Connection con = connections.get(pj);
             PubSubManager mgr = new PubSubManager(con);
+            Trigger trigger = null;
 
             try {
+                Iterator it2 = (Jenkins.getInstance().getItems()).iterator();
+                while (it2.hasNext()) {
+                    AbstractProject job = (AbstractProject) it2.next();
+                    trigger = (ElOyente) job.getTriggers().get(this);
+                }
                 LeafNode node = (LeafNode) mgr.getNode(nodesAvailable);
-                ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(nodesAvailable);
+                ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(nodesAvailable, trigger);
                 node.addItemEventListener(itemEventCoordinator);
                 String JID = con.getUser();
                 node.subscribe(JID);
