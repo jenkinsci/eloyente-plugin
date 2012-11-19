@@ -1,6 +1,5 @@
 package com.technicolor.eloyente;
 
-import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
