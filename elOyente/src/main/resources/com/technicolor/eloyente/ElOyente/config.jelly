@@ -19,5 +19,6 @@
     <f:entry field="nodesSub" title="Nodos registrados">
         <f:select />
     </f:entry>
-    <f:validateButton title="${%Subscribe}" progress="${%Subscribing ...}" method="subscribe" with="nodesAvailable, ${instance.name}" />
+    <f:validateButton onBlur="sayHi()" title="${%Unsubscribe}" progress="${%Unsubscribing ...}" method="Unsubscribe" with="nodesSub, name" />
+
 </j:jelly>
