@@ -36,8 +36,8 @@ import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest;
 
 /**
- * @author Juan Luis Pardo González
- * @author Isabel Fernández Díaz
+ * @author Juan Luis Pardo Gonz&aacute;lez
+ * @author Isabel Fern&aacute;ndez D&iacute;az
  */
 public class ElOyente extends Trigger<Project> {
 
