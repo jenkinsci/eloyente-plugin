@@ -1,6 +1,5 @@
 package com.technicolor.eloyente;
 
-import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
@@ -40,8 +39,8 @@ import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest;
 
 /**
- * @author Juan Luis Pardo González
- * @author Isabel Fernández Díaz
+ * @author Juan Luis Pardo Gonz&aacute;lez
+ * @author Isabel Fern&aacute;ndez D&iacute;az
  */
 public class ElOyente extends Trigger<Project> {
 
@@ -59,7 +58,7 @@ public class ElOyente extends Trigger<Project> {
      *
      * It uses the Descriptor to set the fields required later on. The
      * Descriptor will bring the information set in the main configuration to
-     * the particular job.
+     * the particular job configuration.
      */
     public ElOyente(SuscriptionProperties... suscriptions) {
 
@@ -104,7 +103,8 @@ public class ElOyente extends Trigger<Project> {
      * in the main configuration and creates the connection.
      *
      * It is also called when restarting a connection because of changes in the
-     * main configuration
+     * main configuration.
+     *
      *
      * @param project
      * @param newInstance
@@ -122,8 +122,8 @@ public class ElOyente extends Trigger<Project> {
 
 
         try {
-            /* If there are old connections, and there is a connection for this job, and it's reloading then 
-             we stop the connection, delete the old subscription and store the node name in order to recreate the connection later
+            /* If there are old connections, there is a connection for this job and it's reloading then 
+             we stop the connection, delete the old subscription and store the node name in order to recreate the connection and subcriptions later
              with the new parameters.
              */
 
@@ -135,13 +135,14 @@ public class ElOyente extends Trigger<Project> {
             /* If parameters are not empty it will create a connection and add it to the Map that stores the connections for later uses.
              * It will also recreate the subscription based on the saved nodes and the new parameters.
              */
+
             if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
-                if (connections.containsKey(project.getName()) && connections.get(project.getName()).getUser().split("@")[0].equals(user)) {
-                    System.err.println("\n\n\nproject.getName() = " + project.getName());
-                    System.err.println("\n\n\nuser = " + user);
-                    System.err.println(connections.get(project.getName()).getUser().split("@")[0]);
-                    connections.get(project.getName()).disconnect();
-                }
+//                if (connections.containsKey(project.getName()) && connections.get(project.getName()).getUser().split("@")[0].equals(user)) {
+//                    System.err.println("\n\n\nproject.getName() = " + project.getName());
+//                    System.err.println("\n\n\nuser = " + user);
+//                    System.err.println(connections.get(project.getName()).getUser().split("@")[0]);
+//                    connections.get(project.getName()).disconnect();
+//                }
                 ConnectionConfiguration config = new ConnectionConfiguration(server);
                 Connection con = new XMPPConnection(config);
                 con.connect();
@@ -166,6 +167,16 @@ public class ElOyente extends Trigger<Project> {
         }
     }
 
+    /**
+     * Add listeners to the connections.
+     *
+     * This method is in charge of adding listeners to a node to which a job is
+     * subscribed to. This way it will receive events that will trigger it.
+     *
+     * @param con
+     * @param project
+     * @throws XMPPException
+     */
     public void addListeners(Connection con, Project project) throws XMPPException {
         PubSubManager mgr = new PubSubManager(con);
         Iterator it = mgr.getSubscriptions().iterator();
@@ -189,14 +200,14 @@ public class ElOyente extends Trigger<Project> {
      * Deletes the subscriptions that a job has when the parameters are changed
      * in the main configuration.
      *
-     * This method deletes the subscriptions of a user from the nodes it is
-     * subscribed, and saves the name of those nodes in order to create new
-     * subscriptions for the new user.
+     * This method deletes the subscriptions to a node that a user has and saves
+     * the name of those nodes in order to recreate new subscriptions for the
+     * new modified user.
      *
      * @param con
      * @param olduser
      * @param resource
-     * @return
+     * @return nodes
      * @throws XMPPException
      */
     public ArrayList deleteSubscriptions(Connection con, String olduser, String resource) throws XMPPException {
@@ -220,9 +231,10 @@ public class ElOyente extends Trigger<Project> {
     }
 
     /**
-     * Recreates the subscriptions with the new parameters introduced in the
-     * main config.
+     * Recreates the subscriptions with the new parameters.
      *
+     * This method creates the subscriptions again but now with the new
+     * parameters introduced in the main config.
      *
      * @param con
      * @param newuser
@@ -240,16 +252,21 @@ public class ElOyente extends Trigger<Project> {
         }
     }
 
+    /**
+     * Run a job.
+     *
+     * This method will be called by the ItemEventCoordinator
+     * when an XMPP event is received and a job must be triggered.
+     * 
+     */
     @Override
     public void run() {
-        // super.run();
         if (!project.getAllJobs().isEmpty()) {
             Iterator iterator = project.getAllJobs().iterator();
             while (iterator.hasNext()) {
                 ((Project) iterator.next()).scheduleBuild(null);
             }
         }
-        //super.run();    
     }
 
     /**
@@ -308,12 +325,10 @@ public class ElOyente extends Trigger<Project> {
         }
 
         /**
-         * Used to persist the global configuration.
+         * Returns true if this task is applicable to the given project.
          *
-         *
-         * This method is used to set the field for the checkbox that activates
-         * the plugin in the job configuration.
-         *
+         * True to allow user to configure this post-promotion task for the given project.
+         * 
          * @return boolean
          * @param item
          */
@@ -322,12 +337,10 @@ public class ElOyente extends Trigger<Project> {
             return true;
         }
 
+        
         /**
-         * Used to persist the global configuration.
+         * Human readable name of this kind of configurable object.
          *
-         *
-         * This method is used to set the field for the checkbox that activates
-         * the plugin in the job configuration.
          *
          * @return String
          */
@@ -336,13 +349,14 @@ public class ElOyente extends Trigger<Project> {
             return "XMPP triggered plugin";
         }
 
+        
         /**
-         * Used to persist the global configuration.
-         *
-         *
-         * global.jelly calls this method to obtain the value of field
-         * server.admin
-         *
+         * Invoked when the global configuration page is submitted..
+         * 
+         * Overriden in order to persist the main configuration, reporting and
+         * and call the method reloadJobs, that we'll decide if it's necessary to
+         * reload or not.
+         * 
          * @param req
          * @param formData// public void listen(Node node, Trigger trigger) { //
          * ItemEventCoordinator itemEventCoordinator = new
@@ -358,14 +372,9 @@ public class ElOyente extends Trigger<Project> {
             server = formData.getString("server");
             user = formData.getString("user");
             password = formData.getString("password");
-            //name= formData.getString("name");
 
-            // ^Can also use req.bindJSON(this, formData);
-            //  (easier when there are many fields; need set* methods for this)
-
-            //report();
+            report();
             save();
-
             reloadJobs();
 
 
@@ -383,7 +392,7 @@ public class ElOyente extends Trigger<Project> {
          * Checks if the parameters username, password and server of the main
          * configuration have changed, if so it calls the method start() of all
          * those jobs that are using ElOyente in order to connect to the server
-         * with the new credentials.
+         * with the new credentials and reset the subscriptions.
          */
         public void reloadJobs() {
             if (!server.equals(oldserver) || !user.equals(olduser) || !password.equals(oldpassword)) {
@@ -454,7 +463,6 @@ public class ElOyente extends Trigger<Project> {
 
                         //Disconnection
                         con.disconnect();
-
                     }
                 } catch (XMPPException ex) {
                     System.err.println(ex.getXMPPError().getMessage());
@@ -501,18 +509,39 @@ public class ElOyente extends Trigger<Project> {
             return password;
         }
 
+        /**
+         * Used for knowing if a job is using the start() method because it is
+         * loading or the configuration has changed and it is being reloaded.
+         * 
+         * @return reloading
+         */
         public boolean getReloading() {
             return reloading;
         }
 
+        /**
+         * It stores the server address previous to the configuration change.
+         * 
+         * @return oldserver
+         */
         public String getOldServer() {
             return oldserver;
         }
 
+        /**
+         *It stores the user previous to the configuration change.
+         * 
+         * @return olduser 
+         */
         public String getOldUser() {
             return olduser;
         }
 
+        /**
+         *It stores the password previous to the configuration change.
+         * 
+         * @return oldpassword
+         */
         public String getOldPassword() {
             return oldpassword;
         }
@@ -652,42 +681,50 @@ public class ElOyente extends Trigger<Project> {
             return items;
         }
 
+        
         public ListBoxModel doFillNodesSubItems() throws XMPPException, InterruptedException {
             ListBoxModel items = new ListBoxModel();
-            String nodeName;
-            String pj;
-
-
-//            if (semaforo == true) {
-//                wait();
-//            } else {
-//                semaforo = true;
-//                pj = ElOyente.DescriptorImpl.getCurrentDescriptorByNameUrl();
-//                System.out.println("pj " + pj);
-//                Connection con = connections.get(pj);
-//                //PubSubManager mgr=getPubSubManager();
-//                PubSubManager mgr = new PubSubManager(con);
-//
-//                List<Subscription> listSubs = mgr.getSubscriptions();
-//
-//                for (int i = 0; i < listSubs.size(); i++) {
-//                    if (listSubs.get(i).getJid().equals(con.getUser())) {
-//                        nodeName = listSubs.get(i).getNode();
-//                        items.add(nodeName);
-//                    }
-//                }
-//                 //con.disconnect();
-//                semaforo = false;
-//            }
+////            String nodeName;
+////            String pj;
+////
+////            if (semaforo == true) {
+////                wait();
+////            } else {
+////                semaforo = true;
+////                pj = ElOyente.DescriptorImpl.getCurrentDescriptorByNameUrl();
+////                System.out.println("pj " + pj);
+////                Connection con = connections.get(pj);
+////                //PubSubManager mgr=getPubSubManager();
+////                PubSubManager mgr = new PubSubManager(con);
+////
+////                List<Subscription> listSubs = mgr.getSubscriptions();
+////
+////                for (int i = 0; i < listSubs.size(); i++) {
+////                    if (listSubs.get(i).getJid().equals(con.getUser())) {
+////                        nodeName = listSubs.get(i).getNode();
+////                        items.add(nodeName);
+////                    }
+////                }
+////                 //con.disconnect();
+////                semaforo = false;
+////            }
 
             return items;
         }
 
-        public FormValidation doSubscribe(@QueryParameter("nodesAvailable") final String nodesAvailable) {
-
-            String name = Stapler.getCurrentRequest().findAncestorObject(AbstractProject.class).getName();
-
-            Connection con = connections.get(name);
+        /**
+         * In charge of subscribing the job to a node.
+         * 
+         * It subscribes the job being configured to the node selected, and also creates the listeners
+         * required for triggering jobs when XMPP events are received.
+         *
+         * @param nodesAvailable
+         * @param name
+         * @return
+         */
+        public FormValidation doSubscribe(@QueryParameter("nodesAvailable") String nodesAvailable) {
+            String projectName = Stapler.getCurrentRequest().findAncestorObject(AbstractProject.class).getName();
+            Connection con = connections.get(projectName);
             PubSubManager mgr = new PubSubManager(con);
             Trigger trigger = null;
 
@@ -702,7 +739,7 @@ public class ElOyente extends Trigger<Project> {
                 node.addItemEventListener(itemEventCoordinator);
                 String JID = con.getUser();
                 node.subscribe(JID);
-                return FormValidation.ok(con.getUser() + " Subscribed to " + nodesAvailable + " with resource " + name);
+                return FormValidation.ok(con.getUser() + " Subscribed to " + nodesAvailable + " with resource " + projectName);
             } catch (Exception e) {
                 return FormValidation.error("Couldn't subscribe to " + nodesAvailable);
             }
