@@ -13,6 +13,9 @@ import hudson.util.ListBoxModel;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -41,10 +44,7 @@ import org.kohsuke.stapler.StaplerRequest;
  */
 public class ElOyente extends Trigger<Project> {
 
-    private String server;
-    private String user;
-    private String password;
-    private Project project;
+    private List<NodeSubscription> jobSubscription;
     private final static Map<String, Connection> connections = new HashMap<String, Connection>();
 
     /**
@@ -55,11 +55,21 @@ public class ElOyente extends Trigger<Project> {
      * the particular job configuration.
      */
     @DataBoundConstructor
-    public ElOyente(Project project, String server, String password, String user) {
+    public ElOyente(List<NodeSubscription> jobSubscription) {
+        this.jobSubscription = jobSubscription;
 
-        this.server = server;
-        this.password = password;
-        this.user = user;
+    }
+
+    public List<NodeSubscription> getAllJobSubscription() {
+        return jobSubscription;
+    }
+
+    public List<NodeSubscription> getJobSubscription() {
+        if (jobSubscription == null) {
+            return new ArrayList<NodeSubscription>();
+        } else {
+            return Collections.unmodifiableList(jobSubscription);
+        }
     }
 
     /**
@@ -78,63 +88,146 @@ public class ElOyente extends Trigger<Project> {
      * @param project
      * @param newInstance
      */
+//    @Override
+//    public void start(Project project, boolean newInstance) {
+//
+//        server = this.getDescriptor().server;
+//        user = this.getDescriptor().user;
+//        password = this.getDescriptor().password;
+//        this.project = project;
+//        ArrayList nodes = new ArrayList();
+//
+//        System.out.println("JOB: " + project.getName());
+//        System.out.println("Con datos: " + !connections.isEmpty());
+//        System.out.println("Conexion existente: " + connections.containsKey(project.getName()));
+//        System.out.println("Reloading: " + getDescriptor().reloading);
+//
+//        try {
+//            /* If there are old connections, there is a connection for this job and it's reloading then 
+//             we stop the connection, delete the old subscription and store the node name in order to recreate the connection and subcriptions later
+//             with the new parameters.
+//             */
+//
+//            if (!connections.isEmpty() && connections.containsKey(project.getName()) && getDescriptor().reloading) {
+//                nodes = deleteSubscriptions(connections.get(project.getName()), this.getDescriptor().olduser, project.getName());
+//                connections.get(project.getName()).disconnect();
+//            }
+//
+//            /* If parameters are not empty it will create a connection and add it to the Map that stores the connections for later uses.
+//             * It will also recreate the subscription based on the saved nodes and the new parameters.
+//             */
+//
+//            if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
+//                ConnectionConfiguration config = new ConnectionConfiguration(server);
+//                Connection con = new XMPPConnection(config);
+//                con.connect();
+//                if (con.isConnected()) {
+//                    try {
+//                        con.login(user, password, project.getName());
+//                        connections.put(project.getName(), con);
+//
+//                        if (getDescriptor().reloading) {
+//                            recreateSubscription(connections.get(project.getName()), user, nodes, project.getName());
+//                        }
+//                        addListeners(connections.get(project.getName()), project);
+//                    } catch (XMPPException ex) {
+//                        System.err.println("Login error");
+//                        ex.printStackTrace(System.err);
+//                    }
+//                }
+//            }
+//        } catch (XMPPException ex) {
+//            System.err.println("Couldn't establish the connection, or already connected");
+//            ex.printStackTrace(System.err);
+//        }
+//    }
     @Override
     public void start(Project project, boolean newInstance) {
 
-        server = this.getDescriptor().server;
-        user = this.getDescriptor().user;
-        password = this.getDescriptor().password;
-        this.project = project;
-        ArrayList nodes = new ArrayList();
-
-        System.out.println("JOB: " + project.getName());
-        System.out.println("Con datos: " + !connections.isEmpty());
-        System.out.println("Conexion existente: " + connections.containsKey(project.getName()));
-        System.out.println("Reloading: " + getDescriptor().reloading);
+        String server = this.getDescriptor().server;
+        String user = this.getDescriptor().user;
+        String password = this.getDescriptor().password;
 
         try {
-            /* If there are old connections, there is a connection for this job and it's reloading then 
-             we stop the connection, delete the old subscription and store the node name in order to recreate the connection and subcriptions later
-             with the new parameters.
-             */
-
-            if (!connections.isEmpty() && connections.containsKey(project.getName()) && getDescriptor().reloading) {
-                nodes = deleteSubscriptions(connections.get(project.getName()), this.getDescriptor().olduser, project.getName());
-                connections.get(project.getName()).disconnect();
-            }
-
-            /* If parameters are not empty it will create a connection and add it to the Map that stores the connections for later uses.
-             * It will also recreate the subscription based on the saved nodes and the new parameters.
-             */
-
-            if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
-//                if (connections.containsKey(project.getName()) && connections.get(project.getName()).getUser().split("@")[0].equals(user)) {
-//                    System.err.println("\n\n\nproject.getName() = " + project.getName());
-//                    System.err.println("\n\n\nuser = " + user);
-//                    System.err.println(connections.get(project.getName()).getUser().split("@")[0]);
-//                    connections.get(project.getName()).disconnect();
-//                }
-                ConnectionConfiguration config = new ConnectionConfiguration(server);
-                Connection con = new XMPPConnection(config);
-                con.connect();
-                if (con.isConnected()) {
-                    try {
-                        con.login(user, password, project.getName());
-                        connections.put(project.getName(), con);
-
-                        if (getDescriptor().reloading) {
-                            recreateSubscription(connections.get(project.getName()), user, nodes, project.getName());
-                        }
-                        addListeners(connections.get(project.getName()), project);
-                    } catch (XMPPException ex) {
-                        System.err.println("Login error");
-                        ex.printStackTrace(System.err);
+            System.err.println("Reiniciando: " + getDescriptor().reloading);
+            if (getDescriptor().reloading) {
+                if (connectionOK(server, user, password)) {
+                    if (!connections.isEmpty() && connections.containsKey(project.getName())) {
+                        connections.get(project.getName()).disconnect();
+                        createConnection(project, server, user, password);
+                        subscribeIfNecessary(project);
+                        //Read subscriptions in job
+                        //Create them again
+                        //Add listeners for each subscription
+                    } else {
+                        createConnection(project, server, user, password);
+                        subscribeIfNecessary(project);
+                        //Read subscriptions in job
+                        //Create them again
+                        //Add listeners for each subscription                       
                     }
+                }
+            } else {
+                if (connectionOK(server, user, password)) {
+                    createConnection(project, server, user, password);
+                    subscribeIfNecessary(project);
+                    //Add listeners for each subscription
                 }
             }
         } catch (XMPPException ex) {
-            System.err.println("Couldn't establish the connection, or already connected");
             ex.printStackTrace(System.err);
+        }
+    }
+
+    public Connection createConnection(Project project, String server, String user, String password) throws XMPPException {
+        ConnectionConfiguration config = new ConnectionConfiguration(server);
+        Connection con = new XMPPConnection(config);
+        con.connect();
+        con.login(user, password, project.getName());
+        connections.put(project.getName(), con);
+        return con;
+    }
+
+    public void subscribeIfNecessary(Project project) throws XMPPException {
+        boolean notSubscribed = true;
+        String nodeName="";
+        Connection con = connections.get(project.getName());
+        PubSubManager mgr = new PubSubManager(con);
+        Iterator it = jobSubscription.iterator();
+        List<Subscription> subscriptionList = mgr.getSubscriptions();
+        Iterator it2 = subscriptionList.iterator();
+        while (it.hasNext()) {
+            nodeName = ((NodeSubscription) it.next()).nodeName;
+            while (it2.hasNext()) {
+                Subscription sub = (Subscription) it2.next();
+                if (sub.getJid().split("/")[1].equals(project.getName()) && sub.getNode().equals(nodeName) && sub.getJid().split("@")[0].equals(getDescriptor().user)) {
+                    notSubscribed = false;
+                }
+            }
+        }
+        if (notSubscribed == true && !nodeName.equals("")) {
+            String JID = con.getUser();
+            mgr.getNode(nodeName).subscribe(JID);
+        }
+    }
+
+    public boolean checkAnyParameterEmpty(String server, String user, String password) {
+        if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
+            return false;
+        }
+        return true;
+    }
+
+    public boolean connectionOK(String server, String user, String password) {
+        try {
+            ConnectionConfiguration config = new ConnectionConfiguration(server);
+            Connection con = new XMPPConnection(config);
+            con.connect();
+            con.login(user, password);
+            con.disconnect();
+            return true;
+        } catch (XMPPException ex) {
+            return false;
         }
     }
 
@@ -148,7 +241,7 @@ public class ElOyente extends Trigger<Project> {
      * @param project
      * @throws XMPPException
      */
-    public void addListeners(Connection con, Project project) throws XMPPException {
+    public void addListeners(Connection con, Project project, String user) throws XMPPException {
         PubSubManager mgr = new PubSubManager(con);
         Iterator it = mgr.getSubscriptions().iterator();
 
@@ -226,18 +319,18 @@ public class ElOyente extends Trigger<Project> {
     /**
      * Run a job.
      *
-     * This method will be called by the ItemEventCoordinator
-     * when an XMPP event is received and a job must be triggered.
-     * 
+     * This method will be called by the ItemEventCoordinator when an XMPP event
+     * is received and a job must be triggered.
+     *
      */
     @Override
     public void run() {
-        if (!project.getAllJobs().isEmpty()) {
-            Iterator iterator = project.getAllJobs().iterator();
-            while (iterator.hasNext()) {
-                ((Project) iterator.next()).scheduleBuild(null);
-            }
-        }
+//        if (!project.getAllJobs().isEmpty()) {
+//            Iterator iterator = project.getAllJobs().iterator();
+//            while (iterator.hasNext()) {
+//                ((Project) iterator.next()).scheduleBuild(null);
+//            }
+//        }
     }
 
     /**
@@ -272,7 +365,7 @@ public class ElOyente extends Trigger<Project> {
         private String server, oldserver;
         private String user, olduser;
         private String password, oldpassword;
-        private boolean reloading = false;
+        public boolean reloading = false;
 
         /**
          * Brings the persisted configuration in the main configuration.
@@ -284,13 +377,15 @@ public class ElOyente extends Trigger<Project> {
             oldserver = this.getServer();
             olduser = this.getUser();
             oldpassword = this.getPassword();
+            reloading = false;
         }
 
         /**
          * Returns true if this task is applicable to the given project.
          *
-         * True to allow user to configure this post-promotion task for the given project.
-         * 
+         * True to allow user to configure this post-promotion task for the
+         * given project.
+         *
          * @return boolean
          * @param item
          */
@@ -299,7 +394,6 @@ public class ElOyente extends Trigger<Project> {
             return true;
         }
 
-        
         /**
          * Human readable name of this kind of configurable object.
          *
@@ -311,14 +405,13 @@ public class ElOyente extends Trigger<Project> {
             return "XMPP triggered plugin";
         }
 
-        
         /**
          * Invoked when the global configuration page is submitted..
-         * 
+         *
          * Overriden in order to persist the main configuration, reporting and
-         * and call the method reloadJobs, that we'll decide if it's necessary to
-         * reload or not.
-         * 
+         * and call the method reloadJobs, that we'll decide if it's necessary
+         * to reload or not.
+         *
          * @param req
          * @param formData// public void listen(Node node, Trigger trigger) { //
          * ItemEventCoordinator itemEventCoordinator = new
@@ -335,10 +428,9 @@ public class ElOyente extends Trigger<Project> {
             user = formData.getString("user");
             password = formData.getString("password");
 
-            report();
+            //report();
             save();
             reloadJobs();
-
 
             oldserver = server;
             olduser = user;
@@ -474,7 +566,7 @@ public class ElOyente extends Trigger<Project> {
         /**
          * Used for knowing if a job is using the start() method because it is
          * loading or the configuration has changed and it is being reloaded.
-         * 
+         *
          * @return reloading
          */
         public boolean getReloading() {
@@ -483,7 +575,7 @@ public class ElOyente extends Trigger<Project> {
 
         /**
          * It stores the server address previous to the configuration change.
-         * 
+         *
          * @return oldserver
          */
         public String getOldServer() {
@@ -491,17 +583,17 @@ public class ElOyente extends Trigger<Project> {
         }
 
         /**
-         *It stores the user previous to the configuration change.
-         * 
-         * @return olduser 
+         * It stores the user previous to the configuration change.
+         *
+         * @return olduser
          */
         public String getOldUser() {
             return olduser;
         }
 
         /**
-         *It stores the password previous to the configuration change.
-         * 
+         * It stores the password previous to the configuration change.
+         *
          * @return oldpassword
          */
         public String getOldPassword() {
@@ -617,7 +709,6 @@ public class ElOyente extends Trigger<Project> {
 
         }
 
-        
         public ListBoxModel doFillNodesSubItems() throws XMPPException, InterruptedException {
             ListBoxModel items = new ListBoxModel();
 ////            String nodeName;
@@ -650,9 +741,10 @@ public class ElOyente extends Trigger<Project> {
 
         /**
          * In charge of subscribing the job to a node.
-         * 
-         * It subscribes the job being configured to the node selected, and also creates the listeners
-         * required for triggering jobs when XMPP events are received.
+         *
+         * It subscribes the job being configured to the node selected, and also
+         * creates the listeners required for triggering jobs when XMPP events
+         * are received.
          *
          * @param nodesAvailable
          * @param name
@@ -679,6 +771,13 @@ public class ElOyente extends Trigger<Project> {
             } catch (Exception e) {
                 return FormValidation.error("Couldn't subscribe to " + nodesAvailable);
             }
+        }
+
+        @Override
+        public ElOyente newInstance(StaplerRequest req, JSONObject formData) {
+
+            List<NodeSubscription> jobSubscription = req.bindParametersToList(NodeSubscription.class, "eloyente.nodeSubscription.");
+            return new ElOyente(jobSubscription);
         }
     }
 }

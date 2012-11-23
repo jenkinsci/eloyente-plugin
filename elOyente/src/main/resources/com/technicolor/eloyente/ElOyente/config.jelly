@@ -11,14 +11,18 @@
       When submitted, it will be passed to the corresponding constructor parameter.
     -->
     
-    
-    <f:entry field="nodesAvailable" title="Nodos disponibles">
-        <f:select />
+    <!--
+       <f:entry field="nodesAvailable" title="Nodos disponibles">
+           <f:select />
+       </f:entry>
+       <f:validateButton title="${%Subscribe}" progress="${%Subscribing ...}" method="subscribe" with="nodesAvailable" />
+       <f:entry field="nodesSub" title="Nodos registrados">
+           <f:select />
+       </f:entry>
+       <f:validateButton onBlur="sayHi()" title="${%Unsubscribe}" progress="${%Unsubscribing ...}" method="Unsubscribe" with="nodesSub, name" />
+    -->
+ 
+    <f:entry title="${%Nodes}">
+        <f:textbox name="eloyente.nodeSubscription.nodeName" value="${nodeName}" />    
     </f:entry>
-    <f:validateButton title="${%Subscribe}" progress="${%Subscribing ...}" method="subscribe" with="nodesAvailable" />
-    <f:entry field="nodesSub" title="Nodos registrados">
-        <f:select />
-    </f:entry>
-    <f:validateButton onBlur="sayHi()" title="${%Unsubscribe}" progress="${%Unsubscribing ...}" method="Unsubscribe" with="nodesSub, name" />
-
 </j:jelly>
