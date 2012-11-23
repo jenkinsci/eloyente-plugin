@@ -14,6 +14,9 @@ import hudson.util.ListBoxModel;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -47,6 +50,9 @@ public class ElOyente extends Trigger<Project> {
     private String password;
     private Project project;
     private final static Map<String, Connection> connections = new HashMap<String, Connection>();
+    private ArrayList nodesToSub;
+    private ArrayList nodesToUnsub;
+    private SuscriptionProperties[] suscriptions;
 
     /**
      * Constructor for elOyente.
@@ -55,12 +61,37 @@ public class ElOyente extends Trigger<Project> {
      * Descriptor will bring the information set in the main configuration to
      * the particular job.
      */
-    @DataBoundConstructor
-    public ElOyente(Project project, String server, String password, String user) {
+    public ElOyente(SuscriptionProperties... suscriptions) {
 
-        this.server = server;
-        this.password = password;
-        this.user = user;
+        this.suscriptions = suscriptions;
+
+    }
+
+    public ElOyente(Collection<SuscriptionProperties> suscriptions) {
+        this((SuscriptionProperties[]) suscriptions.toArray(new SuscriptionProperties[suscriptions.size()]));
+    }
+
+    /**
+     * This method will return the taskProperties foe the specified logText
+     *
+     * @return SuscriptionProperties[]
+     */
+    // TODO need to finish later
+    public SuscriptionProperties[] getAllSuscriptions() {
+        return suscriptions;
+    }
+
+    /**
+     * This method will return all the tasks
+     *
+     * @return List<SuscriptionProperties>
+     */
+    public List<SuscriptionProperties> getSuscriptions() {
+        if (suscriptions == null) {
+            return new ArrayList<SuscriptionProperties>();
+        } else {
+            return Collections.unmodifiableList(Arrays.asList(suscriptions));
+        }
     }
 
     /**
@@ -81,16 +112,14 @@ public class ElOyente extends Trigger<Project> {
     @Override
     public void start(Project project, boolean newInstance) {
 
-//        server = this.getDescriptor().server;
-//        user = this.getDescriptor().user;
-//        password = this.getDescriptor().password;
-//        ElOyente.project = project;
+        server = this.getDescriptor().server;
+        user = this.getDescriptor().user;
+        password = this.getDescriptor().password;
+       
         this.project = project;
         ArrayList nodes = new ArrayList();
-        System.out.println("JOB: " + project.getName());
-        System.out.println("Con datos: " + !connections.isEmpty());
-        System.out.println("Conexion existente: " + connections.containsKey(project.getName()));
-        System.out.println("Reloading: " + getDescriptor().reloading);
+       
+
 
         try {
             /* If there are old connections, and there is a connection for this job, and it's reloading then 
@@ -256,7 +285,6 @@ public class ElOyente extends Trigger<Project> {
         private String user, olduser;
         private String password, oldpassword;
         private boolean reloading = false;
-        // private String name;
 
         /**
          * Brings the persisted configuration in the main configuration.
@@ -268,7 +296,15 @@ public class ElOyente extends Trigger<Project> {
             oldserver = this.getServer();
             olduser = this.getUser();
             oldpassword = this.getPassword();
-            //      name = this.getName();
+        }
+
+        @Override
+        public Trigger<?> newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+            
+            List<SuscriptionProperties> tasksprops = req.bindParametersToList(SuscriptionProperties.class, "elOyente-suscription.suscriptionpropertes.");
+            System.out.println(tasksprops.toArray());
+            return new ElOyente(tasksprops);
+            
         }
 
         /**
@@ -386,8 +422,6 @@ public class ElOyente extends Trigger<Project> {
         public void report() {
             Logger logger = Logger.getLogger("com.technicolor.eloyente");
             //Logger loger =  Logger.getLogger(ElOyente.class.getName());
-
-
 
             if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
                 try {
@@ -542,6 +576,14 @@ public class ElOyente extends Trigger<Project> {
             }
         }
 
+        /**
+         * Fill the drop-down called "nodesAvailable" of the config.jelly
+         *
+         * @param name: name of the job
+         * @return ListBoxModel: List of nodes available in the XMPP Server
+         * @throws XMPPException
+         * @throws InterruptedException
+         */
         public ListBoxModel doFillNodesAvailableItems(@QueryParameter("name") String name) throws XMPPException, InterruptedException {
             ListBoxModel items = new ListBoxModel();
             ArrayList nodesSubsArray = new ArrayList();
@@ -558,10 +600,21 @@ public class ElOyente extends Trigger<Project> {
 //            System.out.println("S\"JOB_NAME\"): " + EnvVars.masterEnvVars.get("PATH"));
 //            System.out.println("(\"JENKINS_HOME\"): " + EnvVars.masterEnvVars.get("JENKINS_HOME"));
 
+//        System.out.println("trabajo: " + Stapler.getCurrentRequest().findAncestorObject(AbstractProject.class).getName());
+//        System.out.println("nombre: " + Stapler.getCurrentRequest().findAncestor("name"));
+//        System.out.println("atributo: " + Stapler.getCurrentRequest().getAttribute("com-technicolor-eloyente-ElOyente"));
+//        System.out.println("getAttributeNames: " + Stapler.getCurrentRequest().getAttributeNames().toString());
+//        System.out.println("getParameterValues: " + Stapler.getCurrentRequest().getParameterValues("com-technicolor-eloyente-ElOyente"));
+
             System.out.println("pjName:" + pjName);
+
+            //System.out.println("nombre: " + Stapler.getCurrentResponse().getCurrentRequest().getParameter("com-technicolor-eloyente-ElOyente"));
+            System.out.println("nombre: " + Stapler.getCurrentRequest().getAttribute("com-technicolor-eloyente-ElOyente"));
+
+
             if (instance != null) {
 
-                Connection con = connections.get(pjName);
+               Connection con = connections.get(pjName);
                 PubSubManager mgr = new PubSubManager(con);
 
                 DiscoverItems it = mgr.discoverNodes(null);
@@ -595,14 +648,15 @@ public class ElOyente extends Trigger<Project> {
                     System.out.println("No Logeado");
                 }
             }
+             items.add("NodoEstatico");
             return items;
-
         }
 
         public ListBoxModel doFillNodesSubItems() throws XMPPException, InterruptedException {
             ListBoxModel items = new ListBoxModel();
             String nodeName;
             String pj;
+
 
 //            if (semaforo == true) {
 //                wait();
@@ -631,9 +685,8 @@ public class ElOyente extends Trigger<Project> {
 
         public FormValidation doSubscribe(@QueryParameter("nodesAvailable") final String nodesAvailable) {
 
-            System.out.println("Stapler: "+Stapler.getCurrentRequest().findAncestor("name"));
             String name = Stapler.getCurrentRequest().findAncestorObject(AbstractProject.class).getName();
- 
+
             Connection con = connections.get(name);
             PubSubManager mgr = new PubSubManager(con);
             Trigger trigger = null;
