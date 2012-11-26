@@ -13,6 +13,8 @@ import hudson.util.ListBoxModel;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -37,13 +39,16 @@ import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest;
 
 /**
- * @author Juan Luis Pardo González
- * @author Isabel Fernández Díaz
+ * @author Juan Luis Pardo Gonz&aacute;lez
+ * @author Isabel Fern&aacute;ndez D&iacute;az
  */
 public class ElOyente extends Trigger<Project> {
 
     private List<NodeSubscription> jobSubscription;
     private final static Map<String, Connection> connections = new HashMap<String, Connection>();
+    private ArrayList nodesToSub;
+    private ArrayList nodesToUnsub;
+    private SuscriptionProperties[] suscriptions;
 
     /**
      * Constructor for elOyente.
@@ -52,21 +57,36 @@ public class ElOyente extends Trigger<Project> {
      * Descriptor will bring the information set in the main configuration to
      * the particular job configuration.
      */
-    @DataBoundConstructor
-    public ElOyente(List<NodeSubscription> jobSubscription) {
-        this.jobSubscription = jobSubscription;
+    public ElOyente(SuscriptionProperties... suscriptions) {
+
+        this.suscriptions = suscriptions;
 
     }
 
-    public List<NodeSubscription> getAllJobSubscription() {
-        return jobSubscription;
+    public ElOyente(Collection<SuscriptionProperties> suscriptions) {
+        this((SuscriptionProperties[]) suscriptions.toArray(new SuscriptionProperties[suscriptions.size()]));
     }
 
-    public List<NodeSubscription> getJobSubscription() {
-        if (jobSubscription == null) {
-            return new ArrayList<NodeSubscription>();
+    /**
+     * This method will return the taskProperties foe the specified logText
+     *
+     * @return SuscriptionProperties[]
+     */
+    // TODO need to finish later
+    public SuscriptionProperties[] getAllSuscriptions() {
+        return suscriptions;
+    }
+
+    /**
+     * This method will return all the tasks
+     *
+     * @return List<SuscriptionProperties>
+     */
+    public List<SuscriptionProperties> getSuscriptions() {
+        if (suscriptions == null) {
+            return new ArrayList<SuscriptionProperties>();
         } else {
-            return Collections.unmodifiableList(jobSubscription);
+            return Collections.unmodifiableList(Arrays.asList(suscriptions));
         }
     }
 
@@ -375,7 +395,15 @@ public class ElOyente extends Trigger<Project> {
             oldserver = this.getServer();
             olduser = this.getUser();
             oldpassword = this.getPassword();
-            reloading = false;
+        }
+
+        @Override
+        public Trigger<?> newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+            
+            List<SuscriptionProperties> tasksprops = req.bindParametersToList(SuscriptionProperties.class, "elOyente-suscription.suscriptionpropertes.");
+            System.out.println(tasksprops.toArray());
+            return new ElOyente(tasksprops);
+            
         }
 
         /**
@@ -657,6 +685,14 @@ public class ElOyente extends Trigger<Project> {
             }
         }
 
+        /**
+         * Fill the drop-down called "nodesAvailable" of the config.jelly
+         *
+         * @param name: name of the job
+         * @return ListBoxModel: List of nodes available in the XMPP Server
+         * @throws XMPPException
+         * @throws InterruptedException
+         */
         public ListBoxModel doFillNodesAvailableItems(@QueryParameter("name") String name) throws XMPPException, InterruptedException {
             ListBoxModel items = new ListBoxModel();
             ArrayList nodesSubsArray = new ArrayList();
@@ -666,10 +702,28 @@ public class ElOyente extends Trigger<Project> {
             pj = (Project) Jenkins.getInstance().getItem(name);
             Object instance = (ElOyente) pj.getTriggers().get(this);
 
+//            pj = ElOyente.DescriptorImpl.getCurrentDescriptorByNameUrl();
+//            pj = pj.substring(5);
+//            EnvVars envVars = new EnvVars();
+//            System.out.println("all: " + envVars);
+//            System.out.println("S\"JOB_NAME\"): " + EnvVars.masterEnvVars.get("PATH"));
+//            System.out.println("(\"JENKINS_HOME\"): " + EnvVars.masterEnvVars.get("JENKINS_HOME"));
+
+//        System.out.println("trabajo: " + Stapler.getCurrentRequest().findAncestorObject(AbstractProject.class).getName());
+//        System.out.println("nombre: " + Stapler.getCurrentRequest().findAncestor("name"));
+//        System.out.println("atributo: " + Stapler.getCurrentRequest().getAttribute("com-technicolor-eloyente-ElOyente"));
+//        System.out.println("getAttributeNames: " + Stapler.getCurrentRequest().getAttributeNames().toString());
+//        System.out.println("getParameterValues: " + Stapler.getCurrentRequest().getParameterValues("com-technicolor-eloyente-ElOyente"));
+
             System.out.println("pjName:" + pjName);
+
+            //System.out.println("nombre: " + Stapler.getCurrentResponse().getCurrentRequest().getParameter("com-technicolor-eloyente-ElOyente"));
+            System.out.println("nombre: " + Stapler.getCurrentRequest().getAttribute("com-technicolor-eloyente-ElOyente"));
+
+
             if (instance != null) {
 
-                Connection con = connections.get(pjName);
+               Connection con = connections.get(pjName);
                 PubSubManager mgr = new PubSubManager(con);
 
                 DiscoverItems it = mgr.discoverNodes(null);
@@ -703,8 +757,8 @@ public class ElOyente extends Trigger<Project> {
                     System.out.println("No Logeado");
                 }
             }
+             items.add("NodoEstatico");
             return items;
-
         }
 
         public ListBoxModel doFillNodesSubItems() throws XMPPException, InterruptedException {
