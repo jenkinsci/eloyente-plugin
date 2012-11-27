@@ -180,7 +180,7 @@ public class ElOyente extends Trigger<Project> {
                             if (!checkAnyParameterEmpty(server, user, password)) {
                                 Connection con = createConnection(project, server, user, password);              //Reloading job because of parameter change, no connection before
                                 subscribeIfNecessary(project);
-                                addListeners(con, project, user); 
+                                addListeners(con, project, user);
                             }
                         }
                     }
@@ -200,12 +200,16 @@ public class ElOyente extends Trigger<Project> {
     }
 
     public Connection createConnection(Project project, String server, String user, String password) throws XMPPException {
-        ConnectionConfiguration config = new ConnectionConfiguration(server);
-        Connection con = new XMPPConnection(config);
-        con.connect();
-        con.login(user, password, project.getName());
-        connections.put(project.getName(), con);
-        return con;
+        if (!connections.containsKey(project.getName())) {
+            ConnectionConfiguration config = new ConnectionConfiguration(server);
+            Connection con = new XMPPConnection(config);
+            con.connect();
+            con.login(user, password, project.getName());
+            connections.put(project.getName(), con);
+            return con;
+        } else {
+            return connections.get(project.getName());
+        }
     }
 
     public void subscribeIfNecessary(Project project) throws XMPPException {
@@ -290,7 +294,6 @@ public class ElOyente extends Trigger<Project> {
      */
     @Override
     public void run() {
-
 //        if (!project.getAllJobs().isEmpty()) {
 //            Iterator iterator = project.getAllJobs().iterator();
 //            while (iterator.hasNext()) {
@@ -347,7 +350,6 @@ public class ElOyente extends Trigger<Project> {
         public Trigger<?> newInstance(StaplerRequest req, JSONObject formData) throws FormException {
 
             List<SuscriptionProperties> tasksprops = req.bindParametersToList(SuscriptionProperties.class, "elOyente-suscription.suscriptionpropertes.");
-            System.out.println(tasksprops.toArray());
             return new ElOyente(tasksprops);
 
         }
@@ -634,11 +636,8 @@ public class ElOyente extends Trigger<Project> {
 //        System.out.println("getAttributeNames: " + Stapler.getCurrentRequest().getAttributeNames().toString());
 //        System.out.println("getParameterValues: " + Stapler.getCurrentRequest().getParameterValues("com-technicolor-eloyente-ElOyente"));
 
-            System.out.println("pjName:" + pjName);
 
             //System.out.println("nombre: " + Stapler.getCurrentResponse().getCurrentRequest().getParameter("com-technicolor-eloyente-ElOyente"));
-            System.out.println("nombre: " + Stapler.getCurrentRequest().getAttribute("com-technicolor-eloyente-ElOyente"));
-
 
             if (instance != null) {
 
