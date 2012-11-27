@@ -1,51 +1,62 @@
+<!--
+   Copyright 2012 Technicolor
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
- <script type="text/javascript" src="${resURL}/plugin/elOyente/js/elOyente.js"></script> 
-    <!--
-    This jelly script is used for per-project configuration.
 
-      See global.jelly for a general discussion about jelly script.
-    -->
+	<f:entry title="${%Subscriptions}">
 
-    <!--
-      Creates a text field that shows the value of the "name" property.
-      When submitted, it will be passed to the corresponding constructor parameter.
-    -->
-    <!--
-    <f:entry title="${%Script}" >
-        <textarea class="setting-input" name="elOyente-suscription.suscriptionpropertes.nodeName"
-        >${t.nodeName}
-        </textarea>
-    </f:entry>
-    
-    
-    
-       <f:validateButton title="${%Subscribe}" progress="${%Subscribing ...}" method="subscribe" with="nodesAvailable" />
-       <f:validateButton onBlur="sayHi()" title="${%Unsubscribe}" progress="${%Unsubscribing ...}" method="Unsubscribe" with="nodesSub, name" />
-    -->
-   
-       
-            <f:entry field="nodesAvailable" title="Nodos disponibles" >
-                <f:select  />
-            </f:entry>
-            <B>${nodesAvailable}</B>
-                    
-            <f:entry title="${%Suscriptions:}">
-                <f:repeatable var="t" items="${instance.suscriptions}" add="Add suscription" minimum="0">
-                    <table  align="right" width="80%" >                       
-                        <textarea class="setting-input" name="elOyente-suscription.suscriptionpropertes.nodeName">
-                        </textarea>                            
-                    </table>
-                    <table width="100%" bgcolor="#660033">
-                        <tr>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                    </table>
-                    <div align="right">
-                     <f:repeatableDeleteButton value="Delete subs"/>
-                     </div>
-                </f:repeatable>
-            </f:entry>
-       
-  
+		<f:repeatable var="s" add="Add subscription">
+			<table width="100%">
+				<f:entry title="Node" field="node">
+					<f:select/>
+				</f:entry>
+				<f:entry title="Filter" field="filter">
+					<f:expandableTextbox/>
+				</f:entry>
+				<f:entry title="Environment variables" field="envvars">
+					<f:repeatable var="v" add="Add variable">
+						<table width="100%" bgcolor="#DDDDDD">
+							<f:entry title="Name" field="envName">
+								<f:textbox style="width:98%"/>
+							</f:entry>
+							<f:entry title="Value selection" field="envExpr">
+								<f:expandableTextbox/>
+							</f:entry>
+							<f:entry>
+								<div align="right">
+									<f:repeatableDeleteButton value="Delete variable"/>
+								</div>
+							</f:entry>
+						</table>
+						<br/>
+					</f:repeatable>
+				</f:entry>
+				<f:entry>
+					<div align="right">
+						<f:repeatableDeleteButton value="Delete subscription"/>
+					</div>
+				</f:entry>
+				<f:entry>
+					<hr size="1" width="100%"/>
+				</f:entry>
+			</table>
+		</f:repeatable>
+
+	</f:entry>
+
 </j:jelly>
+
+<!-- vim: set filetype=xml tabstop=4 softtabstop=4 shiftwidth=4 noexpandtab : -->
