@@ -16,15 +16,14 @@
 
 <div>
 	<p>
-		<u>El Oyente</u> (The Listener: Spanish)
-
-	<p>
-		Configure a Jenkins job to be triggered on XMPP events.
+		If empty, the job will be triggered for any event occuring on the selected
+		node.  The filter expression allows the job to be triggered only if the payload of
+		the event matches a certain criterium.  The filter is a boolean expression in
+		<a href="http://www.w3.org/TR/xpath/">XPath notation</a>, which is applied on the
+		payload of the XMPP event.  If the boolean expression evaluates to true, the job is triggered.
 	</p>
 	<p>
-		This plugin integrates XMPP Pub/Sub into Jenkins, which allows jobs to be triggered
-		on XMPP events.  XMPP Pub/Sub makes it possible to let distinct services communicate
-		with each other via a pub/sub enabled XMPP chat server.
+		TODO: add some examples
 	</p>
 </div>
 
