@@ -613,72 +613,64 @@ public class ElOyente extends Trigger<Project> {
          * @throws XMPPException
          * @throws InterruptedException
          */
-        public ListBoxModel doFillNodesAvailableItems(@QueryParameter("name") String name) throws XMPPException, InterruptedException {
+        public ListBoxModel doFillNodeItems(@QueryParameter("name") String name) throws XMPPException, InterruptedException {
+
             ListBoxModel items = new ListBoxModel();
             ArrayList nodesSubsArray = new ArrayList();
-            String nodeName;
-            String pjName = name;
-            Project pj;
-            pj = (Project) Jenkins.getInstance().getItem(name);
-            Object instance = (ElOyente) pj.getTriggers().get(this);
-
-//            pj = ElOyente.DescriptorImpl.getCurrentDescriptorByNameUrl();
-//            pj = pj.substring(5);
-//            EnvVars envVars = new EnvVars();
-//            System.out.println("all: " + envVars);
-//            System.out.println("S\"JOB_NAME\"): " + EnvVars.masterEnvVars.get("PATH"));
-//            System.out.println("(\"JENKINS_HOME\"): " + EnvVars.masterEnvVars.get("JENKINS_HOME"));
-
-//        System.out.println("trabajo: " + Stapler.getCurrentRequest().findAncestorObject(AbstractProject.class).getName());
-//        System.out.println("nombre: " + Stapler.getCurrentRequest().findAncestor("name"));
-//        System.out.println("atributo: " + Stapler.getCurrentRequest().getAttribute("com-technicolor-eloyente-ElOyente"));
-//        System.out.println("getAttributeNames: " + Stapler.getCurrentRequest().getAttributeNames().toString());
-//        System.out.println("getParameterValues: " + Stapler.getCurrentRequest().getParameterValues("com-technicolor-eloyente-ElOyente"));
-
-            System.out.println("pjName:" + pjName);
-
-            //System.out.println("nombre: " + Stapler.getCurrentResponse().getCurrentRequest().getParameter("com-technicolor-eloyente-ElOyente"));
-            System.out.println("nombre: " + Stapler.getCurrentRequest().getAttribute("com-technicolor-eloyente-ElOyente"));
-
-
-            if (instance != null) {
-
-               Connection con = connections.get(pjName);
-                PubSubManager mgr = new PubSubManager(con);
-
-                DiscoverItems it = mgr.discoverNodes(null);
-                Iterator<DiscoverItems.Item> iter = it.getItems();
-
-                HashMap<String, Subscription> prueba = new HashMap<String, Subscription>();
-                List<Subscription> listSubs = mgr.getSubscriptions();
-
-                for (int i = 0; i < listSubs.size(); i++) {
-                    if (listSubs.get(i).getJid().equals(con.getUser())) {
-                        System.out.println("User: " + listSubs.get(i).getJid() + " es igual a: " + con.getUser());
-                        System.out.println("Suscrito a: " + listSubs.get(i).getNode());
-                        nodeName = listSubs.get(i).getNode();
-                        nodesSubsArray.add(nodeName);
-                    }
-                }
-
-                if (con.isAuthenticated()) {
-                    while (iter.hasNext()) {
-                        DiscoverItems.Item i = iter.next();
-                        if (!nodesSubsArray.contains(i.getNode())) {
-                            items.add(i.getNode());
-                            System.out.println("Node shown: " + i.getNode());
-                        } else {
-                            System.out.println("Node no shown: " + i.getNode());
-                        }
-                    }
-                    //con.disconnect();
-                } else {
-                    items.add("No esta conectado el amigo");
-                    System.out.println("No Logeado");
-                }
-            }
-             items.add("NodoEstatico");
+//            String nodeName;
+//            String pjName = name;
+//            Project pj;
+//            pj = (Project) Jenkins.getInstance().getItem(name);
+//            Object instance = (ElOyente) pj.getTriggers().get(this);
+            
+            items.add("NodoEstatico1");
+            items.add("NodoEstatico2");
+            items.add("NodoEstatico3");
             return items;
+//
+//            System.out.println("pjName:" + pjName);
+//
+//            //System.out.println("nombre: " + Stapler.getCurrentResponse().getCurrentRequest().getParameter("com-technicolor-eloyente-ElOyente"));
+//            System.out.println("nombre: " + Stapler.getCurrentRequest().getAttribute("com-technicolor-eloyente-ElOyente"));
+//
+//
+//            if (instance != null) {
+//
+//               Connection con = connections.get(pjName);
+//                PubSubManager mgr = new PubSubManager(con);
+//
+//                DiscoverItems it = mgr.discoverNodes(null);
+//                Iterator<DiscoverItems.Item> iter = it.getItems();
+//
+//                HashMap<String, Subscription> prueba = new HashMap<String, Subscription>();
+//                List<Subscription> listSubs = mgr.getSubscriptions();
+//
+//                for (int i = 0; i < listSubs.size(); i++) {
+//                    if (listSubs.get(i).getJid().equals(con.getUser())) {
+//                        System.out.println("User: " + listSubs.get(i).getJid() + " es igual a: " + con.getUser());
+//                        System.out.println("Suscrito a: " + listSubs.get(i).getNode());
+//                        nodeName = listSubs.get(i).getNode();
+//                        nodesSubsArray.add(nodeName);
+//                    }
+//                }
+//
+//                if (con.isAuthenticated()) {
+//                    while (iter.hasNext()) {
+//                        DiscoverItems.Item i = iter.next();
+//                        if (!nodesSubsArray.contains(i.getNode())) {
+//                            items.add(i.getNode());
+//                            System.out.println("Node shown: " + i.getNode());
+//                        } else {
+//                            System.out.println("Node no shown: " + i.getNode());
+//                        }
+//                    }
+//                    //con.disconnect();
+//                } else {
+//                    items.add("No esta conectado el amigo");
+//                    System.out.println("No Logeado");
+//                }
+//            }
+             
         }
 
         
