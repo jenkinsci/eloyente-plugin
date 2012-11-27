@@ -16,46 +16,46 @@
 
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 
-	<f:entry title="${%Subscriptions}">
+    <f:entry title="${%Subscriptions}">
 
-		<f:repeatable var="s" add="Add subscription">
-			<table width="100%">
-				<f:entry title="Node" field="node">
-					<f:select/>
-				</f:entry>
-				<f:entry title="Filter" field="filter">
-					<f:expandableTextbox/>
-				</f:entry>
-				<f:entry title="Environment variables" field="envvars">
-					<f:repeatable var="v" add="Add variable">
-						<table width="100%" bgcolor="#DDDDDD">
-							<f:entry title="Name" field="envName">
-								<f:textbox style="width:98%"/>
-							</f:entry>
-							<f:entry title="Value selection" field="envExpr">
-								<f:expandableTextbox/>
-							</f:entry>
-							<f:entry>
-								<div align="right">
-									<f:repeatableDeleteButton value="Delete variable"/>
-								</div>
-							</f:entry>
-						</table>
-						<br/>
-					</f:repeatable>
-				</f:entry>
-				<f:entry>
-					<div align="right">
-						<f:repeatableDeleteButton value="Delete subscription"/>
-					</div>
-				</f:entry>
-				<f:entry>
-					<hr size="1" width="100%"/>
-				</f:entry>
-			</table>
-		</f:repeatable>
+        <f:repeatable var="s" add="Add subscription">
+            <table width="100%">
+                <f:entry title="Node" field="node">
+                    <f:select/>
+                </f:entry>
+                <f:entry title="Filter" field="filter">
+                    <f:expandableTextbox/>
+                </f:entry>
+                <f:entry title="Environment variables" field="envvars">
+                    <f:repeatable var="v" add="Add variable">
+                        <table width="100%" bgcolor="#DDDDDD">
+                            <f:entry title="Name" field="envName">
+                                <f:textbox style="width:98%"/>
+                            </f:entry>
+                            <f:entry title="Value selection" field="envExpr">
+                                <f:expandableTextbox/>
+                            </f:entry>
+                            <f:entry>
+                                <div align="right">
+                                    <f:repeatableDeleteButton value="Delete variable"/>
+                                </div>
+                            </f:entry>
+                        </table>
+                        <br/>
+                    </f:repeatable>
+                </f:entry>
+                <f:entry>
+                    <div align="right">
+                        <f:repeatableDeleteButton value="Delete subscription"/>
+                    </div>
+                </f:entry>
+                <f:entry>
+                    <hr size="1" width="100%"/>
+                </f:entry>
+            </table>
+        </f:repeatable>
 
-	</f:entry>
+    </f:entry>
 
 </j:jelly>
 

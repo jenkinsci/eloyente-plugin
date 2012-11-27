@@ -47,7 +47,7 @@ public class ElOyente extends Trigger<Project> {
     private final static Map<String, Connection> connections = new HashMap<String, Connection>();
     private ArrayList nodesToSub;
     private ArrayList nodesToUnsub;
-    private SuscriptionProperties[] suscriptions;
+    private SubscriptionProperties[] suscriptions;
 
     /**
      * Constructor for elOyente.
@@ -56,34 +56,34 @@ public class ElOyente extends Trigger<Project> {
      * Descriptor will bring the information set in the main configuration to
      * the particular job configuration.
      */
-    public ElOyente(SuscriptionProperties... suscriptions) {
+    public ElOyente(SubscriptionProperties... suscriptions) {
 
         this.suscriptions = suscriptions;
 
     }
 
-    public ElOyente(Collection<SuscriptionProperties> suscriptions) {
-        this((SuscriptionProperties[]) suscriptions.toArray(new SuscriptionProperties[suscriptions.size()]));
+    public ElOyente(Collection<SubscriptionProperties> suscriptions) {
+        this((SubscriptionProperties[]) suscriptions.toArray(new SubscriptionProperties[suscriptions.size()]));
     }
 
     /**
      * This method will return the taskProperties foe the specified logText
      *
-     * @return SuscriptionProperties[]
+     * @return SubscriptionProperties[]
      */
     // TODO need to finish later
-    public SuscriptionProperties[] getAllSuscriptions() {
+    public SubscriptionProperties[] getAllSubscriptions() {
         return suscriptions;
     }
 
     /**
      * This method will return all the tasks
      *
-     * @return List<SuscriptionProperties>
+     * @return List<SubscriptionProperties>
      */
-    public List<SuscriptionProperties> getSuscriptions() {
+    public List<SubscriptionProperties> getSubscriptions() {
         if (suscriptions == null) {
-            return new ArrayList<SuscriptionProperties>();
+            return new ArrayList<SubscriptionProperties>();
         } else {
             return Collections.unmodifiableList(Arrays.asList(suscriptions));
         }
@@ -349,7 +349,7 @@ public class ElOyente extends Trigger<Project> {
         @Override
         public Trigger<?> newInstance(StaplerRequest req, JSONObject formData) throws FormException {
 
-            List<SuscriptionProperties> tasksprops = req.bindParametersToList(SuscriptionProperties.class, "elOyente-suscription.suscriptionpropertes.");
+            List<SubscriptionProperties> tasksprops = req.bindParametersToList(SubscriptionProperties.class, "elOyente-suscription.suscriptionpropertes.");
             return new ElOyente(tasksprops);
 
         }

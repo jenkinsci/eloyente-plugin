@@ -10,7 +10,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
  *
  * @author fernandezdiazi
  */
-public class SuscriptionProperties {
+public class SubscriptionProperties {
 
     /**
      * The text string which should be searched in the build log.
@@ -19,7 +19,7 @@ public class SuscriptionProperties {
     public String nodeName;
 
     @DataBoundConstructor
-    public SuscriptionProperties(String nodeName) {
+    public SubscriptionProperties(String nodeName) {
         this.nodeName=nodeName;
     }
 
