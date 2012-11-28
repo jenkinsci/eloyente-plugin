@@ -17,10 +17,12 @@
 <div>
 	<p>
 		If empty, the job will be triggered for any event occuring on the selected
-		node.  The filter expression allows the job to be triggered only if the payload of
-		the event matches a certain criterium.  The filter is a boolean expression in
+		node.  The filter expression allows the job to be triggered only if the event
+		matches a certain criterium.  The filter is a boolean expression in
 		<a href="http://www.w3.org/TR/xpath/">XPath notation</a>, which is applied on the
-		payload of the XMPP event.  If the boolean expression evaluates to true, the job is triggered.
+		XMPP event.  If the boolean expression evaluates to true, the job is triggered.
+		See <a href="http://xmpp.org/extensions/xep-0060.html">XEP-0060</a> for more
+		information about XMPP Pub/Sub.
 	</p>
 	<p>
 		TODO: add some examples
