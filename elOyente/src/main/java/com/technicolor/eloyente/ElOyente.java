@@ -56,7 +56,7 @@ public class ElOyente extends Trigger<Project> {
      * Descriptor will bring the information set in the main configuration to
      * the particular job configuration.
      */
-    
+    @DataBoundConstructor
     public ElOyente(SubscriptionProperties... subscriptions) {
 
         this.subscriptions = subscriptions;

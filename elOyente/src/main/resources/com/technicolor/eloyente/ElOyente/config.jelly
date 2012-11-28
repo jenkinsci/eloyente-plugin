@@ -24,7 +24,8 @@
                     <f:select/>
                 </f:entry>
                 <f:entry title="Filter" field="filter">
-                    <f:expandableTextbox/>
+                     <f:expandableTextbox name="elOyente-subscription.subscriptionproperties.filter" value="${s.filter}"/>
+
                 </f:entry>
                 <f:entry title="${%Script}">                  
                     <textarea name="elOyente-subscription.subscriptionproperties.node">${s.node}
