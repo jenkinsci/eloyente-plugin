@@ -47,7 +47,7 @@ public class ElOyente extends Trigger<Project> {
     private final static Map<String, Connection> connections = new HashMap<String, Connection>();
     private ArrayList nodesToSub;
     private ArrayList nodesToUnsub;
-    private SubscriptionProperties[] suscriptions;
+    private SubscriptionProperties[] subscriptions;
 
     /**
      * Constructor for elOyente.
@@ -56,14 +56,15 @@ public class ElOyente extends Trigger<Project> {
      * Descriptor will bring the information set in the main configuration to
      * the particular job configuration.
      */
-    public ElOyente(SubscriptionProperties... suscriptions) {
+    
+    public ElOyente(SubscriptionProperties... subscriptions) {
 
-        this.suscriptions = suscriptions;
+        this.subscriptions = subscriptions;
 
     }
 
-    public ElOyente(Collection<SubscriptionProperties> suscriptions) {
-        this((SubscriptionProperties[]) suscriptions.toArray(new SubscriptionProperties[suscriptions.size()]));
+    public ElOyente(Collection<SubscriptionProperties> subscriptions) {
+        this((SubscriptionProperties[]) subscriptions.toArray(new SubscriptionProperties[subscriptions.size()]));
     }
 
     /**
@@ -73,7 +74,7 @@ public class ElOyente extends Trigger<Project> {
      */
     // TODO need to finish later
     public SubscriptionProperties[] getAllSubscriptions() {
-        return suscriptions;
+        return subscriptions;
     }
 
     /**
@@ -82,10 +83,10 @@ public class ElOyente extends Trigger<Project> {
      * @return List<SubscriptionProperties>
      */
     public List<SubscriptionProperties> getSubscriptions() {
-        if (suscriptions == null) {
+        if (subscriptions == null) {
             return new ArrayList<SubscriptionProperties>();
         } else {
-            return Collections.unmodifiableList(Arrays.asList(suscriptions));
+            return Collections.unmodifiableList(Arrays.asList(subscriptions));
         }
     }
 
@@ -220,9 +221,9 @@ public class ElOyente extends Trigger<Project> {
         List<Subscription> subscriptionList = mgr.getSubscriptions();
         Iterator it2 = subscriptionList.iterator();
 
-        if (suscriptions.length != 0) {
-            for (int i = 0; i < suscriptions.length; i++) {
-                nodeName = suscriptions[i].getnodeName();
+        if (subscriptions.length != 0) {
+            for (int i = 0; i < subscriptions.length; i++) {
+                nodeName = subscriptions[i].getNode();
                 while (it2.hasNext()) {
                     Subscription sub = (Subscription) it2.next();
                     if (sub.getJid().split("/")[1].equals(project.getName()) && sub.getNode().equals(nodeName) && sub.getJid().split("@")[0].equals(getDescriptor().user)) {
@@ -349,7 +350,7 @@ public class ElOyente extends Trigger<Project> {
         @Override
         public Trigger<?> newInstance(StaplerRequest req, JSONObject formData) throws FormException {
 
-            List<SubscriptionProperties> tasksprops = req.bindParametersToList(SubscriptionProperties.class, "elOyente-suscription.suscriptionpropertes.");
+            List<SubscriptionProperties> tasksprops = req.bindParametersToList(SubscriptionProperties.class, "elOyente-subscription.subscriptionproperties.");
             return new ElOyente(tasksprops);
 
         }

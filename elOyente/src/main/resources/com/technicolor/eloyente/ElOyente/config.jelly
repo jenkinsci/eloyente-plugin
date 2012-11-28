@@ -18,13 +18,17 @@
 
     <f:entry title="${%Subscriptions}">
 
-        <f:repeatable var="s" add="Add subscription">
+        <f:repeatable var="s" items="${instance.subscriptions}" add="Add subscription" minimum="0">
             <table width="100%">
                 <f:entry title="Node" field="node">
                     <f:select/>
                 </f:entry>
                 <f:entry title="Filter" field="filter">
                     <f:expandableTextbox/>
+                </f:entry>
+                <f:entry title="${%Script}">                  
+                    <textarea name="elOyente-subscription.subscriptionproperties.node">${s.node}
+                    </textarea> 
                 </f:entry>
                 <f:entry title="Environment variables" field="envvars">
                     <f:repeatable var="v" add="Add variable">

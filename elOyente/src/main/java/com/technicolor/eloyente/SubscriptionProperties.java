@@ -16,18 +16,26 @@ public class SubscriptionProperties {
      * The text string which should be searched in the build log.
      */
     // public LogProperties[] logTexts;
-    public String nodeName;
+    public String node;
+    public String filter;
 
     @DataBoundConstructor
-    public SubscriptionProperties(String nodeName) {
-        this.nodeName=nodeName;
+    public SubscriptionProperties(String node, String filter) {
+        this.node=node;
+        this.filter=filter;
     }
 
-    public String getnodeName() {
-        return nodeName;
+    public String getNode() {
+        return node;
     }
-    public void setnodeName(String nodeName) {
-         this.nodeName=nodeName;
+    public void setNode(String node) {
+         this.node=node;
+    }
+     public String getFilter() {
+        return filter;
+    }
+    public void setFilter(String filter) {
+         this.filter=filter;
     }
     /*
      * public TaskProperties(LogProperties[] logTexts, String script) {
