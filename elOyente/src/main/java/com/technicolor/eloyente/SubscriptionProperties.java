@@ -12,22 +12,22 @@ import org.kohsuke.stapler.DataBoundConstructor;
  */
 public class SubscriptionProperties {
 
-//    public String node;
+    public String node;
     //public Expressions[] expressions;
     public final String filter;
     
     @DataBoundConstructor
-    public SubscriptionProperties(String filter) {
-//        this.node = node;
+    public SubscriptionProperties(String filter, String node) {
+        this.node = node;
         this.filter = filter;
     }
 
 //    public void setExpressions(Expressions[] expressions) {
 //        this.expressions = expressions;
 //    }
-//    public String getNode() {
-//        return node;
-//    }
+    public String getNode() {
+        return node;
+    }
 //
 //    public void setNode(String node){
 //        this.node = node;
