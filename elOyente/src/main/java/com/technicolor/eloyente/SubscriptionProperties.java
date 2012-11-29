@@ -4,6 +4,9 @@
  */
 package com.technicolor.eloyente;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
@@ -13,13 +16,14 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class SubscriptionProperties {
 
     public String node;
-    //public Expressions[] expressions;
+    public Expressions[] envVars;
     public final String filter;
-    
+
     @DataBoundConstructor
-    public SubscriptionProperties(String filter, String node) {
+    public SubscriptionProperties(String filter, String node, Expressions[] v) {
         this.node = node;
         this.filter = filter;
+        this.envVars = v;
     }
 
 //    public void setExpressions(Expressions[] expressions) {
@@ -32,10 +36,16 @@ public class SubscriptionProperties {
 //    public void setNode(String node){
 //        this.node = node;
 //    }
+
     public String getFilter() {
         return filter;
     }
-//    public Expressions[] getExpressions() {
-//        return expressions;
-//    }
+
+    public List<Expressions> getEnvVars() {
+        if (envVars == null) {
+            return new ArrayList<Expressions>();
+        } else {
+            return Arrays.asList(envVars);
+        }
+    }
 }
