@@ -45,47 +45,22 @@ import org.kohsuke.stapler.StaplerRequest;
 public class ElOyente extends Trigger<Project> {
 
     private final static Map<String, Connection> connections = new HashMap<String, Connection>();
-    private ArrayList nodesToSub;
-    private ArrayList nodesToUnsub;
-    private SubscriptionProperties[] suscriptions;
+    private SubscriptionProperties[] subscriptions;
 
-    /**
-     * Constructor for elOyente.
-     *
-     * It uses the Descriptor to set the fields required later on. The
-     * Descriptor will bring the information set in the main configuration to
-     * the particular job configuration.
-     */
-    public ElOyente(SubscriptionProperties... suscriptions) {
-
-        this.suscriptions = suscriptions;
-
+    @DataBoundConstructor
+    public ElOyente(SubscriptionProperties[] s) {
+        this.subscriptions = s;
     }
 
-    public ElOyente(Collection<SubscriptionProperties> suscriptions) {
-        this((SubscriptionProperties[]) suscriptions.toArray(new SubscriptionProperties[suscriptions.size()]));
+    public SubscriptionProperties[] getAllTasks() {
+        return subscriptions;
     }
 
-    /**
-     * This method will return the taskProperties foe the specified logText
-     *
-     * @return SubscriptionProperties[]
-     */
-    // TODO need to finish later
-    public SubscriptionProperties[] getAllSubscriptions() {
-        return suscriptions;
-    }
-
-    /**
-     * This method will return all the tasks
-     *
-     * @return List<SubscriptionProperties>
-     */
     public List<SubscriptionProperties> getSubscriptions() {
-        if (suscriptions == null) {
+        if (subscriptions == null) {
             return new ArrayList<SubscriptionProperties>();
         } else {
-            return Collections.unmodifiableList(Arrays.asList(suscriptions));
+            return Arrays.asList(subscriptions);
         }
     }
 
@@ -105,59 +80,6 @@ public class ElOyente extends Trigger<Project> {
      * @param project
      * @param newInstance
      */
-//    @Override
-//    public void start(Project project, boolean newInstance) {
-//
-//        server = this.getDescriptor().server;
-//        user = this.getDescriptor().user;
-//        password = this.getDescriptor().password;
-//        this.project = project;
-//        ArrayList nodes = new ArrayList();
-//
-//        System.out.println("JOB: " + project.getName());
-//        System.out.println("Con datos: " + !connections.isEmpty());
-//        System.out.println("Conexion existente: " + connections.containsKey(project.getName()));
-//        System.out.println("Reloading: " + getDescriptor().reloading);
-//
-//        try {
-//            /* If there are old connections, there is a connection for this job and it's reloading then 
-//             we stop the connection, delete the old subscription and store the node name in order to recreate the connection and subcriptions later
-//             with the new parameters.
-//             */
-//
-//            if (!connections.isEmpty() && connections.containsKey(project.getName()) && getDescriptor().reloading) {
-//                nodes = deleteSubscriptions(connections.get(project.getName()), this.getDescriptor().olduser, project.getName());
-//                connections.get(project.getName()).disconnect();
-//            }
-//
-//            /* If parameters are not empty it will create a connection and add it to the Map that stores the connections for later uses.
-//             * It will also recreate the subscription based on the saved nodes and the new parameters.
-//             */
-//
-//            if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
-//                ConnectionConfiguration config = new ConnectionConfiguration(server);
-//                Connection con = new XMPPConnection(config);
-//                con.connect();
-//                if (con.isConnected()) {
-//                    try {
-//                        con.login(user, password, project.getName());
-//                        connections.put(project.getName(), con);
-//
-//                        if (getDescriptor().reloading) {
-//                            recreateSubscription(connections.get(project.getName()), user, nodes, project.getName());
-//                        }
-//                        addListeners(connections.get(project.getName()), project);
-//                    } catch (XMPPException ex) {
-//                        System.err.println("Login error");
-//                        ex.printStackTrace(System.err);
-//                    }
-//                }
-//            }
-//        } catch (XMPPException ex) {
-//            System.err.println("Couldn't establish the connection, or already connected");
-//            ex.printStackTrace(System.err);
-//        }
-//    }
     @Override
     public void start(Project project, boolean newInstance) {
 
@@ -174,12 +96,12 @@ public class ElOyente extends Trigger<Project> {
                             connections.remove(project.getName());
 
                             Connection con = createConnection(project, server, user, password);
-                            subscribeIfNecessary(project);
+                            //subscribeIfNecessary(project);
                             addListeners(con, project, user);
                         } else {
                             if (!checkAnyParameterEmpty(server, user, password)) {
                                 Connection con = createConnection(project, server, user, password);              //Reloading job because of parameter change, no connection before
-                                subscribeIfNecessary(project);
+                                //subscribeIfNecessary(project);
                                 addListeners(con, project, user);
                             }
                         }
@@ -189,7 +111,7 @@ public class ElOyente extends Trigger<Project> {
                 if (!checkAnyParameterEmpty(server, user, password)) {
                     if (connectionOK(server, user, password)) {                                                 // New job
                         Connection con = createConnection(project, server, user, password);
-                        subscribeIfNecessary(project);
+                        //subscribeIfNecessary(project);
                         addListeners(con, project, user);
                     }
                 }
@@ -212,31 +134,30 @@ public class ElOyente extends Trigger<Project> {
         }
     }
 
-    public void subscribeIfNecessary(Project project) throws XMPPException {
-        boolean notSubscribed = true;
-        String nodeName;
-        Connection con = connections.get(project.getName());
-        PubSubManager mgr = new PubSubManager(con);
-        List<Subscription> subscriptionList = mgr.getSubscriptions();
-        Iterator it2 = subscriptionList.iterator();
-
-        if (suscriptions.length != 0) {
-            for (int i = 0; i < suscriptions.length; i++) {
-                nodeName = suscriptions[i].getnodeName();
-                while (it2.hasNext()) {
-                    Subscription sub = (Subscription) it2.next();
-                    if (sub.getJid().split("/")[1].equals(project.getName()) && sub.getNode().equals(nodeName) && sub.getJid().split("@")[0].equals(getDescriptor().user)) {
-                        notSubscribed = false;
-                    }
-                }
-                if (notSubscribed == true && !nodeName.equals("")) {
-                    String JID = con.getUser();
-                    mgr.getNode(nodeName).subscribe(JID);
-                }
-            }
-        }
-    }
-
+//    public void subscribeIfNecessary(Project project) throws XMPPException {
+//        boolean notSubscribed = true;
+//        String nodeName;
+//        Connection con = connections.get(project.getName());
+//        PubSubManager mgr = new PubSubManager(con);
+//        List<Subscription> subscriptionList = mgr.getSubscriptions();
+//        Iterator it2 = subscriptionList.iterator();
+//
+//        if (subscriptions.length != 0) {
+//            for (int i = 0; i < subscriptions.length; i++) {
+//                nodeName = subscriptions[i].getnodeName();
+//                while (it2.hasNext()) {
+//                    Subscription sub = (Subscription) it2.next();
+//                    if (sub.getJid().split("/")[1].equals(project.getName()) && sub.getNode().equals(nodeName) && sub.getJid().split("@")[0].equals(getDescriptor().user)) {
+//                        notSubscribed = false;
+//                    }
+//                }
+//                if (notSubscribed == true && !nodeName.equals("")) {
+//                    String JID = con.getUser();
+//                    mgr.getNode(nodeName).subscribe(JID);
+//                }
+//            }
+//        }
+//    }
     public boolean checkAnyParameterEmpty(String server, String user, String password) {
         if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
             return false;
@@ -346,14 +267,13 @@ public class ElOyente extends Trigger<Project> {
             reloading = false;
         }
 
-        @Override
-        public Trigger<?> newInstance(StaplerRequest req, JSONObject formData) throws FormException {
-
-            List<SubscriptionProperties> tasksprops = req.bindParametersToList(SubscriptionProperties.class, "elOyente-suscription.suscriptionpropertes.");
-            return new ElOyente(tasksprops);
-
-        }
-
+//        @Override
+//        public Trigger<?> newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+//            
+//            List<SubscriptionProperties> tasksprops = req.bindParametersToList(SubscriptionProperties.class, "elOyente-suscription.suscriptionpropertes.");
+//            return new ElOyente(tasksprops);
+//            
+//        }
         /**
          * Returns true if this task is applicable to the given project.
          *
@@ -618,15 +538,15 @@ public class ElOyente extends Trigger<Project> {
 
             ListBoxModel items = new ListBoxModel();
             ArrayList nodesSubsArray = new ArrayList();
-//            String nodeName;
+//            String node;
 //            String pjName = name;
 //            Project pj;
 //            pj = (Project) Jenkins.getInstance().getItem(name);
 //            Object instance = (ElOyente) pj.getTriggers().get(this);
-            
-            items.add("NodoEstatico1");
-            items.add("NodoEstatico2");
-            items.add("NodoEstatico3");
+
+            items.add("Node1");
+            items.add("Node2");
+            items.add("Node3");
             return items;
 //
 //            System.out.println("pjName:" + pjName);
@@ -650,8 +570,8 @@ public class ElOyente extends Trigger<Project> {
 //                    if (listSubs.get(i).getJid().equals(con.getUser())) {
 //                        System.out.println("User: " + listSubs.get(i).getJid() + " es igual a: " + con.getUser());
 //                        System.out.println("Suscrito a: " + listSubs.get(i).getNode());
-//                        nodeName = listSubs.get(i).getNode();
-//                        nodesSubsArray.add(nodeName);
+//                        node = listSubs.get(i).getNode();
+//                        nodesSubsArray.add(node);
 //                    }
 //                }
 //
@@ -671,12 +591,12 @@ public class ElOyente extends Trigger<Project> {
 //                    System.out.println("No Logeado");
 //                }
 //            }
-             
+
         }
 
         public ListBoxModel doFillNodesSubItems() throws XMPPException, InterruptedException {
             ListBoxModel items = new ListBoxModel();
-////            String nodeName;
+////            String node;
 ////            String pj;
 ////
 ////            if (semaforo == true) {
@@ -693,8 +613,8 @@ public class ElOyente extends Trigger<Project> {
 ////
 ////                for (int i = 0; i < listSubs.size(); i++) {
 ////                    if (listSubs.get(i).getJid().equals(con.getUser())) {
-////                        nodeName = listSubs.get(i).getNode();
-////                        items.add(nodeName);
+////                        node = listSubs.get(i).getNode();
+////                        items.add(node);
 ////                    }
 ////                }
 ////                 //con.disconnect();
