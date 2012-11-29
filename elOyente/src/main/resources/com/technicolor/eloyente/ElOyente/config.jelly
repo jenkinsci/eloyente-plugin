@@ -18,14 +18,21 @@
 
     <f:entry title="${%Subscriptions}">
 
-        <f:repeatable var="s" add="Add subscription">
+        <f:repeatable var="s" add="Add subscription" items="${instance.subscriptions}" minimum="1">
             <table width="100%">
+                <!--
                 <f:entry title="Node" field="node">
                     <f:select/>
                 </f:entry>
-                <f:entry title="Filter" field="filter">
-                    <f:expandableTextbox/>
+                -->
+                <f:entry title="Filter" field="filter" >
+                    <f:expandableTextbox value="${s.filter}"/>
                 </f:entry>
+                <!--
+                <f:entry title="Textbox" field="filter" >
+                    <f:textbox/>
+                </f:entry>
+                
                 <f:entry title="Environment variables" field="envvars">
                     <f:repeatable var="v" add="Add variable">
                         <table width="100%" bgcolor="#DDDDDD">
@@ -44,6 +51,7 @@
                         <br/>
                     </f:repeatable>
                 </f:entry>
+                -->
                 <f:entry>
                     <div align="right">
                         <f:repeatableDeleteButton value="Delete subscription"/>

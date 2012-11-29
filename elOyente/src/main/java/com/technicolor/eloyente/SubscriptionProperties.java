@@ -12,35 +12,30 @@ import org.kohsuke.stapler.DataBoundConstructor;
  */
 public class SubscriptionProperties {
 
-    /**
-     * The text string which should be searched in the build log.
-     */
-    // public LogProperties[] logTexts;
-    public String nodeName;
-
+//    public String node;
+    //public Expressions[] expressions;
+    public final String filter;
+    
     @DataBoundConstructor
-    public SubscriptionProperties(String nodeName) {
-        this.nodeName=nodeName;
+    public SubscriptionProperties(String filter) {
+//        this.node = node;
+        this.filter = filter;
     }
 
-    public String getnodeName() {
-        return nodeName;
+//    public void setExpressions(Expressions[] expressions) {
+//        this.expressions = expressions;
+//    }
+//    public String getNode() {
+//        return node;
+//    }
+//
+//    public void setNode(String node){
+//        this.node = node;
+//    }
+    public String getFilter() {
+        return filter;
     }
-    public void setnodeName(String nodeName) {
-         this.nodeName=nodeName;
-    }
-    /*
-     * public TaskProperties(LogProperties[] logTexts, String script) {
-     * this.logTexts = logTexts; this.script = script; }
-     */
-
-    /*
-     * public TaskProperties(Collection<LogProperties> logTexts,String script) {
-     * this((LogProperties[])logTexts.toArray(new
-     * LogProperties[logTexts.size()]),script); }
-     */
-    // TODO
-	/*
-     * public String getLogText() { return null; }
-     */
+//    public Expressions[] getExpressions() {
+//        return expressions;
+//    }
 }
