@@ -16,14 +16,14 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class SubscriptionProperties {
 
     public String node;
-    public Expressions[] envVars;
+    public Expressions[] expressions;
     public final String filter;
 
     @DataBoundConstructor
     public SubscriptionProperties(String filter, String node, Expressions[] v) {
         this.node = node;
         this.filter = filter;
-        this.envVars = v;
+        this.expressions = v;
     }
 
 //    public void setExpressions(Expressions[] expressions) {
@@ -41,11 +41,11 @@ public class SubscriptionProperties {
         return filter;
     }
 
-    public List<Expressions> getEnvVars() {
-        if (envVars == null) {
+    public List<Expressions> getExpressions() {
+        if (expressions == null) {
             return new ArrayList<Expressions>();
         } else {
-            return Arrays.asList(envVars);
+            return Arrays.asList(expressions);
         }
     }
 }

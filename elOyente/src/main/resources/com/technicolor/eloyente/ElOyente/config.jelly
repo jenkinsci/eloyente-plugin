@@ -27,13 +27,13 @@
                     <f:expandableTextbox value="${s.filter}"/>
                 </f:entry>             
                 <f:entry title="Environment variables" field="envVars">
-                    <f:repeatable var="v" add="Add variable">
+                    <f:repeatable var="v" add="Add variable" items="${s.expressions}">
                         <table width="100%" bgcolor="#DDDDDD">
                             <f:entry title="Name" field="envName">
-                                <f:textbox value="${s.v.envName}" style="width:98%"/>
+                                <f:textbox value="${v.envName}" style="width:98%"/>
                             </f:entry>
                             <f:entry title="Value selection" field="envExpr">
-                                <f:expandableTextbox value="${s.v.envExpr}"/>
+                                <f:expandableTextbox value="${v.envExpr}"/>
                             </f:entry>
                             <f:entry>
                                 <div align="right">

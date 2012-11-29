@@ -52,10 +52,6 @@ public class ElOyente extends Trigger<Project> {
         this.subscriptions = s;
     }
 
-    public SubscriptionProperties[] getAllTasks() {
-        return subscriptions;
-    }
-
     public List<SubscriptionProperties> getSubscriptions() {
         if (subscriptions == null) {
             return new ArrayList<SubscriptionProperties>();
