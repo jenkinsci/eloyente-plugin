@@ -193,8 +193,13 @@ public class ElOyente extends Trigger<Project> {
         while (it.hasNext()) {
             Subscription sub = (Subscription) it.next();
             String JID = sub.getJid();
-            String JIDuser = JID.split("@")[0];
-            String JIDresource = JID.split("@")[1].split("/")[1];
+            
+            int atPos = JID.indexOf('@');
+            int slashPos = JID.indexOf('/');
+            if (atPos == -1 || slashPos == -1) continue;
+            String JIDuser = JID.substring(0, atPos);
+            String JIDresource = JID.substring(slashPos);
+            
             if (JIDuser.equals(user) && JIDresource.equals(project.getName())) {
                 LeafNode node = (LeafNode) mgr.getNode(sub.getNode());
                 ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(sub.getNode(), this);
@@ -212,12 +217,12 @@ public class ElOyente extends Trigger<Project> {
      */
     @Override
     public void run() {
-//        if (!project.getAllJobs().isEmpty()) {
-//            Iterator iterator = project.getAllJobs().iterator();
-//            while (iterator.hasNext()) {
-//                ((Project) iterator.next()).scheduleBuild(null);
-//            }
-//        }
+        if (!this.job.getAllJobs().isEmpty()) {
+            Iterator iterator = this.job.getAllJobs().iterator();
+            while (iterator.hasNext()) {
+                ((Project) iterator.next()).scheduleBuild(null);
+            }
+        }
     }
 
     /**
