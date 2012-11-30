@@ -18,10 +18,10 @@
 
     <f:entry title="${%Subscriptions}">
 
-        <f:repeatable var="s" add="Add subscription" items="${instance.subscriptions}" minimum="1">
+        <f:repeatable var="s" add="Add subscription" items="${instance.subscriptions}">
             <table width="100%">
                 <f:entry title="Node" field="node">
-                    <f:select value="${s.node}"/>
+                    <f:textbox value="${s.node}"/>
                 </f:entry>             
                 <f:entry title="Filter" field="filter" >
                     <f:expandableTextbox value="${s.filter}"/>

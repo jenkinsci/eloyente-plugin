@@ -46,6 +46,7 @@ public class ElOyente extends Trigger<Project> {
 
     private final static Map<String, Connection> connections = new HashMap<String, Connection>();
     private SubscriptionProperties[] subscriptions;
+    
 
     @DataBoundConstructor
     public ElOyente(SubscriptionProperties[] s) {
