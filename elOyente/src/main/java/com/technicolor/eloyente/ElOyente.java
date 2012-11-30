@@ -44,9 +44,10 @@ import org.kohsuke.stapler.StaplerRequest;
  */
 public class ElOyente extends Trigger<Project> {
 
+    private final static Integer USER_ID = 0;
+    private final static Integer RESOURCE_ID = 1;
     private final static Map<String, Connection> connections = new HashMap<String, Connection>();
     private SubscriptionProperties[] subscriptions;
-    
 
     @DataBoundConstructor
     public ElOyente(SubscriptionProperties[] s) {
@@ -93,12 +94,12 @@ public class ElOyente extends Trigger<Project> {
                             connections.remove(project.getName());
 
                             Connection con = createConnection(project, server, user, password);
-                            //subscribeIfNecessary(project);
+                            subscribeIfNecessary(project);
                             addListeners(con, project, user);
                         } else {
                             if (!checkAnyParameterEmpty(server, user, password)) {
                                 Connection con = createConnection(project, server, user, password);              //Reloading job because of parameter change, no connection before
-                                //subscribeIfNecessary(project);
+                                subscribeIfNecessary(project);
                                 addListeners(con, project, user);
                             }
                         }
@@ -108,7 +109,7 @@ public class ElOyente extends Trigger<Project> {
                 if (!checkAnyParameterEmpty(server, user, password)) {
                     if (connectionOK(server, user, password)) {                                                 // New job
                         Connection con = createConnection(project, server, user, password);
-                        //subscribeIfNecessary(project);
+                        subscribeIfNecessary(project);
                         addListeners(con, project, user);
                     }
                 }
@@ -131,30 +132,51 @@ public class ElOyente extends Trigger<Project> {
         }
     }
 
-//    public void subscribeIfNecessary(Project project) throws XMPPException {
-//        boolean notSubscribed = true;
-//        String nodeName;
-//        Connection con = connections.get(project.getName());
-//        PubSubManager mgr = new PubSubManager(con);
-//        List<Subscription> subscriptionList = mgr.getSubscriptions();
-//        Iterator it2 = subscriptionList.iterator();
-//
-//        if (subscriptions.length != 0) {
-//            for (int i = 0; i < subscriptions.length; i++) {
-//                nodeName = subscriptions[i].getnodeName();
-//                while (it2.hasNext()) {
-//                    Subscription sub = (Subscription) it2.next();
-//                    if (sub.getJid().split("/")[1].equals(project.getName()) && sub.getNode().equals(nodeName) && sub.getJid().split("@")[0].equals(getDescriptor().user)) {
-//                        notSubscribed = false;
-//                    }
-//                }
-//                if (notSubscribed == true && !nodeName.equals("")) {
-//                    String JID = con.getUser();
-//                    mgr.getNode(nodeName).subscribe(JID);
-//                }
-//            }
-//        }
-//    }
+    private Map<Integer, String> parseJID(Subscription sub) {
+        String JID = sub.getJid();
+
+        int atPos = JID.indexOf('@');
+        int slashPos = JID.indexOf('/');
+        if (atPos == -1 || slashPos == -1) {
+            return null;
+        }
+        HashMap<Integer, String> res = new HashMap<Integer, String>();
+        res.put(USER_ID, JID.substring(0, atPos));
+        res.put(RESOURCE_ID, JID.substring(slashPos+1));
+        return res;
+    }
+
+    public void subscribeIfNecessary(Project project) throws XMPPException {
+        boolean subscribed = false;
+        String nodeName;
+        Connection con = connections.get(project.getName());
+        PubSubManager mgr = new PubSubManager(con);
+        List<Subscription> subscriptionList = mgr.getSubscriptions();
+        Iterator it2 = subscriptionList.iterator();
+
+        if (subscriptions.length != 0) {
+            for (int i = 0; i < subscriptions.length; i++) {
+                nodeName = subscriptions[i].getNode();
+                while (it2.hasNext()) {
+
+                    Subscription sub = (Subscription) it2.next();
+                    Map<Integer, String> jid = parseJID(sub);
+                    if (null == jid || jid.size() < 2) {
+                        continue;
+                    }
+
+                    if (jid.get(RESOURCE_ID).equals(project.getName()) && sub.getNode().equals(nodeName) && jid.get(USER_ID).equals(getDescriptor().user)) {
+                        subscribed = true;
+                    }
+                }
+                if (!subscribed && !nodeName.equals("")) {
+                    String JID = con.getUser();
+                    mgr.getNode(nodeName).subscribe(JID);
+                }
+            }
+        }
+    }
+
     public boolean checkAnyParameterEmpty(String server, String user, String password) {
         if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
             return false;
@@ -192,15 +214,12 @@ public class ElOyente extends Trigger<Project> {
 
         while (it.hasNext()) {
             Subscription sub = (Subscription) it.next();
-            String JID = sub.getJid();
-            
-            int atPos = JID.indexOf('@');
-            int slashPos = JID.indexOf('/');
-            if (atPos == -1 || slashPos == -1) continue;
-            String JIDuser = JID.substring(0, atPos);
-            String JIDresource = JID.substring(slashPos);
-            
-            if (JIDuser.equals(user) && JIDresource.equals(project.getName())) {
+            Map<Integer, String> jid = parseJID(sub);
+            if (null == jid || jid.size() < 2) {
+                continue;
+            }
+
+            if (jid.get(USER_ID).equals(user)&& jid.get(RESOURCE_ID).equals(project.getName())) {
                 LeafNode node = (LeafNode) mgr.getNode(sub.getNode());
                 ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(sub.getNode(), this);
                 node.addItemEventListener(itemEventCoordinator);
