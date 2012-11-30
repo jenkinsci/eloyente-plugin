@@ -14,65 +14,164 @@
    limitations under the License.
 */
 
+package com.technicolor.eloyente;
+
 import org.w3c.dom.*;
+import org.w3c.dom.ls.*;
 import org.xml.sax.*;
 import javax.xml.xpath.*;
 import javax.xml.parsers.*;
 import java.io.*;
 
 
+/**
+ * This is a convenience class for working with XPath expressions.
+ * <p>
+ * It is used in ElOyente for filters and for environment variables,
+ * based on XMPP events.  XMPP events are XML messages, and a filters
+ * uses the test() function of this class to check whether the XMPP
+ * event should trigger a Jenkins job.  The evaluate() function at the
+ * other hand will be used to extract data from the XMPP event, and to
+ * store it in environment variables, such that the Jenkins job which
+ * is triggered by the event can use the data.
+ *
+ * @author Frank Vanderhallen
+ */
+
 public class XPathExpressionHandler {
 
-	private String expr_str; // the expression string
-	private XPathExpression expr_cmp; // the compiled expression
+	private String exprStr; // the expression string
+	private XPathExpression exprCmp; // the compiled expression
+
+	private DocumentBuilder docBuilder;
 
 	private static final String EMPTY_STR = "";
 
+	/**
+	 * Default constructor
+	 * <p>
+	 * Creates an XPathExpression handler with an empty expression.
+	 */
+	public XPathExpressionHandler() throws XPathExpressionException {
+		this(null);
+	}
+
+	/**
+	 * Constructor which configures an expression
+	 * <p>
+	 * @param expression An expression in XPath notation
+	 */
 	public XPathExpressionHandler(String expression) throws XPathExpressionException {
+		try {
+			DocumentBuilderFactory dbfact = DocumentBuilderFactory.newInstance();
+			dbfact.setNamespaceAware(true);
+			docBuilder = dbfact.newDocumentBuilder();
+		} catch (Exception e) {
+			/**
+			* If an exception is thrown, there is a problem with the XML parsing
+			* environment on the machine on which the code is executed.
+			* Inform the user about the problem, but don't throw the exception
+			* to the user.
+			*/
+			e.printStackTrace();
+		}
 		this.setExpression(expression);
 	}
 
+	/**
+	 * Function to change the expression
+	 * <p>
+	 * @param expression An expression in XPath notation.
+	 */
 	public void setExpression(String expression) throws XPathExpressionException {
-		if (null != expression && !expression.equals(expr_str)) {
+		if (null != expression && !expression.equals(exprStr)) {
 			XPath xpath = XPathFactory.newInstance().newXPath();
-			expr_cmp = xpath.compile(expression);
-			expr_str = expression;
+			exprCmp = xpath.compile(expression);
+			exprStr = expression;
 		}
 	}
 
+	/**
+	 * Function to retrieve the expression
+	 * <p>
+	 * @return The expression that the object holds
+	 */
 	public String getExpression() {
-		return expr_str;
+		return exprStr;
 	}
 
+	/**
+	 * Evaluate the expression
+	 * <p>
+	 * This function evaluates the expression against the provided
+	 * XML document and returns the result as a string.
+	 *
+	 * @param xml The XML document to evaluate
+	 * @return The result of evaluating the expression
+	 */
 	public String evaluate(String xml) throws XPathExpressionException {
-		if (null == xml) return EMPTY_STR;
+		if (null == xml || xml.isEmpty()) return xml;
+		// optimalization: '/' is the document selector (just return input)
+		if ("/".equals(exprStr)) return xml;
 		Document doc = getDOM(xml);
 		if (null == doc) return EMPTY_STR;
-		return (String)expr_cmp.evaluate(doc, XPathConstants.STRING);
+		NodeList n = (NodeList)exprCmp.evaluate(doc, XPathConstants.NODESET);
+		return getXML(n);
 	}
 
+	/**
+	 * Test the expression
+	 * <p>
+	 * This function evaluates the expression against the provided
+	 * XML document and returns true if the expression result is not empty.
+	 *
+	 * @param xml The XML document to evaluate
+	 * @return True if the result is not empty
+	 */
 	public boolean test(String xml) throws XPathExpressionException {
-		if (null == xml) return false;
+		if (null == xml || xml.isEmpty()) return false;
+		// optimalization: '/' is the document selector (validate input)
+		if ("/".equals(exprStr)) return true;
 		Document doc = getDOM(xml);
 		if (null == doc) return false;
-		// a string is true if and only if its length is non-zero
+		// a node-set is true if and only if it is not empty
 		// (source: http://www.w3.org/TR/xpath/#function-boolean)
-		return ! EMPTY_STR.equals(expr_cmp.evaluate(doc, XPathConstants.STRING));
+		NodeList n = (NodeList)exprCmp.evaluate(doc, XPathConstants.NODESET);
+		return (n.getLength() > 0);
 	}
 
 	private Document getDOM(String xml) {
-		if (null == xml) return null;
 		try {
-			DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
-			docBuilderFactory.setNamespaceAware(true);
-			DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
 			InputStream is = new ByteArrayInputStream(xml.getBytes());
 			return docBuilder.parse(is);
-		} catch (FactoryConfigurationError fc_ex) {
-			fc_ex.printStackTrace();
+		} catch (Exception e) {
+			/**
+			* Exceptions are due to malformed XML messages, which can be
+			* received from anywhere.  Since we cannot throw the exception to the
+			* sender of the XML message, silently discard it.
+			*/
 			return null;
-		} catch (Exception ex) {
-			return null;
+		}
+	}
+
+	private String getXML(NodeList list) {
+		try {
+			Document xmldoc = docBuilder.newDocument();
+			DOMImplementationLS impl = (DOMImplementationLS)xmldoc.getImplementation();
+			LSSerializer ser = impl.createLSSerializer();
+			String docstr = "";
+
+			for (int i=0; i<list.getLength(); i++) {
+				docstr += ser.writeToString(list.item(i));
+			}
+
+			// TODO: find real solution to disable xml-declaration generation
+			if (docstr.startsWith("<?xml version=\"1.0\" encoding=\"UTF-16\"?>")) return docstr.substring(39);
+
+			return docstr;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "";
 		}
 	}
 
