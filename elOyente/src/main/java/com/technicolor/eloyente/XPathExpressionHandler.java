@@ -44,6 +44,7 @@ public class XPathExpressionHandler {
 	private XPathExpression exprCmp; // the compiled expression
 
 	private DocumentBuilder docBuilder;
+	private DOMImplementationLS domImplementation;
 
 	private static final String EMPTY_STR = "";
 
@@ -66,6 +67,8 @@ public class XPathExpressionHandler {
 			DocumentBuilderFactory dbfact = DocumentBuilderFactory.newInstance();
 			dbfact.setNamespaceAware(true);
 			docBuilder = dbfact.newDocumentBuilder();
+			Document xmldoc = docBuilder.newDocument();
+			domImplementation = (DOMImplementationLS)xmldoc.getImplementation();
 		} catch (Exception e) {
 			/**
 			* If an exception is thrown, there is a problem with the XML parsing
@@ -156,9 +159,7 @@ public class XPathExpressionHandler {
 
 	private String getXML(NodeList list) {
 		try {
-			Document xmldoc = docBuilder.newDocument();
-			DOMImplementationLS impl = (DOMImplementationLS)xmldoc.getImplementation();
-			LSSerializer ser = impl.createLSSerializer();
+			LSSerializer ser = domImplementation.createLSSerializer();
 			String docstr = "";
 
 			for (int i=0; i<list.getLength(); i++) {
@@ -170,7 +171,6 @@ public class XPathExpressionHandler {
 
 			return docstr;
 		} catch (Exception e) {
-			e.printStackTrace();
 			return "";
 		}
 	}
