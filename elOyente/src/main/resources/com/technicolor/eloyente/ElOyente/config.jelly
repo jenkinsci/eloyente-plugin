@@ -18,27 +18,22 @@
 
     <f:entry title="${%Subscriptions}">
 
-        <f:repeatable var="s" add="Add subscription" items="${instance.subscriptions}" minimum="1">
+        <f:repeatable var="s" add="Add subscription" items="${instance.subscriptions}">
             <table width="100%">
                 <f:entry title="Node" field="node">
-                    <f:select value="${s.node}"/>
+                    <f:textbox value="${s.node}"/>
                 </f:entry>             
                 <f:entry title="Filter" field="filter" >
                     <f:expandableTextbox value="${s.filter}"/>
-                </f:entry>
-                <!--
-                <f:entry title="Textbox" field="filter" >
-                    <f:textbox/>
-                </f:entry>
-                
-                <f:entry title="Environment variables" field="envvars">
-                    <f:repeatable var="v" add="Add variable">
+                </f:entry>             
+                <f:entry title="Environment variables" field="envVars">
+                    <f:repeatable var="v" add="Add variable" items="${s.expressions}">
                         <table width="100%" bgcolor="#DDDDDD">
                             <f:entry title="Name" field="envName">
-                                <f:textbox style="width:98%"/>
+                                <f:textbox value="${v.envName}" style="width:98%"/>
                             </f:entry>
                             <f:entry title="Value selection" field="envExpr">
-                                <f:expandableTextbox/>
+                                <f:expandableTextbox value="${v.envExpr}"/>
                             </f:entry>
                             <f:entry>
                                 <div align="right">
@@ -49,7 +44,6 @@
                         <br/>
                     </f:repeatable>
                 </f:entry>
-                -->
                 <f:entry>
                     <div align="right">
                         <f:repeatableDeleteButton value="Delete subscription"/>
