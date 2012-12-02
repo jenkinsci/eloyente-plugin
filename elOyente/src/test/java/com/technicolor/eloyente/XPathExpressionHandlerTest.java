@@ -125,6 +125,13 @@ public class XPathExpressionHandlerTest {
 		assertFalse(eh.test(XML5));
 	}
 
+	@Test
+	public void testMultipleMatches() throws Exception {
+		String xml = "<bar>bar1</bar><bar>bar2</bar>";
+		XPathExpressionHandler eh = new XPathExpressionHandler("//bar");
+		assertEquals(xml, eh.evaluate("<foo>" + xml + "</foo>"));
+	}
+
 }
 
 // vim: set tabstop=4 softtabstop=4 shiftwidth=4 noexpandtab :

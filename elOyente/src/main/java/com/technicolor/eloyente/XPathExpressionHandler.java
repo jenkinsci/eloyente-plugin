@@ -160,14 +160,12 @@ public class XPathExpressionHandler {
 	private String getXML(NodeList list) {
 		try {
 			LSSerializer ser = domImplementation.createLSSerializer();
+			ser.getDomConfig().setParameter("xml-declaration", false);
 			String docstr = "";
 
 			for (int i=0; i<list.getLength(); i++) {
 				docstr += ser.writeToString(list.item(i));
 			}
-
-			// TODO: find real solution to disable xml-declaration generation
-			if (docstr.startsWith("<?xml version=\"1.0\" encoding=\"UTF-16\"?>")) return docstr.substring(39);
 
 			return docstr;
 		} catch (Exception e) {
