@@ -48,6 +48,7 @@ public class ElOyente extends Trigger<Project> {
     private final static Integer RESOURCE_ID = 1;
     private final static Map<String, Connection> connections = new HashMap<String, Connection>();
     private SubscriptionProperties[] subscriptions;
+    private Project project;
 
     @DataBoundConstructor
     public ElOyente(SubscriptionProperties[] s) {
@@ -84,6 +85,7 @@ public class ElOyente extends Trigger<Project> {
         String server = this.getDescriptor().server;
         String user = this.getDescriptor().user;
         String password = this.getDescriptor().password;
+        this.project = project;
 
         try {
             if (getDescriptor().reloading) {
@@ -95,12 +97,12 @@ public class ElOyente extends Trigger<Project> {
 
                             Connection con = createConnection(project, server, user, password);
                             subscribeIfNecessary(project);
-                            addListeners(con, project, user);
+                            addListeners(con, user);
                         } else {
                             if (!checkAnyParameterEmpty(server, user, password)) {
                                 Connection con = createConnection(project, server, user, password);              //Reloading job because of parameter change, no connection before
                                 subscribeIfNecessary(project);
-                                addListeners(con, project, user);
+                                addListeners(con, user);
                             }
                         }
                     }
@@ -110,7 +112,7 @@ public class ElOyente extends Trigger<Project> {
                     if (connectionOK(server, user, password)) {                                                 // New job
                         Connection con = createConnection(project, server, user, password);
                         subscribeIfNecessary(project);
-                        addListeners(con, project, user);
+                        addListeners(con, user);
                     }
                 }
             }
@@ -208,7 +210,7 @@ public class ElOyente extends Trigger<Project> {
      * @param project
      * @throws XMPPException
      */
-    public void addListeners(Connection con, Project project, String user) throws XMPPException {
+    public void addListeners(Connection con, String user) throws XMPPException {
         PubSubManager mgr = new PubSubManager(con);
         Iterator it = mgr.getSubscriptions().iterator();
 
@@ -236,8 +238,8 @@ public class ElOyente extends Trigger<Project> {
      */
     @Override
     public void run() {
-        if (!this.job.getAllJobs().isEmpty()) {
-            Iterator iterator = this.job.getAllJobs().iterator();
+        if (!project.getAllJobs().isEmpty()) {
+            Iterator iterator = this.project.getAllJobs().iterator();
             while (iterator.hasNext()) {
                 ((Project) iterator.next()).scheduleBuild(null);
             }
