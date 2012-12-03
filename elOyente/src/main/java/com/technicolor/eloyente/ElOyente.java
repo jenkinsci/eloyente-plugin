@@ -144,7 +144,7 @@ public class ElOyente extends Trigger<Project> {
         }
         HashMap<Integer, String> res = new HashMap<Integer, String>();
         res.put(USER_ID, JID.substring(0, atPos));
-        res.put(RESOURCE_ID, JID.substring(slashPos+1));
+        res.put(RESOURCE_ID, JID.substring(slashPos + 1));
         return res;
     }
 
@@ -186,7 +186,7 @@ public class ElOyente extends Trigger<Project> {
         return true;
     }
 
-    public boolean connectionOK(String server, String user, String password) {
+    public static synchronized boolean connectionOK(String server, String user, String password) {
 
         try {
             ConnectionConfiguration config = new ConnectionConfiguration(server);
@@ -221,7 +221,7 @@ public class ElOyente extends Trigger<Project> {
                 continue;
             }
 
-            if (jid.get(USER_ID).equals(user)&& jid.get(RESOURCE_ID).equals(project.getName())) {
+            if (jid.get(USER_ID).equals(user) && jid.get(RESOURCE_ID).equals(project.getName())) {
                 LeafNode node = (LeafNode) mgr.getNode(sub.getNode());
                 ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(sub.getNode(), this);
                 node.addItemEventListener(itemEventCoordinator);
