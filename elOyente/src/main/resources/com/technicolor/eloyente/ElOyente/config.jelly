@@ -17,7 +17,6 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 
     <f:entry title="${%Subscriptions}">
-
         <f:repeatable var="s" add="Add subscription" items="${instance.subscriptions}">
             <table width="100%">
                 <f:entry title="Node" field="node">
@@ -41,10 +40,8 @@
                                 </div>
                             </f:entry>
                         </table>
-                        <br/>
                     </f:repeatable>
                 </f:entry>
-                -->
                 <f:entry>
                     <div align="right">
                         <f:repeatableDeleteButton value="Delete subscription"/>
@@ -55,9 +52,7 @@
                 </f:entry>
             </table>
         </f:repeatable>
-
     </f:entry>
-
 </j:jelly>
 
 <!-- vim: set filetype=xml tabstop=4 softtabstop=4 shiftwidth=4 noexpandtab : -->
