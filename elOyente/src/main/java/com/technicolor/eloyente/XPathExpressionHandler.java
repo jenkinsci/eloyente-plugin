@@ -65,7 +65,7 @@ public class XPathExpressionHandler {
 	public XPathExpressionHandler(String expression) throws XPathExpressionException {
 		try {
 			DocumentBuilderFactory dbfact = DocumentBuilderFactory.newInstance();
-			dbfact.setNamespaceAware(true);
+			dbfact.setNamespaceAware(false);
 			docBuilder = dbfact.newDocumentBuilder();
 			Document xmldoc = docBuilder.newDocument();
 			domImplementation = (DOMImplementationLS)xmldoc.getImplementation();

@@ -132,6 +132,14 @@ public class XPathExpressionHandlerTest {
 		assertEquals(xml, eh.evaluate("<foo>" + xml + "</foo>"));
 	}
 
+	@Test
+	public void testWithNamespace() throws Exception {
+		String expected = "<foo><bar>bar1</bar><bar>bar2</bar></foo>";
+		String full = "<message xmlns=\"mynamespace\">" + expected + "</message>";
+		XPathExpressionHandler eh = new XPathExpressionHandler("//foo");
+		assertEquals(expected, eh.evaluate(full));
+	}
+
 }
 
 // vim: set tabstop=4 softtabstop=4 shiftwidth=4 noexpandtab :
