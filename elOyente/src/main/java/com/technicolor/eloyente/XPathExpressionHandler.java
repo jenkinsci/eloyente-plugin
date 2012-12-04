@@ -22,6 +22,8 @@ import org.xml.sax.*;
 import javax.xml.xpath.*;
 import javax.xml.parsers.*;
 import java.io.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 /**
@@ -40,11 +42,11 @@ import java.io.*;
 
 public class XPathExpressionHandler {
 
-	private String exprStr; // the expression string
-	private XPathExpression exprCmp; // the compiled expression
+	private String expression;
+	private transient XPathExpression expressionCompiled;
 
-	private DocumentBuilder docBuilder;
-	private DOMImplementationLS domImplementation;
+	private transient DocumentBuilder docBuilder;
+	private transient DOMImplementationLS domImplementation;
 
 	private static final String EMPTY_STR = "";
 
@@ -87,10 +89,10 @@ public class XPathExpressionHandler {
 	 * @param expression An expression in XPath notation.
 	 */
 	public void setExpression(String expression) throws XPathExpressionException {
-		if (null != expression && !expression.equals(exprStr)) {
+		if (null != expression && !expression.equals(this.expression)) {
 			XPath xpath = XPathFactory.newInstance().newXPath();
-			exprCmp = xpath.compile(expression);
-			exprStr = expression;
+			this.expressionCompiled = xpath.compile("".equals(expression) ? "/" : expression);
+			this.expression = expression;
 		}
 	}
 
@@ -100,7 +102,7 @@ public class XPathExpressionHandler {
 	 * @return The expression that the object holds
 	 */
 	public String getExpression() {
-		return exprStr;
+		return expression;
 	}
 
 	/**
@@ -115,10 +117,10 @@ public class XPathExpressionHandler {
 	public String evaluate(String xml) throws XPathExpressionException {
 		if (null == xml || xml.isEmpty()) return xml;
 		// optimalization: '/' is the document selector (just return input)
-		if ("/".equals(exprStr)) return xml;
+		if ("/".equals(expression) || "".equals(expression)) return xml;
 		Document doc = getDOM(xml);
 		if (null == doc) return EMPTY_STR;
-		NodeList n = (NodeList)exprCmp.evaluate(doc, XPathConstants.NODESET);
+		NodeList n = (NodeList)expressionCompiled.evaluate(doc, XPathConstants.NODESET);
 		return getXML(n);
 	}
 
@@ -134,12 +136,12 @@ public class XPathExpressionHandler {
 	public boolean test(String xml) throws XPathExpressionException {
 		if (null == xml || xml.isEmpty()) return false;
 		// optimalization: '/' is the document selector (validate input)
-		if ("/".equals(exprStr)) return true;
+		if ("/".equals(expression) || "".equals(expression)) return true;
 		Document doc = getDOM(xml);
 		if (null == doc) return false;
 		// a node-set is true if and only if it is not empty
 		// (source: http://www.w3.org/TR/xpath/#function-boolean)
-		NodeList n = (NodeList)exprCmp.evaluate(doc, XPathConstants.NODESET);
+		NodeList n = (NodeList)expressionCompiled.evaluate(doc, XPathConstants.NODESET);
 		return (n.getLength() > 0);
 	}
 

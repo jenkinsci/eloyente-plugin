@@ -7,6 +7,7 @@ package com.technicolor.eloyente;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import javax.xml.xpath.XPathExpressionException;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
@@ -15,14 +16,14 @@ import org.kohsuke.stapler.DataBoundConstructor;
  */
 public class SubscriptionProperties {
 
-    public String node;
-    public Expressions[] expressions;
-    public final String filter;
+    protected String node;
+    protected Expressions[] expressions;
+    private XPathExpressionHandler filter;
 
     @DataBoundConstructor
-    public SubscriptionProperties(String filter, String node, Expressions[] v) {
+    public SubscriptionProperties(String filter, String node, Expressions[] v) throws XPathExpressionException {
         this.node = node;
-        this.filter = filter;
+        this.filter = new XPathExpressionHandler(filter);
         this.expressions = v;
     }
 
@@ -38,6 +39,10 @@ public class SubscriptionProperties {
 //    }
 
     public String getFilter() {
+        return filter.getExpression();
+    }
+
+    public XPathExpressionHandler getFilterXPath() {
         return filter;
     }
 
