@@ -47,8 +47,8 @@ public class ElOyente extends Trigger<Project> {
     private final static Integer USER_ID = 0;
     private final static Integer RESOURCE_ID = 1;
     private final static Map<String, Connection> connections = new HashMap<String, Connection>();
-    private SubscriptionProperties[] subscriptions;
-    private Project project;
+    protected SubscriptionProperties[] subscriptions;
+    protected Project project;
 
     @DataBoundConstructor
     public ElOyente(SubscriptionProperties[] s) {
@@ -61,6 +61,26 @@ public class ElOyente extends Trigger<Project> {
         } else {
             return Arrays.asList(subscriptions);
         }
+    }
+
+    public List<SubscriptionProperties> getNodeSubscriptions(String node) {
+
+        if (subscriptions == null) {
+            return new ArrayList<SubscriptionProperties>();
+        } else {
+            int i;
+            List<SubscriptionProperties> subsc = new ArrayList<SubscriptionProperties>();
+            //return Arrays.asList(subscriptions);
+
+            for (i = 0; i < subscriptions.length; i++) {
+                if (subscriptions[i].node.equals(node)) {
+                    subsc.add(subscriptions[i]);
+                }
+            }
+            return subsc;
+        }
+
+
     }
 
     /**
@@ -103,6 +123,7 @@ public class ElOyente extends Trigger<Project> {
                                 Connection con = createConnection(project, server, user, password);              //Reloading job because of parameter change, no connection before
                                 subscribeIfNecessary(project);
                                 addListeners(con, user);
+
                             }
                         }
                     }
@@ -153,12 +174,15 @@ public class ElOyente extends Trigger<Project> {
         String nodeName;
         Connection con = connections.get(project.getName());
         PubSubManager mgr = new PubSubManager(con);
-        List<Subscription> subscriptionList = mgr.getSubscriptions();
-        Iterator it2 = subscriptionList.iterator();
+        List<Subscription> subscriptionList;
+        Iterator it2;
 
         if (subscriptions.length != 0) {
             for (int i = 0; i < subscriptions.length; i++) {
                 nodeName = subscriptions[i].getNode();
+                subscriptionList = mgr.getSubscriptions();
+                it2 = subscriptionList.iterator();
+
                 while (it2.hasNext()) {
 
                     Subscription sub = (Subscription) it2.next();
@@ -169,9 +193,11 @@ public class ElOyente extends Trigger<Project> {
 
                     if (jid.get(RESOURCE_ID).equals(project.getName()) && sub.getNode().equals(nodeName) && jid.get(USER_ID).equals(getDescriptor().user)) {
                         subscribed = true;
+                        break;
                     }
                 }
                 if (!subscribed && !nodeName.equals("")) {
+                    Node node = mgr.getNode(nodeName);
                     String JID = con.getUser();
                     mgr.getNode(nodeName).subscribe(JID);
                 }
@@ -241,7 +267,9 @@ public class ElOyente extends Trigger<Project> {
         if (!project.getAllJobs().isEmpty()) {
             Iterator iterator = this.project.getAllJobs().iterator();
             while (iterator.hasNext()) {
-                ((Project) iterator.next()).scheduleBuild(null);
+                Project p = ((Project) iterator.next());
+                System.out.println("ScheduleBuild: " + p.getName());
+                p.scheduleBuild(null);
             }
         }
     }
@@ -646,7 +674,6 @@ public class ElOyente extends Trigger<Project> {
 
             return items;
         }
-
         /**
          * In charge of subscribing the job to a node.
          *
@@ -658,27 +685,27 @@ public class ElOyente extends Trigger<Project> {
          * @param name
          * @return
          */
-        public FormValidation doSubscribe(@QueryParameter("nodesAvailable") String nodesAvailable) {
-            String projectName = Stapler.getCurrentRequest().findAncestorObject(AbstractProject.class).getName();
-            Connection con = connections.get(projectName);
-            PubSubManager mgr = new PubSubManager(con);
-            Trigger trigger = null;
-
-            try {
-                Iterator it2 = (Jenkins.getInstance().getItems()).iterator();
-                while (it2.hasNext()) {
-                    AbstractProject job = (AbstractProject) it2.next();
-                    trigger = (ElOyente) job.getTriggers().get(this);
-                }
-                LeafNode node = (LeafNode) mgr.getNode(nodesAvailable);
-                ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(nodesAvailable, trigger);
-                node.addItemEventListener(itemEventCoordinator);
-                String JID = con.getUser();
-                node.subscribe(JID);
-                return FormValidation.ok(con.getUser() + " Subscribed to " + nodesAvailable + " with resource " + projectName);
-            } catch (Exception e) {
-                return FormValidation.error("Couldn't subscribe to " + nodesAvailable);
-            }
-        }
+//        public FormValidation doSubscribe(@QueryParameter("nodesAvailable") String nodesAvailable) {
+//            String projectName = Stapler.getCurrentRequest().findAncestorObject(AbstractProject.class).getName();
+//            Connection con = connections.get(projectName);
+//            PubSubManager mgr = new PubSubManager(con);
+//            Trigger trigger = null;
+//
+//            try {
+//                Iterator it2 = (Jenkins.getInstance().getItems()).iterator();
+//                while (it2.hasNext()) {
+//                    AbstractProject job = (AbstractProject) it2.next();
+//                    trigger = (ElOyente) job.getTriggers().get(this);
+//                }
+//                LeafNode node = (LeafNode) mgr.getNode(nodesAvailable);
+//                ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(nodesAvailable, trigger);
+//                node.addItemEventListener(itemEventCoordinator);
+//                String JID = con.getUser();
+//                node.subscribe(JID);
+//                return FormValidation.ok(con.getUser() + " Subscribed to " + nodesAvailable + " with resource " + projectName);
+//            } catch (Exception e) {
+//                return FormValidation.error("Couldn't subscribe to " + nodesAvailable);
+//            }
+//        }
     }
 }

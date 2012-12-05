@@ -19,6 +19,7 @@ public class SubscriptionProperties {
     protected String node;
     protected Expressions[] expressions;
     private XPathExpressionHandler filter;
+    
 
     @DataBoundConstructor
     public SubscriptionProperties(String filter, String node, Expressions[] v) throws XPathExpressionException {
