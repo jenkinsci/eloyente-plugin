@@ -14,8 +14,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -30,7 +28,6 @@ import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smackx.packet.DiscoverItems;
 import org.jivesoftware.smackx.pubsub.LeafNode;
-import org.jivesoftware.smackx.pubsub.Node;
 import org.jivesoftware.smackx.pubsub.PubSubManager;
 import org.jivesoftware.smackx.pubsub.Subscription;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -86,7 +83,7 @@ public class ElOyente extends Trigger<Project> {
         String user = this.getDescriptor().user;
         String password = this.getDescriptor().password;
         this.project = project;
-
+        
         try {
             if (getDescriptor().reloading) {
                 if (!checkAnyParameterEmpty(server, user, password)) {
@@ -109,8 +106,8 @@ public class ElOyente extends Trigger<Project> {
                 }
             } else {
                 if (!checkAnyParameterEmpty(server, user, password)) {
-                    if (connectionOK(server, user, password)) {                                                 // New job
-                        Connection con = createConnection(project, server, user, password);
+                    if (connectionOK(server, user, password)) {
+                        Connection con = createConnection(project, server, user, password);                     // New job
                         subscribeIfNecessary(project);
                         addListeners(con, user);
                     }
@@ -489,6 +486,8 @@ public class ElOyente extends Trigger<Project> {
         public boolean getReloading() {
             return reloading;
         }
+
+
 
         /**
          * Performs on-the-fly validation of the form field 'server'.
