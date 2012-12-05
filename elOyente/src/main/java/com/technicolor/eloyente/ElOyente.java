@@ -104,7 +104,7 @@ public class ElOyente extends Trigger<Project> {
         String user = this.getDescriptor().user;
         String password = this.getDescriptor().password;
         this.project = project;
-        
+
         try {
             if (getDescriptor().reloading) {
                 if (!checkAnyParameterEmpty(server, user, password)) {
@@ -172,32 +172,48 @@ public class ElOyente extends Trigger<Project> {
         String nodeName;
         Connection con = connections.get(project.getName());
         PubSubManager mgr = new PubSubManager(con);
-        List<Subscription> subscriptionList;
-        Iterator it2;
+        if (mgr.discoverNodes(null).getItems().hasNext()) {
 
-        if (subscriptions.length != 0) {
-            for (int i = 0; i < subscriptions.length; i++) {
-                nodeName = subscriptions[i].getNode();
-                subscriptionList = mgr.getSubscriptions();
-                it2 = subscriptionList.iterator();
+            List<Subscription> subscriptionList;
+            Iterator it2;
 
-                while (it2.hasNext()) {
+            if (subscriptions.length != 0) {
+                for (int i = 0; i < subscriptions.length; i++) {
+                    nodeName = subscriptions[i].getNode();
+                    subscriptionList = mgr.getSubscriptions();
+                    it2 = subscriptionList.iterator();
 
-                    Subscription sub = (Subscription) it2.next();
-                    Map<Integer, String> jid = parseJID(sub);
-                    if (null == jid || jid.size() < 2) {
-                        continue;
+                    while (it2.hasNext()) {
+
+                        Subscription sub = (Subscription) it2.next();
+                        Map<Integer, String> jid = parseJID(sub);
+                        if (null == jid || jid.size() < 2) {
+                            continue;
+                        }
+
+                        if (jid.get(RESOURCE_ID).equals(project.getName()) && sub.getNode().equals(nodeName) && jid.get(USER_ID).equals(getDescriptor().user)) {
+                            subscribed = true;
+                            break;
+                        }
                     }
+                    if (!subscribed && !nodeName.equals("")) {
 
-                    if (jid.get(RESOURCE_ID).equals(project.getName()) && sub.getNode().equals(nodeName) && jid.get(USER_ID).equals(getDescriptor().user)) {
-                        subscribed = true;
-                        break;
+
+                        DiscoverItems discoverNodes = mgr.discoverNodes(null);
+                        Iterator<DiscoverItems.Item> items = discoverNodes.getItems();
+
+                        boolean nodeExists = false;
+                        while (items.hasNext()) {
+                            if (((DiscoverItems.Item) items.next()).getNode().equals(nodeName)) {
+                                nodeExists = true;
+                            }
+                        }
+                        if (nodeExists) {
+                            Node node = mgr.getNode(nodeName);
+                            String JID = con.getUser();
+                            mgr.getNode(nodeName).subscribe(JID);
+                        }
                     }
-                }
-                if (!subscribed && !nodeName.equals("")) {
-                    Node node = mgr.getNode(nodeName);
-                    String JID = con.getUser();
-                    mgr.getNode(nodeName).subscribe(JID);
                 }
             }
         }
@@ -490,9 +506,6 @@ public class ElOyente extends Trigger<Project> {
         public String getUser() {
             return user;
         }
-//         private String getName() {
-//             return name;
-//        }
 
         /**
          * This method returns the password for the XMPP connection.
@@ -515,8 +528,6 @@ public class ElOyente extends Trigger<Project> {
         public boolean getReloading() {
             return reloading;
         }
-
-
 
         /**
          * Performs on-the-fly validation of the form field 'server'.
