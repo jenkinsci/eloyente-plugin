@@ -41,37 +41,40 @@ public class XPathExpressionHandlerTest {
 		XPathExpressionHandler eh1 = new XPathExpressionHandler(null);
 		assertNull(eh1.getExpression());
 
-		exp = "/node/foo[@bar='baz']/name/text()";
-		XPathExpressionHandler eh2 = new XPathExpressionHandler(exp);
-		assertEquals(exp, eh2.getExpression());
+		XPathExpressionHandler eh2 = new XPathExpressionHandler("");
+		assertEquals("", eh2.getExpression());
 
-		exp = "//foo | //bar";
+		exp = "/node/foo[@bar='baz']/name/text()";
 		XPathExpressionHandler eh3 = new XPathExpressionHandler(exp);
 		assertEquals(exp, eh3.getExpression());
-		eh3.setExpression(exp);
-		assertEquals(exp, eh3.getExpression());
+
+		exp = "//foo | //bar";
+		XPathExpressionHandler eh4 = new XPathExpressionHandler(exp);
+		assertEquals(exp, eh4.getExpression());
+		eh4.setExpression(exp);
+		assertEquals(exp, eh4.getExpression());
 	}
 
 	@Test(expected=XPathExpressionException.class)
 	public void testConstructorNOK() throws Exception {
-		new XPathExpressionHandler("");
+		new XPathExpressionHandler("~this\\could/never/be/legal/xpath");
 	}
 
-	@Test(expected=XPathExpressionException.class)
+	@Test
 	public void testEmpty() throws Exception {
 		XPathExpressionHandler eh = new XPathExpressionHandler("");
-		assertEquals("", eh.evaluate(XML0));
-		assertEquals("", eh.evaluate(XML1));
-		assertEquals("", eh.evaluate(XML2));
-		assertEquals("", eh.evaluate(XML3));
-		assertEquals("", eh.evaluate(XML4));
-		assertEquals("", eh.evaluate(XML5));
+		assertEquals(XML0, eh.evaluate(XML0));
+		assertEquals(XML1, eh.evaluate(XML1));
+		assertEquals(XML2, eh.evaluate(XML2));
+		assertEquals(XML3, eh.evaluate(XML3));
+		assertEquals(XML4, eh.evaluate(XML4));
+		assertEquals(XML5, eh.evaluate(XML5));
 		assertFalse(eh.test(XML0));
-		assertFalse(eh.test(XML1));
-		assertFalse(eh.test(XML2));
-		assertFalse(eh.test(XML3));
-		assertFalse(eh.test(XML4));
-		assertFalse(eh.test(XML5));
+		assertEquals(XML1.length() > 0, eh.test(XML1));
+		assertEquals(XML2.length() > 0, eh.test(XML2));
+		assertEquals(XML3.length() > 0, eh.test(XML3));
+		assertEquals(XML4.length() > 0, eh.test(XML4));
+		assertEquals(XML5.length() > 0, eh.test(XML5));
 	}
 
 	@Test
@@ -130,6 +133,14 @@ public class XPathExpressionHandlerTest {
 		String xml = "<bar>bar1</bar><bar>bar2</bar>";
 		XPathExpressionHandler eh = new XPathExpressionHandler("//bar");
 		assertEquals(xml, eh.evaluate("<foo>" + xml + "</foo>"));
+	}
+
+	@Test
+	public void testWithNamespace() throws Exception {
+		String expected = "<foo><bar>bar1</bar><bar>bar2</bar></foo>";
+		String full = "<message xmlns=\"mynamespace\">" + expected + "</message>";
+		XPathExpressionHandler eh = new XPathExpressionHandler("//foo");
+		assertEquals(expected, eh.evaluate(full));
 	}
 
 }
