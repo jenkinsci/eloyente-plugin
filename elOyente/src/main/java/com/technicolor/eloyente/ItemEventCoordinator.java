@@ -28,6 +28,7 @@ class ItemEventCoordinator implements ItemEventListener<PayloadItem<SimplePayloa
         String xml = items.getItems().iterator().next().toXML();
         List<SubscriptionProperties> subscriptionList = trigger.getNodeSubscriptions(nodename);
         Iterator it = subscriptionList.iterator();
+        System.out.println("IMPRIME handlePublishedItems() of object " + this + " called for items " + items.getItems());
         System.out.println("IMPRIME size: " + items.getItems().size());
         System.out.println("IMPRIME xml: " + xml);
 
