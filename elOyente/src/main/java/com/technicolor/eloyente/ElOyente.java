@@ -25,9 +25,11 @@ import java.util.logging.Logger;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.jivesoftware.smack.Connection;
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smack.filter.PacketFilter;
 import org.jivesoftware.smackx.packet.DiscoverItems;
 import org.jivesoftware.smackx.pubsub.LeafNode;
 import org.jivesoftware.smackx.pubsub.Node;
@@ -60,7 +62,7 @@ public class ElOyente extends Trigger<Project> {
             return new ArrayList<SubscriptionProperties>();
         } else {
             return Arrays.asList(subscriptions);
-        }
+        }  
     }
 
     public List<SubscriptionProperties> getNodeSubscriptions(String node) {
@@ -180,7 +182,7 @@ public class ElOyente extends Trigger<Project> {
         if (subscriptions.length != 0) {
             for (int i = 0; i < subscriptions.length; i++) {
                 nodeName = subscriptions[i].getNode();
-                subscriptionList = mgr.getSubscriptions();
+                subscriptionList = mgr.getSubscriptions(); //TODO get only the subs del nodo que estamos mirando
                 it2 = subscriptionList.iterator();
 
                 while (it2.hasNext()) {
@@ -196,11 +198,13 @@ public class ElOyente extends Trigger<Project> {
                         break;
                     }
                 }
-                if (!subscribed && !nodeName.equals("")) {
+                if (!subscribed && !nodeName.equals("")) {             
                     Node node = mgr.getNode(nodeName);
                     String JID = con.getUser();
                     mgr.getNode(nodeName).subscribe(JID);
+                    System.out.println("Subscribe:--> Node: "+node.getId() + " pj: "+project.getName());
                 }
+                subscribed=false;
             }
         }
     }
@@ -251,6 +255,8 @@ public class ElOyente extends Trigger<Project> {
                 LeafNode node = (LeafNode) mgr.getNode(sub.getNode());
                 ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(sub.getNode(), this);
                 node.addItemEventListener(itemEventCoordinator);
+                System.out.println("\nitemEventCoordinator--> Node: "+node.getId() + " pj: "+project.getName());
+                
             }
         }
     }
