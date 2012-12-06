@@ -14,8 +14,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -132,8 +130,8 @@ public class ElOyente extends Trigger<Project> {
                 }
             } else {
                 if (!checkAnyParameterEmpty(server, user, password)) {
-                    if (connectionOK(server, user, password)) {                                                 // New job
-                        Connection con = createConnection(project, server, user, password);
+                    if (connectionOK(server, user, password)) {
+                        Connection con = createConnection(project, server, user, password);                     // New job
                         subscribeIfNecessary(project);
                         addListeners(con, user);
                     }
@@ -176,33 +174,48 @@ public class ElOyente extends Trigger<Project> {
         String nodeName;
         Connection con = connections.get(project.getName());
         PubSubManager mgr = new PubSubManager(con);
-        List<Subscription> subscriptionList;
-        Iterator it2;
+        if (mgr.discoverNodes(null).getItems().hasNext()) {
 
-        if (subscriptions.length != 0) {
-            for (int i = 0; i < subscriptions.length; i++) {
-                nodeName = subscriptions[i].getNode();
-                subscriptionList = mgr.getSubscriptions(); //TODO get only the subs del nodo que estamos mirando
-                it2 = subscriptionList.iterator();
+            List<Subscription> subscriptionList;
+            Iterator it2;
 
-                while (it2.hasNext()) {
+            if (subscriptions.length != 0) {
+                for (int i = 0; i < subscriptions.length; i++) {
+                    nodeName = subscriptions[i].getNode();
+                    subscriptionList = mgr.getSubscriptions();
+                    it2 = subscriptionList.iterator();
 
-                    Subscription sub = (Subscription) it2.next();
-                    Map<Integer, String> jid = parseJID(sub);
-                    if (null == jid || jid.size() < 2) {
-                        continue;
+                    while (it2.hasNext()) {
+
+                        Subscription sub = (Subscription) it2.next();
+                        Map<Integer, String> jid = parseJID(sub);
+                        if (null == jid || jid.size() < 2) {
+                            continue;
+                        }
+
+                        if (jid.get(RESOURCE_ID).equals(project.getName()) && sub.getNode().equals(nodeName) && jid.get(USER_ID).equals(getDescriptor().user)) {
+                            subscribed = true;
+                            break;
+                        }
                     }
+                    if (!subscribed && !nodeName.equals("")) {
 
-                    if (jid.get(RESOURCE_ID).equals(project.getName()) && sub.getNode().equals(nodeName) && jid.get(USER_ID).equals(getDescriptor().user)) {
-                        subscribed = true;
-                        break;
+
+                        DiscoverItems discoverNodes = mgr.discoverNodes(null);
+                        Iterator<DiscoverItems.Item> items = discoverNodes.getItems();
+
+                        boolean nodeExists = false;
+                        while (items.hasNext()) {
+                            if (((DiscoverItems.Item) items.next()).getNode().equals(nodeName)) {
+                                nodeExists = true;
+                            }
+                        }
+                        if (nodeExists) {
+                            Node node = mgr.getNode(nodeName);
+                            String JID = con.getUser();
+                            mgr.getNode(nodeName).subscribe(JID);
+                        }
                     }
-                }
-                if (!subscribed && !nodeName.equals("")) {             
-                    Node node = mgr.getNode(nodeName);
-                    String JID = con.getUser();
-                    mgr.getNode(nodeName).subscribe(JID);
-                    System.out.println("Subscribe:--> Node: "+node.getId() + " pj: "+project.getName());
                 }
                 subscribed=false;
             }
@@ -498,9 +511,6 @@ public class ElOyente extends Trigger<Project> {
         public String getUser() {
             return user;
         }
-//         private String getName() {
-//             return name;
-//        }
 
         /**
          * This method returns the password for the XMPP connection.
