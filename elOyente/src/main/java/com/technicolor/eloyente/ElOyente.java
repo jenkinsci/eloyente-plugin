@@ -12,6 +12,7 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.File;
 import java.io.IOException;
+import java.io.ObjectStreamException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -43,26 +44,27 @@ import org.kohsuke.stapler.StaplerRequest;
  * @author Isabel Fern&aacute;ndez D&iacute;az
  */
 public class ElOyente extends Trigger<Project> {
-    
+
     private final static Integer USER_ID = 0;
     private final static Integer RESOURCE_ID = 1;
     private final static Map<String, Connection> connections = new HashMap<String, Connection>();
     protected SubscriptionProperties[] subscriptions;
-    private transient Map<String, ItemEventCoordinator> listeners = new HashMap<String, ItemEventCoordinator>();    
+    private transient Map<String, ItemEventCoordinator> listeners = new HashMap<String, ItemEventCoordinator>();
     protected transient Project project;
-    
+
     @DataBoundConstructor
     public ElOyente(SubscriptionProperties[] s) {
         this.subscriptions = s;
     }
-//    
-//    @Override
-//    public Object readResolve() {
-//        listeners = new HashMap<String, ItemEventCoordinator>();  
-//        System.out.println("readResolve created lesteners: "+ listeners);
-//        return this;
-//    }
     
+    @Override
+    public Object readResolve() throws ObjectStreamException {
+        super.readResolve();
+        listeners = new HashMap<String, ItemEventCoordinator>();  
+        System.out.println("readResolve created lesteners: "+ listeners);
+        return this;
+    }
+
     public List<SubscriptionProperties> getSubscriptions() {
         if (subscriptions == null) {
             return new ArrayList<SubscriptionProperties>();
@@ -70,9 +72,9 @@ public class ElOyente extends Trigger<Project> {
             return Arrays.asList(subscriptions);
         }
     }
-    
+
     public List<SubscriptionProperties> getNodeSubscriptions(String node) {
-        
+
         if (subscriptions == null) {
             return new ArrayList<SubscriptionProperties>();
         } else {
@@ -87,8 +89,8 @@ public class ElOyente extends Trigger<Project> {
             }
             return subsc;
         }
-        
-        
+
+
     }
 
     /**
@@ -109,12 +111,12 @@ public class ElOyente extends Trigger<Project> {
      */
     @Override
     public void start(Project project, boolean newInstance) {
-        
+
         String server = this.getDescriptor().server;
         String user = this.getDescriptor().user;
         String password = this.getDescriptor().password;
         this.project = project;
-        
+
         try {
             if (getDescriptor().reloading) {
                 if (!checkAnyParameterEmpty(server, user, password)) {
@@ -122,7 +124,7 @@ public class ElOyente extends Trigger<Project> {
                         if (!connections.isEmpty() && connections.containsKey(project.getName())) {
                             connections.get(project.getName()).disconnect();                                    //Reloading job because of parameter change, connection existing
                             connections.remove(project.getName());
-                            
+
                             Connection con = createConnection(project, server, user, password);
                             subscribeIfNecessary(project);
                             addListeners(con, user);
@@ -131,7 +133,7 @@ public class ElOyente extends Trigger<Project> {
                                 Connection con = createConnection(project, server, user, password);              //Reloading job because of parameter change, no connection before
                                 subscribeIfNecessary(project);
                                 addListeners(con, user);
-                                
+
                             }
                         }
                     }
@@ -149,7 +151,7 @@ public class ElOyente extends Trigger<Project> {
             ex.printStackTrace(System.err);
         }
     }
-    
+
     public Connection createConnection(Project project, String server, String user, String password) throws XMPPException {
         if (!connections.containsKey(project.getName())) {
             ConnectionConfiguration config = new ConnectionConfiguration(server);
@@ -162,10 +164,10 @@ public class ElOyente extends Trigger<Project> {
             return connections.get(project.getName());
         }
     }
-    
+
     private Map<Integer, String> parseJID(Subscription sub) {
         String JID = sub.getJid();
-        
+
         int atPos = JID.indexOf('@');
         int slashPos = JID.indexOf('/');
         if (atPos == -1 || slashPos == -1) {
@@ -176,42 +178,42 @@ public class ElOyente extends Trigger<Project> {
         res.put(RESOURCE_ID, JID.substring(slashPos + 1));
         return res;
     }
-    
+
     public void subscribeIfNecessary(Project project) throws XMPPException {
         boolean subscribed = false;
         String nodeName;
         Connection con = connections.get(project.getName());
         PubSubManager mgr = new PubSubManager(con);
         if (mgr.discoverNodes(null).getItems().hasNext()) {
-            
+
             List<Subscription> subscriptionList;
             Iterator it2;
-            
+
             if (subscriptions.length != 0) {
                 for (int i = 0; i < subscriptions.length; i++) {
                     nodeName = subscriptions[i].getNode();
                     subscriptionList = mgr.getSubscriptions();
                     it2 = subscriptionList.iterator();
-                    
+
                     while (it2.hasNext()) {
-                        
+
                         Subscription sub = (Subscription) it2.next();
                         Map<Integer, String> jid = parseJID(sub);
                         if (null == jid || jid.size() < 2) {
                             continue;
                         }
-                        
+
                         if (jid.get(RESOURCE_ID).equals(project.getName()) && sub.getNode().equals(nodeName) && jid.get(USER_ID).equals(getDescriptor().user)) {
                             subscribed = true;
                             break;
                         }
                     }
                     if (!subscribed && !nodeName.equals("")) {
-                        
-                        
+
+
                         DiscoverItems discoverNodes = mgr.discoverNodes(null);
                         Iterator<DiscoverItems.Item> items = discoverNodes.getItems();
-                        
+
                         boolean nodeExists = false;
                         while (items.hasNext()) {
                             if (((DiscoverItems.Item) items.next()).getNode().equals(nodeName)) {
@@ -227,20 +229,20 @@ public class ElOyente extends Trigger<Project> {
                     }
                     subscribed = false;
                 }
-                
+
             }
         }
     }
-    
+
     public boolean checkAnyParameterEmpty(String server, String user, String password) {
         if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
             return false;
         }
         return true;
     }
-    
+
     public static synchronized boolean connectionOK(String server, String user, String password) {
-        
+
         try {
             ConnectionConfiguration config = new ConnectionConfiguration(server);
             Connection con = new XMPPConnection(config);
@@ -265,24 +267,27 @@ public class ElOyente extends Trigger<Project> {
      */
     public void addListeners(Connection con, String user) throws XMPPException {
         PubSubManager mgr = new PubSubManager(con);
-        
+
         for (int i = 0; i < subscriptions.length; i++) {
-            
+
             LeafNode node = (LeafNode) mgr.getNode(subscriptions[i].node);
             System.out.println("NODO: " + subscriptions[i].node);
             System.out.println("NODO: " + node);
             System.out.println("NODO: " + node.getId());
             System.out.println("this: " + this + " - Listeners: " + listeners);
-            
+
             if (!listeners.containsKey(node.getId())) {
                 ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(node.getId(), this);
+                System.out.println("NEW ITEM EVENT COORDINATOR: " + itemEventCoordinator);
+                // TODO: remove the next line
+                itemEventCoordinator.print();
                 node.addItemEventListener(itemEventCoordinator);
                 listeners.put(node.getId(), itemEventCoordinator);
                 System.out.println("itemEventCoordinator--> Node: " + node.getId() + " pj: " + project.getName());
             } else {
                 System.err.println("NO se anade listener--> Node: " + node.getId() + " pj: " + project.getName());
             }
-            
+
         }
     }
 
@@ -304,32 +309,39 @@ public class ElOyente extends Trigger<Project> {
             }
         }
     }
-    
+
     @Override
     public void stop() {
-        System.out.println("Entering stop() of "+this);
+        System.out.println("Entering stop() of " + this);
         try {
             ConnectionConfiguration config = new ConnectionConfiguration(getDescriptor().server);
-            Connection con = new XMPPConnection(config);
-            con.connect();
-             con.login(getDescriptor().user, getDescriptor().password, "Global");
+            Connection con = connections.get(project.getName());                
             PubSubManager mgr = new PubSubManager(con);
-            System.out.println("config="+config+" mgr="+mgr+" con="+con);
+            System.out.println("config=" + config + " mgr=" + mgr + " con=" + con);
             for (String nodeName : listeners.keySet()) {
-                System.out.println("nodeName: "+nodeName);
-                LeafNode n= (LeafNode)mgr.getNode(nodeName);
-                System.out.println("Removing ItemEventListener: "+listeners.get(nodeName)+" for node "+n);
-                n.removeItemEventListener(listeners.get(nodeName));
+                System.out.println("nodeName: " + nodeName);
+                LeafNode n = (LeafNode) mgr.getNode(nodeName);
+                System.out.println("JID:"+con.getUser());
+                n.unsubscribe(con.getUser());
+//                ItemEventCoordinator listener = listeners.get(nodeName);
+//                System.out.println("Removing ItemEventListener: " + listener + " for node " + n.getId());
+//                // TODO: remove next line
+//                listener.print();
+//                n.removeItemEventListener(listener);
+//                listener = null;
             }
-            listeners.clear();
-            con.disconnect();
-            super.stop();
+//            listeners.clear();
+            project=null;
+            listeners=null;
+            subscriptions=null;
             
+            super.stop();
+
         } catch (XMPPException ex) {
             Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
         }
-        System.out.println("Leaving stop() of "+this);
-        
+        System.out.println("Leaving stop() of " + this);
+
     }
 
     /**
@@ -434,7 +446,7 @@ public class ElOyente extends Trigger<Project> {
             //report();
             save();
             reloadJobs();
-            
+
             return super.configure(req, formData);
         }
 
@@ -448,7 +460,7 @@ public class ElOyente extends Trigger<Project> {
          * with the new credentials and reset the subscriptions.
          */
         public void reloadJobs() {
-            
+
             Iterator it2 = (Jenkins.getInstance().getItems()).iterator();
             while (it2.hasNext()) {
                 AbstractProject job = (AbstractProject) it2.next();
@@ -463,14 +475,14 @@ public class ElOyente extends Trigger<Project> {
                     File directoryConfigXml = job.getConfigFile().getFile().getParentFile();
                     try {
                         Items.load(job.getParent(), directoryConfigXml);
-                        
+
                     } catch (IOException ex) {
                         Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 } else {
                     System.out.println(job.getName() + ": Yo no tengo el plugin");
                 }
-                
+
                 reloading = false;
             }
         }
@@ -508,7 +520,7 @@ public class ElOyente extends Trigger<Project> {
                         mgr = new PubSubManager(con);
                         DiscoverItems items = mgr.discoverNodes(null);
                         Iterator<DiscoverItems.Item> iter = items.getItems();
-                        
+
                         logger.log(Level.INFO, "NODES: ---------------------------------");
                         while (iter.hasNext()) {
                             DiscoverItems.Item i = iter.next();
@@ -583,11 +595,11 @@ public class ElOyente extends Trigger<Project> {
          * @param server
          */
         public FormValidation doCheckServer(@QueryParameter String server) {
-            
+
             try {
                 ConnectionConfiguration config = new ConnectionConfiguration(server);
                 Connection con = new XMPPConnection(config);
-                
+
                 if (server.isEmpty()) {
                     return FormValidation.warningWithMarkup("No server specified");
                 }
@@ -641,7 +653,7 @@ public class ElOyente extends Trigger<Project> {
          * @throws InterruptedException
          */
         public ListBoxModel doFillNodeItems(@QueryParameter("name") String name) throws XMPPException, InterruptedException {
-            
+
             ListBoxModel items = new ListBoxModel();
             ArrayList nodesSubsArray = new ArrayList();
 //            String node;
@@ -699,7 +711,7 @@ public class ElOyente extends Trigger<Project> {
 //            }
 
         }
-        
+
         public ListBoxModel doFillNodesSubItems() throws XMPPException, InterruptedException {
             ListBoxModel items = new ListBoxModel();
 ////            String node;

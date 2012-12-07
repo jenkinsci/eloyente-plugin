@@ -24,7 +24,7 @@ class ItemEventCoordinator implements ItemEventListener<PayloadItem<SimplePayloa
 
     @Override
     public void handlePublishedItems(ItemPublishEvent<PayloadItem<SimplePayload>> items) {
-        print(nodename, items);
+        print(items);
         String xml = items.getItems().iterator().next().toXML();
         List<SubscriptionProperties> subscriptionList = trigger.getNodeSubscriptions(nodename);
         Iterator it = subscriptionList.iterator();
@@ -54,7 +54,7 @@ class ItemEventCoordinator implements ItemEventListener<PayloadItem<SimplePayloa
         }
     }
 
-    private synchronized void print(String nodename, ItemPublishEvent<PayloadItem<SimplePayload>> items) {
+    private synchronized void print(ItemPublishEvent<PayloadItem<SimplePayload>> items) {
         System.out.println("-----------------------------");
         System.out.println(nodename + ": Item count: " + items.getItems().size());
         for (PayloadItem<SimplePayload> item : items.getItems()) {
@@ -62,5 +62,9 @@ class ItemEventCoordinator implements ItemEventListener<PayloadItem<SimplePayloa
             System.out.println("Mas cosas:" + item);
         }
         System.out.println("-----------------------------");
+    }
+
+    public void print() {
+        System.out.println("ItemEventCoordinator: node="+nodename+" trigger="+trigger);
     }
 }
