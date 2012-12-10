@@ -1,6 +1,7 @@
 package com.technicolor.eloyente;
 
 import hudson.triggers.Trigger;
+import hudson.EnvVars;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -15,11 +16,11 @@ import org.jivesoftware.smackx.pubsub.listener.ItemEventListener;
 class ItemEventCoordinator implements ItemEventListener<PayloadItem<SimplePayload>> {
 
     private final String nodename;
-    private final ElOyente trigger;
+    private final ElOyente eloyente;
 
     ItemEventCoordinator(String nodename, Trigger trigger) {
         this.nodename = nodename;
-        this.trigger = (ElOyente) trigger;
+        this.eloyente = (ElOyente) trigger;
     }
 
     @Override
@@ -27,7 +28,7 @@ class ItemEventCoordinator implements ItemEventListener<PayloadItem<SimplePayloa
         print(nodename, items);
 	// TODO: why only consider the first entry of items, and why use an iterator in that case?
         String xml = items.getItems().iterator().next().toXML();
-        List<SubscriptionProperties> subscriptionList = trigger.getNodeSubscriptions(nodename);
+        List<SubscriptionProperties> subscriptionList = eloyente.getNodeSubscriptions(nodename);
         //System.out.println("IMPRIME size: " + items.getItems().size());
         System.out.println("IMPRIME xml: " + xml);
 
@@ -40,15 +41,13 @@ class ItemEventCoordinator implements ItemEventListener<PayloadItem<SimplePayloa
                 //System.out.println("IMPRIME evaluate: " + filter.evaluate(xml));
 
                 if (filter.test(xml)) {
+                    EnvVars vars = new EnvVars();
                     System.out.println("IMPRIME run init");
                     for (Variable v : subs.getVariables()) {
-                        System.out.println("$" + v.getEnvName());
-                        System.out.println("expression=" + v.getEnvExpr());
-                        System.out.println("resolve=" + v.resolve(xml));
-                    //    System.out.println("$" + v.getEnvName() + " = '" + v.resolve(xml) + "' [" + v.getEnvExpr() + "] " + xml);
+                        vars.put(v.getEnvName(), v.resolve(xml));
                     }
                     System.out.println("IMPRIME run");
-                    trigger.run();
+                    eloyente.runWithEnvironment(vars);
                 } else {
                     System.out.println("filter="+filter+" test() returned false");
 		}

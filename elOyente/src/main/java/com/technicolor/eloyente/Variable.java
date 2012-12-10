@@ -50,12 +50,6 @@ public class Variable {
     }
 
     public String resolve(String xml) throws XPathExpressionException {
-try {
-System.out.println("evaluate expression "+envExpr.getExpression()+" against "+xml);
-System.out.println("boolean value: "+envExpr.test(xml));
-System.out.println("string value: "+envExpr.evaluate(xml));
-} catch (XPathExpressionException e) { e.printStackTrace(); throw e; }
-  catch (Exception e) { e.printStackTrace(); }
        return envExpr.evaluate(xml);
     }
 

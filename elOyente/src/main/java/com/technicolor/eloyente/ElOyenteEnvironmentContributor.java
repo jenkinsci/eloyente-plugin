@@ -34,7 +34,7 @@ public final class ElOyenteEnvironmentContributor extends EnvironmentContributor
 	public void buildEnvironmentFor(Run run, EnvVars envs, TaskListener listener) {
 		ElOyenteTriggerCause cause = (ElOyenteTriggerCause)run.getCause(ElOyenteTriggerCause.class);
 		if (null != cause) {
-			//envs.overrideAll(cause.getEnvVars());
+			envs.overrideAll(cause.getEnvVars());
 		}
 	}
 

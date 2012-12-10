@@ -10,6 +10,7 @@ import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
+import hudson.EnvVars;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -262,12 +263,16 @@ public class ElOyente extends Trigger<Project> {
      */
     @Override
     public void run() {
+        runWithEnvironment(null);
+    }
+
+    public void runWithEnvironment(EnvVars vars) {
         if (!project.getAllJobs().isEmpty()) {
             Iterator iterator = this.project.getAllJobs().iterator();
             while (iterator.hasNext()) {
                 Project p = ((Project) iterator.next());
                 System.out.println("ScheduleBuild: " + p.getName());
-                p.scheduleBuild(new ElOyenteTriggerCause());
+                p.scheduleBuild(new ElOyenteTriggerCause(vars));
             }
         }
     }

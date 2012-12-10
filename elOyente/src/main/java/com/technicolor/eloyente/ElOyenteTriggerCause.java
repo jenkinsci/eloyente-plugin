@@ -17,6 +17,7 @@
 package com.technicolor.eloyente;
 
 import hudson.model.Cause;
+import hudson.EnvVars;
 
 
 /**
@@ -25,12 +26,19 @@ import hudson.model.Cause;
 
 public final class ElOyenteTriggerCause extends Cause {
 
-	public ElOyenteTriggerCause() {
+	private EnvVars vars;
+
+	public ElOyenteTriggerCause(EnvVars vars) {
+		this.vars = vars;
 	}
 
 	@Override
 	public String getShortDescription() {
 		return new String("El Oyente received an XMPP event");
+	}
+
+	public EnvVars getEnvVars() {
+		return vars;
 	}
 
 }
