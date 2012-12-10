@@ -36,10 +36,10 @@ public class XPathExpressionHandlerTest {
 		String exp;
 
 		XPathExpressionHandler eh0 = new XPathExpressionHandler();
-		assertNull(eh0.getExpression());
+		assertEquals("", eh0.getExpression());
 
 		XPathExpressionHandler eh1 = new XPathExpressionHandler(null);
-		assertNull(eh1.getExpression());
+		assertEquals("", eh1.getExpression());
 
 		XPathExpressionHandler eh2 = new XPathExpressionHandler("");
 		assertEquals("", eh2.getExpression());
@@ -63,7 +63,7 @@ public class XPathExpressionHandlerTest {
 	@Test
 	public void testEmpty() throws Exception {
 		XPathExpressionHandler eh = new XPathExpressionHandler("");
-		assertEquals(XML0, eh.evaluate(XML0));
+		assertEquals("", eh.evaluate(XML0));
 		assertEquals(XML1, eh.evaluate(XML1));
 		assertEquals(XML2, eh.evaluate(XML2));
 		assertEquals(XML3, eh.evaluate(XML3));
@@ -80,24 +80,24 @@ public class XPathExpressionHandlerTest {
 	@Test
 	public void testDocument() throws Exception {
 		XPathExpressionHandler eh = new XPathExpressionHandler("/");
-		assertEquals(XML0, eh.evaluate(XML0));
+		assertEquals("", eh.evaluate(XML0));
 		assertEquals(XML1, eh.evaluate(XML1));
 		assertEquals(XML2, eh.evaluate(XML2));
 		assertEquals(XML3, eh.evaluate(XML3));
 		assertEquals(XML4, eh.evaluate(XML4));
-		assertEquals(XML5, eh.evaluate(XML5));
+		assertEquals("", eh.evaluate(XML5));
 		assertFalse(eh.test(XML0));
 		assertEquals(XML1.length() > 0, eh.test(XML1));
 		assertEquals(XML2.length() > 0, eh.test(XML2));
 		assertEquals(XML3.length() > 0, eh.test(XML3));
 		assertEquals(XML4.length() > 0, eh.test(XML4));
-		assertEquals(XML5.length() > 0, eh.test(XML5));
+		assertFalse(eh.test(XML5));
 	}
 
 	@Test
 	public void testRoot() throws Exception {
 		XPathExpressionHandler eh = new XPathExpressionHandler("/foo");
-		assertEquals(XML0, eh.evaluate(XML0));
+		assertEquals("", eh.evaluate(XML0));
 		assertEquals(XML1, eh.evaluate(XML1));
 		assertEquals(XML2, eh.evaluate(XML2));
 		assertEquals(XML3, eh.evaluate(XML3));
@@ -114,7 +114,7 @@ public class XPathExpressionHandlerTest {
 	@Test
 	public void testNonExistingRoot() throws Exception {
 		XPathExpressionHandler eh = new XPathExpressionHandler("/non-existing-root");
-		assertEquals(XML0, eh.evaluate(XML0));
+		assertEquals("", eh.evaluate(XML0));
 		assertEquals("", eh.evaluate(XML1));
 		assertEquals("", eh.evaluate(XML2));
 		assertEquals("", eh.evaluate(XML3));
@@ -138,9 +138,29 @@ public class XPathExpressionHandlerTest {
 	@Test
 	public void testWithNamespace() throws Exception {
 		String expected = "<foo><bar>bar1</bar><bar>bar2</bar></foo>";
-		String full = "<message xmlns=\"mynamespace\">" + expected + "</message>";
+		String xml = "<message xmlns=\"mynamespace\">" + expected + "</message>";
 		XPathExpressionHandler eh = new XPathExpressionHandler("//foo");
-		assertEquals(expected, eh.evaluate(full));
+		assertTrue(eh.test(xml));
+		assertEquals(expected, eh.evaluate(xml));
+	}
+
+	@Test
+	public void testTextSelector() throws Exception {
+		String expected = "This is my text to resolve";
+		String xml = "<message id=\"something\" xmlns=\"mynamespace\"><foo><bar>" + expected + "</bar></foo></message>";
+		XPathExpressionHandler eh = new XPathExpressionHandler("//foo/bar/text()");
+		assertTrue(eh.test(xml));
+		assertEquals(expected, eh.evaluate(xml));
+	}
+
+	@Test
+	public void testXMPPevent() throws Exception {
+		XPathExpressionHandler eh = new XPathExpressionHandler("/");
+		String xml = "<item id=\"Message_1354885341032\"><foo><bar>baz</bar></foo></item>";
+		assertTrue(eh.test(xml));
+		assertEquals(xml, eh.evaluate(xml));
+		eh.setExpression("//foo/bar/text()");
+		assertEquals("baz", eh.evaluate(xml));
 	}
 
 }

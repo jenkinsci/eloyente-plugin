@@ -17,19 +17,19 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class SubscriptionProperties {
 
     protected String node;
-    protected Expressions[] expressions;
+    protected Variable[] variables;
     private XPathExpressionHandler filter;
-    
+
 
     @DataBoundConstructor
-    public SubscriptionProperties(String filter, String node, Expressions[] v) throws XPathExpressionException {
+    public SubscriptionProperties(String filter, String node, Variable[] v) throws XPathExpressionException {
         this.node = node;
         this.filter = new XPathExpressionHandler(filter);
-        this.expressions = v;
+        this.variables = v;
     }
 
-//    public void setExpressions(Expressions[] expressions) {
-//        this.expressions = expressions;
+//    public void setExpressions(Expressions[] variables) {
+//        this.variables = variables;
 //    }
     public String getNode() {
         return node;
@@ -47,11 +47,11 @@ public class SubscriptionProperties {
         return filter;
     }
 
-    public List<Expressions> getExpressions() {
-        if (expressions == null) {
-            return new ArrayList<Expressions>();
+    public List<Variable> getVariables() {
+        if (variables == null) {
+            return new ArrayList<Variable>();
         } else {
-            return Arrays.asList(expressions);
+            return Arrays.asList(variables);
         }
     }
 }

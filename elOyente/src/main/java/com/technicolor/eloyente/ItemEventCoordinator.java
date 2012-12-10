@@ -25,29 +25,35 @@ class ItemEventCoordinator implements ItemEventListener<PayloadItem<SimplePayloa
     @Override
     public void handlePublishedItems(ItemPublishEvent<PayloadItem<SimplePayload>> items) {
         print(nodename, items);
+	// TODO: why only consider the first entry of items, and why use an iterator in that case?
         String xml = items.getItems().iterator().next().toXML();
         List<SubscriptionProperties> subscriptionList = trigger.getNodeSubscriptions(nodename);
-        Iterator it = subscriptionList.iterator();
-        System.out.println("IMPRIME size: " + items.getItems().size());
+        //System.out.println("IMPRIME size: " + items.getItems().size());
         System.out.println("IMPRIME xml: " + xml);
 
-        while (it.hasNext()) {
-            SubscriptionProperties subs = (SubscriptionProperties) it.next();
+        for (SubscriptionProperties subs : subscriptionList) {
             System.out.println("IMPRIME nodo: " + subs.getNode());
-            System.out.println("IMPRIME filtro: " + subs.getFilter());
+            System.out.println("IMPRIME filtro: " + subs.getFilter() + " / " + subs.getFilterXPath());
 
             try {
-                if (subs != null) {
-                    XPathExpressionHandler filter = subs.getFilterXPath();
-                    //System.out.println("IMPRIME evaluate: " + filter.evaluate(xml));
+                XPathExpressionHandler filter = subs.getFilterXPath();
+                //System.out.println("IMPRIME evaluate: " + filter.evaluate(xml));
 
-                    if (filter.test(xml)) {
-                        System.out.println("IMPRIME run");
-                        trigger.run();
+                if (filter.test(xml)) {
+                    System.out.println("IMPRIME run init");
+                    for (Variable v : subs.getVariables()) {
+                        System.out.println("$" + v.getEnvName());
+                        System.out.println("expression=" + v.getEnvExpr());
+                        System.out.println("resolve=" + v.resolve(xml));
+                    //    System.out.println("$" + v.getEnvName() + " = '" + v.resolve(xml) + "' [" + v.getEnvExpr() + "] " + xml);
                     }
-                }
-
+                    System.out.println("IMPRIME run");
+                    trigger.run();
+                } else {
+                    System.out.println("filter="+filter+" test() returned false");
+		}
             } catch (XPathExpressionException ex) {
+		System.out.println("Exception: "+ex);
                 Logger.getLogger(ItemEventCoordinator.class.getName()).log(Level.SEVERE, null, ex);
             }
         }

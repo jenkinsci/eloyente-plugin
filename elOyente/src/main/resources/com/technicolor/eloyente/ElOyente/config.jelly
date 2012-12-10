@@ -21,12 +21,12 @@
             <table width="100%">
                 <f:entry title="Node" field="node">
                     <f:textbox value="${s.node}"/>
-                </f:entry>             
+                </f:entry>
                 <f:entry title="Filter" field="filter" >
                     <f:expandableTextbox value="${s.filter}"/>
-                </f:entry>             
+                </f:entry>
                 <f:entry title="Environment variables" field="envVars">
-                    <f:repeatable var="v" add="Add variable" items="${s.expressions}">
+                    <f:repeatable var="v" add="Add variable" items="${s.variables}">
                         <table width="100%" bgcolor="#DDDDDD">
                             <f:entry title="Name" field="envName">
                                 <f:textbox value="${v.envName}" style="width:98%"/>
@@ -40,6 +40,7 @@
                                 </div>
                             </f:entry>
                         </table>
+						<br/>
                     </f:repeatable>
                 </f:entry>
                 <f:entry>

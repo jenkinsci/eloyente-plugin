@@ -16,21 +16,21 @@
 package com.technicolor.eloyente;
 
 import org.kohsuke.stapler.DataBoundConstructor;
+import javax.xml.xpath.XPathExpressionException;
 
 /**
  *
  * @author pardogonzalezj
  */
-public class Expressions {
+public class Variable {
 
     public String envName;
-    public String envExpr;
+    public XPathExpressionHandler envExpr;
 
     @DataBoundConstructor
-    public Expressions(String envName, String envExpr) {
+    public Variable(String envName, String envExpr) throws XPathExpressionException {
         this.envName = envName;
-        this.envExpr = envExpr;
-
+        this.envExpr = new XPathExpressionHandler(envExpr);
     }
 
     public void setEnvName(String envName) {
@@ -41,11 +41,22 @@ public class Expressions {
         return envName;
     }
 
-    public void setEnvExpr(String envExpr) {
-        this.envName = envExpr;
+    public void setEnvExpr(String envExpr)  throws XPathExpressionException {
+        this.envExpr.setExpression(envExpr);
     }
 
     public String getEnvExpr() {
-        return envExpr;
+        return envExpr.getExpression();
     }
+
+    public String resolve(String xml) throws XPathExpressionException {
+try {
+System.out.println("evaluate expression "+envExpr.getExpression()+" against "+xml);
+System.out.println("boolean value: "+envExpr.test(xml));
+System.out.println("string value: "+envExpr.evaluate(xml));
+} catch (XPathExpressionException e) { e.printStackTrace(); throw e; }
+  catch (Exception e) { e.printStackTrace(); }
+       return envExpr.evaluate(xml);
+    }
+
 }

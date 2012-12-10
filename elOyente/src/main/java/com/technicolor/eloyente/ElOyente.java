@@ -104,7 +104,7 @@ public class ElOyente extends Trigger<Project> {
         String user = this.getDescriptor().user;
         String password = this.getDescriptor().password;
         this.project = project;
-        
+
         try {
             if (getDescriptor().reloading) {
                 if (!checkAnyParameterEmpty(server, user, password)) {
@@ -267,7 +267,7 @@ public class ElOyente extends Trigger<Project> {
             while (iterator.hasNext()) {
                 Project p = ((Project) iterator.next());
                 System.out.println("ScheduleBuild: " + p.getName());
-                p.scheduleBuild(null);
+                p.scheduleBuild(new ElOyenteTriggerCause());
             }
         }
     }
@@ -279,6 +279,7 @@ public class ElOyente extends Trigger<Project> {
      *
      * @return DescriptorImpl
      */
+    //TODO: Why override a method just to call the parent?
     @Override
     public final DescriptorImpl getDescriptor() {
         return (DescriptorImpl) super.getDescriptor();
@@ -318,10 +319,10 @@ public class ElOyente extends Trigger<Project> {
 
 //        @Override
 //        public Trigger<?> newInstance(StaplerRequest req, JSONObject formData) throws FormException {
-//            
+//
 //            List<SubscriptionProperties> tasksprops = req.bindParametersToList(SubscriptionProperties.class, "elOyente-suscription.suscriptionpropertes.");
 //            return new ElOyente(tasksprops);
-//            
+//
 //        }
         /**
          * Returns true if this task is applicable to the given project.

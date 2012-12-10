@@ -16,6 +16,7 @@
 
 package com.technicolor.eloyente;
 
+import org.w3c.dom.bootstrap.DOMImplementationRegistry;
 import org.w3c.dom.*;
 import org.w3c.dom.ls.*;
 import org.xml.sax.*;
@@ -24,7 +25,7 @@ import javax.xml.parsers.*;
 import java.io.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
+import java.nio.charset.Charset;
 
 /**
  * This is a convenience class for working with XPath expressions.
@@ -45,7 +46,10 @@ public class XPathExpressionHandler {
 	private String expression;
 	private transient XPathExpression expressionCompiled;
 
+	private transient DOMImplementationRegistry domImplementationRegistry;
+	private transient DocumentBuilderFactory docBuilderFactory;
 	private transient DocumentBuilder docBuilder;
+	private transient Document xmldoc;
 	private transient DOMImplementationLS domImplementation;
 
 	private static final String EMPTY_STR = "";
@@ -56,7 +60,7 @@ public class XPathExpressionHandler {
 	 * Creates an XPathExpression handler with an empty expression.
 	 */
 	public XPathExpressionHandler() throws XPathExpressionException {
-		this(null);
+		this(EMPTY_STR);
 	}
 
 	/**
@@ -65,12 +69,20 @@ public class XPathExpressionHandler {
 	 * @param expression An expression in XPath notation
 	 */
 	public XPathExpressionHandler(String expression) throws XPathExpressionException {
+		init(expression);
+	}
+
+	private void init(String expression) throws XPathExpressionException {
 		try {
-			DocumentBuilderFactory dbfact = DocumentBuilderFactory.newInstance();
-			dbfact.setNamespaceAware(false);
-			docBuilder = dbfact.newDocumentBuilder();
-			Document xmldoc = docBuilder.newDocument();
-			domImplementation = (DOMImplementationLS)xmldoc.getImplementation();
+			domImplementationRegistry = DOMImplementationRegistry.newInstance();
+			domImplementation = (DOMImplementationLS)domImplementationRegistry.getDOMImplementation("LS");
+			docBuilderFactory = DocumentBuilderFactory.newInstance();
+			docBuilderFactory.setNamespaceAware(false);
+			docBuilder = docBuilderFactory.newDocumentBuilder();
+			xmldoc = docBuilder.newDocument();
+			setExpression(expression);
+		} catch (XPathExpressionException e) {
+			throw e;
 		} catch (Exception e) {
 			/**
 			* If an exception is thrown, there is a problem with the XML parsing
@@ -80,7 +92,17 @@ public class XPathExpressionHandler {
 			*/
 			e.printStackTrace();
 		}
-		this.setExpression(expression);
+	}
+
+	/**
+	 * This function initializes the transient members when the object is deserialized.
+	 */
+	private Object readResolve() throws XPathExpressionException {
+		String expr = this.expression;
+		// this is to avoid the optimalization when deserializing
+		this.expression = null;
+		init(expr);
+		return this;
 	}
 
 	/**
@@ -89,10 +111,15 @@ public class XPathExpressionHandler {
 	 * @param expression An expression in XPath notation.
 	 */
 	public void setExpression(String expression) throws XPathExpressionException {
-		if (null != expression && !expression.equals(this.expression)) {
-			XPath xpath = XPathFactory.newInstance().newXPath();
-			this.expressionCompiled = xpath.compile("".equals(expression) ? "/" : expression);
-			this.expression = expression;
+		String newExpr = (null == expression ? EMPTY_STR : expression);
+		if (!newExpr.equals(this.expression)) {
+			if (!EMPTY_STR.equals(newExpr)) {
+				XPath xpath = XPathFactory.newInstance().newXPath();
+				this.expressionCompiled = xpath.compile(newExpr);
+			} else {
+				this.expressionCompiled = null;
+			}
+			this.expression = newExpr;
 		}
 	}
 
@@ -115,9 +142,7 @@ public class XPathExpressionHandler {
 	 * @return The result of evaluating the expression
 	 */
 	public String evaluate(String xml) throws XPathExpressionException {
-		if (null == xml || xml.isEmpty()) return xml;
-		// optimalization: '/' is the document selector (just return input)
-		if ("/".equals(expression) || "".equals(expression)) return xml;
+		if (null == expressionCompiled) return (null != xml ? xml : EMPTY_STR);
 		Document doc = getDOM(xml);
 		if (null == doc) return EMPTY_STR;
 		NodeList n = (NodeList)expressionCompiled.evaluate(doc, XPathConstants.NODESET);
@@ -134,9 +159,7 @@ public class XPathExpressionHandler {
 	 * @return True if the result is not empty
 	 */
 	public boolean test(String xml) throws XPathExpressionException {
-		if (null == xml || xml.isEmpty()) return false;
-		// optimalization: '/' is the document selector (validate input)
-		if ("/".equals(expression) || "".equals(expression)) return true;
+		if (null == expressionCompiled) return (null != xml && !xml.isEmpty());
 		Document doc = getDOM(xml);
 		if (null == doc) return false;
 		// a node-set is true if and only if it is not empty
@@ -147,7 +170,7 @@ public class XPathExpressionHandler {
 
 	private Document getDOM(String xml) {
 		try {
-			InputStream is = new ByteArrayInputStream(xml.getBytes());
+			InputStream is = new ByteArrayInputStream(xml.getBytes(Charset.forName("UTF-16")));
 			return docBuilder.parse(is);
 		} catch (Exception e) {
 			/**
@@ -162,16 +185,19 @@ public class XPathExpressionHandler {
 	private String getXML(NodeList list) {
 		try {
 			LSSerializer ser = domImplementation.createLSSerializer();
-			ser.getDomConfig().setParameter("xml-declaration", false);
-			String docstr = "";
+			DOMConfiguration cfg = ser.getDomConfig();
+			cfg.setParameter("xml-declaration", false);
+			StringBuilder docstr = new StringBuilder();
 
 			for (int i=0; i<list.getLength(); i++) {
-				docstr += ser.writeToString(list.item(i));
+				Node n = list.item(i);
+				docstr.append(ser.writeToString(n));
 			}
 
-			return docstr;
+			return docstr.toString();
 		} catch (Exception e) {
-			return "";
+			e.printStackTrace();
+			return EMPTY_STR;
 		}
 	}
 
