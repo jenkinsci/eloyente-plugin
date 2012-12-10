@@ -25,11 +25,13 @@ class ItemEventCoordinator implements ItemEventListener<PayloadItem<SimplePayloa
 
     @Override
     public void handlePublishedItems(ItemPublishEvent<PayloadItem<SimplePayload>> items) {
-        print(nodename, items);
+        print(items);
 	// TODO: why only consider the first entry of items, and why use an iterator in that case?
         String xml = items.getItems().iterator().next().toXML();
         List<SubscriptionProperties> subscriptionList = eloyente.getNodeSubscriptions(nodename);
-        //System.out.println("IMPRIME size: " + items.getItems().size());
+        Iterator it = subscriptionList.iterator();
+        System.out.println("IMPRIME handlePublishedItems() of object " + this + " called for items " + items.getItems());
+        System.out.println("IMPRIME size: " + items.getItems().size());
         System.out.println("IMPRIME xml: " + xml);
 
         for (SubscriptionProperties subs : subscriptionList) {
@@ -58,7 +60,7 @@ class ItemEventCoordinator implements ItemEventListener<PayloadItem<SimplePayloa
         }
     }
 
-    private synchronized void print(String nodename, ItemPublishEvent<PayloadItem<SimplePayload>> items) {
+    private synchronized void print(ItemPublishEvent<PayloadItem<SimplePayload>> items) {
         System.out.println("-----------------------------");
         System.out.println(nodename + ": Item count: " + items.getItems().size());
         for (PayloadItem<SimplePayload> item : items.getItems()) {
@@ -67,4 +69,5 @@ class ItemEventCoordinator implements ItemEventListener<PayloadItem<SimplePayloa
         }
         System.out.println("-----------------------------");
     }
+
 }
