@@ -51,6 +51,12 @@
   <artifactId>elOyente</artifactId>
   <version>1.0</version>
   <packaging>hpi</packaging>
+  <scm>
+    <connection>scm:git:ssh://github.com/vanderhallenf/eloyente.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/vanderhallenf/eloyente.git</developerConnection>
+    <url>https://github.com/vanderhallenf/eloyente</url>
+  </scm>
+  <url>http://wiki.jenkins-ci.org/display/JENKINS/El+Oyente+Plugin</url>
   <dependencies>
     <dependency>
       <groupId>org.igniterealtime.smack</groupId>
