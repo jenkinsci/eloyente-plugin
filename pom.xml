@@ -25,7 +25,7 @@
   </licenses>
   <developers>
     <developer>
-      <id>IsabelFD</id>
+      <id>isabelFD</id>
       <name>Isabel Fern&aacute;ndez D&iacute;az</name>
       <email>isabel.fd@gmail.com</email>
     </developer>
@@ -52,7 +52,7 @@
   <version>1.0</version>
   <packaging>hpi</packaging>
   <scm>
-    <connection>scm:git:ssh://https://github.com/jenkinsci/eloyente-plugin.git</connection>
+    <connection>scm:git:ssh://github.com/jenkinsci/eloyente-plugin.git</connection>
     <developerConnection>scm:git:ssh://git@github.com:jenkinsci/eloyente-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/eloyente-plugin</url>
   </scm>
