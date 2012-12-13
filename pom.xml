@@ -52,11 +52,11 @@
   <version>1.1-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <scm>
-    <connection>scm:git:ssh://github.com/vanderhallenf/eloyente.git</connection>
-    <developerConnection>scm:git:ssh://git@github.com/vanderhallenf/eloyente.git</developerConnection>
-    <url>https://github.com/vanderhallenf/eloyente</url>
+    <connection>scm:git:ssh://https://github.com/jenkinsci/eloyente-plugin.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com:jenkinsci/eloyente-plugin.git</developerConnection>
+    <url>https://github.com/jenkinsci/eloyente-plugin</url>
   </scm>
-  <url>http://wiki.jenkins-ci.org/display/JENKINS/El+Oyente+Plugin</url>
+  <url>https://wiki.jenkins-ci.org/display/JENKINS/El+Oyente+Plugin</url>
   <dependencies>
     <dependency>
       <groupId>org.igniterealtime.smack</groupId>
