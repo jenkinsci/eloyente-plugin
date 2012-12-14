@@ -124,7 +124,7 @@ public class XPathExpressionHandler {
 	}
 
 	/**
-	 * Function to retrieve the expression
+	 * Function to retrieve the expression.
 	 * <p>
 	 * @return The expression that the object holds
 	 */
@@ -133,7 +133,7 @@ public class XPathExpressionHandler {
 	}
 
 	/**
-	 * Evaluate the expression
+	 * Evaluate the expression.
 	 * <p>
 	 * This function evaluates the expression against the provided
 	 * XML document and returns the result as a string.

@@ -14,11 +14,14 @@
    limitations under the License.
 */
 
+/**
+ * @author Juan Luis Pardo Gonz&aacute;lez
+ * @author Isabel Fern&aacute;ndez D&iacute;az
+ */
 package com.technicolor.eloyente;
 
-import hudson.triggers.Trigger;
 import hudson.EnvVars;
-import java.util.ArrayList;
+import hudson.triggers.Trigger;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
@@ -32,50 +35,45 @@ import org.jivesoftware.smackx.pubsub.listener.ItemEventListener;
 class ItemEventCoordinator implements ItemEventListener<PayloadItem<SimplePayload>> {
 
     private final String nodename;
-    private final ElOyente eloyente;
+    private final ElOyente elOyente;
 
     ItemEventCoordinator(String nodename, Trigger trigger) {
         this.nodename = nodename;
-        this.eloyente = (ElOyente) trigger;
+        this.elOyente = (ElOyente) trigger;
     }
 
+    /**
+     * Applying the filter decides whether to trigger the job or not and passes
+     * the environment variables if they exist.
+     */
     @Override
     public void handlePublishedItems(ItemPublishEvent<PayloadItem<SimplePayload>> items) {
         print(items);
-	// TODO: why only consider the first entry of items, and why use an iterator in that case?
+        // TODO: why only consider the first entry of items, and why use an iterator in that case?
         String xml = items.getItems().iterator().next().toXML();
-        List<SubscriptionProperties> subscriptionList = eloyente.getNodeSubscriptions(nodename);
+        List<SubscriptionProperties> subscriptionList = elOyente.getNodeSubscriptions(nodename);
         Iterator it = subscriptionList.iterator();
-        System.out.println("IMPRIME handlePublishedItems() of object " + this + " called for items " + items.getItems());
-        System.out.println("IMPRIME size: " + items.getItems().size());
-        System.out.println("IMPRIME xml: " + xml);
 
         for (SubscriptionProperties subs : subscriptionList) {
-            System.out.println("IMPRIME nodo: " + subs.getNode());
-            System.out.println("IMPRIME filtro: " + subs.getFilter() + " / " + subs.getFilterXPath());
-
             try {
                 XPathExpressionHandler filter = subs.getFilterXPath();
-                //System.out.println("IMPRIME evaluate: " + filter.evaluate(xml));
-
                 if (filter.test(xml)) {
                     EnvVars vars = new EnvVars();
-                    System.out.println("IMPRIME run init");
                     for (Variable v : subs.getVariables()) {
                         vars.put(v.getEnvName(), v.resolve(xml));
                     }
-                    System.out.println("IMPRIME run");
-                    eloyente.runWithEnvironment(vars);
-                } else {
-                    System.out.println("filter="+filter+" test() returned false");
-		}
+                    elOyente.runWithEnvironment(vars);
+                }
             } catch (XPathExpressionException ex) {
-		System.out.println("Exception: "+ex);
+                System.out.println("Exception: " + ex);
                 Logger.getLogger(ItemEventCoordinator.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }
 
+    /**
+     * Prints the message of the XMPP event received.
+     */
     private synchronized void print(ItemPublishEvent<PayloadItem<SimplePayload>> items) {
         System.out.println("-----------------------------");
         System.out.println(nodename + ": Item count: " + items.getItems().size());
@@ -85,5 +83,4 @@ class ItemEventCoordinator implements ItemEventListener<PayloadItem<SimplePayloa
         }
         System.out.println("-----------------------------");
     }
-
 }

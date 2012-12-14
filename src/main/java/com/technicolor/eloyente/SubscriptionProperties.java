@@ -14,10 +14,6 @@
    limitations under the License.
 */
 
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.technicolor.eloyente;
 
 import java.util.ArrayList;
@@ -27,16 +23,29 @@ import javax.xml.xpath.XPathExpressionException;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
- *
- * @author fernandezdiazi
+ * @author Juan Luis Pardo Gonz&aacute;lez
+ * @author Isabel Fern&aacute;ndez D&iacute;az
  */
 public class SubscriptionProperties {
 
+    /**
+     * The node to which a job will subscribe.
+     */
     protected String node;
+    /**
+     * The environment variables that a job will have.
+     */
     protected Variable[] variables;
     private XPathExpressionHandler filter;
 
-
+    /**
+     * Constructor for the properties of a subscription.
+     *
+     * @param filter Filter to be applied to the XMPP messages received
+     * @param node Node to which the subscription is done.
+     * @param v Environment variables for that subscription.
+     * @throws XPathExpressionException
+     */
     @DataBoundConstructor
     public SubscriptionProperties(String filter, String node, Variable[] v) throws XPathExpressionException {
         this.node = node;
@@ -44,17 +53,16 @@ public class SubscriptionProperties {
         this.variables = v;
     }
 
-//    public void setExpressions(Expressions[] variables) {
-//        this.variables = variables;
-//    }
+    /**
+     * Retrieves the node the user input.
+     */
     public String getNode() {
         return node;
     }
-//
-//    public void setNode(String node){
-//        this.node = node;
-//    }
 
+    /**
+     * Retrieves the filter the user input.
+     */
     public String getFilter() {
         return filter.getExpression();
     }
@@ -63,6 +71,9 @@ public class SubscriptionProperties {
         return filter;
     }
 
+    /**
+     * Retrieves the environment variables the user input
+     */
     public List<Variable> getVariables() {
         if (variables == null) {
             return new ArrayList<Variable>();

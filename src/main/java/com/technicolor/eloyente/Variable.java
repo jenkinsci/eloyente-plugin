@@ -15,18 +15,32 @@
  */
 package com.technicolor.eloyente;
 
-import org.kohsuke.stapler.DataBoundConstructor;
 import javax.xml.xpath.XPathExpressionException;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
- *
- * @author pardogonzalezj
+ * @author Juan Luis Pardo Gonz&aacute;lez
+ * @author Isabel Fern&aacute;ndez D&iacute;az
  */
 public class Variable {
 
+    /**
+     * Name of the environment variable.
+     */
     public String envName;
+    /**
+     * Value of the environment variable.
+     */
     public XPathExpressionHandler envExpr;
 
+    /**
+     * Constructor for an environment variables.
+     *
+     *
+     * @param envName
+     * @param envExpr
+     * @throws XPathExpressionException
+     */
     @DataBoundConstructor
     public Variable(String envName, String envExpr) throws XPathExpressionException {
         this.envName = envName;
@@ -37,20 +51,40 @@ public class Variable {
         this.envName = envName;
     }
 
+    /**
+     * This method returns the name of the environment variable.
+     *
+     * config.jelly calls this method to obtain the value of the field Name for
+     * a variable.
+     *
+     */
     public String getEnvName() {
         return envName;
     }
 
-    public void setEnvExpr(String envExpr)  throws XPathExpressionException {
+    public void setEnvExpr(String envExpr) throws XPathExpressionException {
         this.envExpr.setExpression(envExpr);
     }
 
+    /**
+     * This method returns the value of the environment variable.
+     *
+     * config.jelly calls this method to obtain the value of the field Value for
+     * a variable.
+     *
+     */
     public String getEnvExpr() {
         return envExpr.getExpression();
     }
 
+    /**
+     * Returns the result of evaluating the expression against the provided XML
+     * document.
+     *
+     * @param xml
+     * @throws XPathExpressionException
+     */
     public String resolve(String xml) throws XPathExpressionException {
-       return envExpr.evaluate(xml);
+        return envExpr.evaluate(xml);
     }
-
 }
