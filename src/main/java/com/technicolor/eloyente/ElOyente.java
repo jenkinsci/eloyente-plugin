@@ -1,19 +1,18 @@
 /*
-   Copyright 2012 Technicolor
+ Copyright 2012 Technicolor
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+ http://www.apache.org/licenses/LICENSE-2.0
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
-
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ */
 package com.technicolor.eloyente;
 
 import hudson.EnvVars;
@@ -54,6 +53,8 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 /**
+ * This plug-in adds job triggering based on XMPP Pub/Sub events.
+ *
  * @author Juan Luis Pardo Gonz&aacute;lez
  * @author Isabel Fern&aacute;ndez D&iacute;az
  */
@@ -120,8 +121,7 @@ public class ElOyente extends Trigger<Project> {
      * This method returns a List with the different subscriptions for a node
      * specified as parameter.
      *
-     * @param node The name of the node.
-     * properties for that node.
+     * @param node The name of the node. properties for that node.
      */
     public List<SubscriptionProperties> getNodeSubscriptions(String node) {
 
@@ -161,36 +161,53 @@ public class ElOyente extends Trigger<Project> {
         this.project = project;
 
         try {
-            if (getDescriptor().reloading) {
-                if (!checkAnyParameterEmpty(server, user, password)) {
-                    if (connectionOK(server, user, password)) {
-                        if (!connections.isEmpty() && connections.containsKey(project.getName())) {
-                            connections.get(project.getName()).disconnect();                                    //Reloading job because of parameters change, connection existing
-                            connections.remove(project.getName());
-
-                            Connection con = createConnection(project, server, user, password);
-                            subscribeIfNecessary(project);
-                            addListeners(con, user);
-                        } else {
-                            if (!checkAnyParameterEmpty(server, user, password)) {
-                                Connection con = createConnection(project, server, user, password);             //Reloading job because of parameter change, not connected before
-                                subscribeIfNecessary(project);
-                                addListeners(con, user);
-                            }
-                        }
-                    }
-                }
-            } else {
-                if (!checkAnyParameterEmpty(server, user, password)) {
-                    if (connectionOK(server, user, password)) {
-                        Connection con = createConnection(project, server, user, password);                     // New job
-                        subscribeIfNecessary(project);
-                        addListeners(con, user);
-                    }
+            if (!checkAnyParameterEmpty(server, user, password)) {
+                if (connectionOK(server, user, password)) {
+                    Connection con = createConnection(project, server, user, password);
+                    subscribeIfNecessary(project);
+                    addListeners(con, user);
                 }
             }
         } catch (XMPPException ex) {
             ex.printStackTrace(System.err);
+        }
+    }
+
+/**
+     * Checks if all the parameters from the main configuration are complete.
+     *
+     * @param server Server from the main configuration
+     * @param user User from the main configuration
+     * @param password Password from the main configuration
+     */
+    public boolean checkAnyParameterEmpty(String server, String user, String password) {
+        if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Check if it is possible to connect to the XMPP server.
+     *
+     * Check if it is possible to connect to the XMPP server with the parameters
+     * specified in the main configuration.
+     *
+     * @param server Server from the main configuration
+     * @param user User from the main configuration
+     * @param password Password from the main configuration
+     */
+    public boolean connectionOK(String server, String user, String password) {
+
+        try {
+            ConnectionConfiguration config = new ConnectionConfiguration(server);
+            Connection con = new XMPPConnection(config);
+            con.connect();
+            con.login(user, password);
+            con.disconnect();
+            return true;
+        } catch (XMPPException ex) {
+            return false;
         }
     }
 
@@ -206,8 +223,8 @@ public class ElOyente extends Trigger<Project> {
         if (!connections.containsKey(project.getName())) {
             ConnectionConfiguration config = new ConnectionConfiguration(server);
             Connection con = new XMPPConnection(config);
-            con.connect();
-            con.login(user, password, project.getName());
+                con.connect();
+                con.login(user, password, project.getName());
             connections.put(project.getName(), con);
             return con;
         } else {
@@ -280,13 +297,14 @@ public class ElOyente extends Trigger<Project> {
                             while (items.hasNext()) {
                                 if (((DiscoverItems.Item) items.next()).getNode().equals(nodeName)) {
                                     nodeExists = true;
+                                    break;
                                 }
                             }
                             if (nodeExists) {
                                 Node node = mgr.getNode(nodeName);
                                 String JID = con.getUser();
                                 mgr.getNode(nodeName).subscribe(JID);
-                                System.out.println("Project " + project.getName() + "subscribed to node " + node.getId());
+                                System.out.println("Project " + project.getName() + " subscribed to node " + node.getId());
                             }
                         }
                         subscribed = false;
@@ -297,43 +315,9 @@ public class ElOyente extends Trigger<Project> {
         }
     }
 
-    /**
-     * Checks if all the parameters from the main configuration are complete.
-     *
-     * @param server Server from the main configuration
-     * @param user User from the main configuration
-     * @param password Password from the main configuration
-     */
-    public boolean checkAnyParameterEmpty(String server, String user, String password) {
-        if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
-            return false;
-        }
-        return true;
-    }
 
-    /**
-     * Check if it is possible to connect to the XMPP server.
-     *
-     * Check if it is possible to connect to the XMPP server with the parameters
-     * specified in the main configuration.
-     *
-     * @param server Server from the main configuration
-     * @param user User from the main configuration
-     * @param password Password from the main configuration
-     */
-    public static synchronized boolean connectionOK(String server, String user, String password) {
 
-        try {
-            ConnectionConfiguration config = new ConnectionConfiguration(server);
-            Connection con = new XMPPConnection(config);
-            con.connect();
-            con.login(user, password);
-            con.disconnect();
-            return true;
-        } catch (XMPPException ex) {
-            return false;
-        }
-    }
+
 
     /**
      * Add listeners to the connections.
@@ -361,11 +345,11 @@ public class ElOyente extends Trigger<Project> {
                 while (items.hasNext()) {
                     if (((DiscoverItems.Item) items.next()).getNode().equals(key)) {
                         nodeExists = true;
+                        break;
                     }
                 }
                 if (nodeExists) {
                     LeafNode node = (LeafNode) mgr.getNode(subscriptions[i].node);
-                    System.out.println("NODO: " + subscriptions[i].node);
 
                     if (!listeners.containsKey(node.getId())) {
                         ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(node.getId(), this);
@@ -393,8 +377,8 @@ public class ElOyente extends Trigger<Project> {
     }
 
     /**
+     * Schedules a build.
      *
-     * @param vars
      */
     public void runWithEnvironment(EnvVars vars) {
         if (!project.getAllJobs().isEmpty()) {
@@ -424,13 +408,15 @@ public class ElOyente extends Trigger<Project> {
                 LeafNode n = (LeafNode) mgr.getNode(nodeName);
                 n.unsubscribe(con.getUser());
             }
+            con.disconnect();
+            connections.remove(project.getName());
         } catch (XMPPException ex) {
             System.err.println(ex);
         }
         project = null;
         listeners = null;
         subscriptions = null;
-        super.stop();
+        //super.stop();
     }
 
     /**
@@ -465,10 +451,6 @@ public class ElOyente extends Trigger<Project> {
         private String server;
         private String user;
         private String password;
-        /**
-         * Indicates if the job is a new job or it is being reloaded.
-         */
-        public boolean reloading = false;
 
         /**
          * Brings the persisted configuration in the main configuration.
@@ -477,7 +459,6 @@ public class ElOyente extends Trigger<Project> {
          */
         public DescriptorImpl() {
             load();
-            reloading = false;
         }
 
         /**
@@ -551,7 +532,6 @@ public class ElOyente extends Trigger<Project> {
                 Object instance = (ElOyente) job.getTriggers().get(this);
                 if (instance != null) {
                     System.out.println("Reloading job: " + job.getName());
-                    reloading = true;
                     File directoryConfigXml = job.getConfigFile().getFile().getParentFile();
                     try {
                         Items.load(job.getParent(), directoryConfigXml);
@@ -560,7 +540,6 @@ public class ElOyente extends Trigger<Project> {
                         Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
-                reloading = false;
             }
         }
 
@@ -646,14 +625,6 @@ public class ElOyente extends Trigger<Project> {
             return password;
         }
 
-        /**
-         * Used for knowing if a job is using the start() method because it is
-         * loading or the configuration has changed and it is being reloaded.
-         *
-         */
-        public boolean getReloading() {
-            return reloading;
-        }
 
         /**
          * Performs on-the-fly validation of the form field 'server'.
@@ -769,7 +740,6 @@ public class ElOyente extends Trigger<Project> {
             }
             return items;
         }
-        
 //        public ListBoxModel doFillNodesSubItems() throws XMPPException, InterruptedException {
 //            ListBoxModel items = new ListBoxModel();
 //            String node;
