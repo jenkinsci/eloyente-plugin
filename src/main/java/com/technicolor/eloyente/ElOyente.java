@@ -62,12 +62,12 @@ public class ElOyente extends Trigger<Project> {
 
     private final static Integer USER_ID = 0;
     private final static Integer RESOURCE_ID = 1;
-    private final static Map<String, Connection> connections = new HashMap<String, Connection>();
+    protected final static Map<String, Connection> connections = new HashMap<String, Connection>();
     /**
      * Array of subscriptions for a job.
      */
     protected SubscriptionProperties[] subscriptions;
-    private transient Map<String, ItemEventCoordinator> listeners = new HashMap<String, ItemEventCoordinator>();
+    protected transient Map<String, ItemEventCoordinator> listeners = new HashMap<String, ItemEventCoordinator>();
     /**
      * The project associated to the instance of the trigger.
      */
@@ -236,7 +236,7 @@ public class ElOyente extends Trigger<Project> {
      * Checks if the JID has the form expected and returns a Map with the UserID
      * y el ResourceID
      */
-    private Map<Integer, String> parseJID(Subscription sub) {
+    protected Map<Integer, String> parseJID(Subscription sub) {
         String JID = sub.getJid();
 
         int atPos = JID.indexOf('@');
@@ -401,7 +401,6 @@ public class ElOyente extends Trigger<Project> {
     @Override
     public void stop() {
         try {
-            ConnectionConfiguration config = new ConnectionConfiguration(getDescriptor().server);
             Connection con = connections.get(project.getName());
             PubSubManager mgr = new PubSubManager(con);
             for (String nodeName : listeners.keySet()) {
@@ -419,6 +418,11 @@ public class ElOyente extends Trigger<Project> {
         //super.stop();
     }
 
+    public void deleteJob(){
+        
+    }
+    
+    
     /**
      * Retrieves the descriptor for the plugin.
      *
@@ -532,6 +536,7 @@ public class ElOyente extends Trigger<Project> {
                 Object instance = (ElOyente) job.getTriggers().get(this);
                 if (instance != null) {
                     System.out.println("Reloading job: " + job.getName());
+                    //START()!!!!!!!!!!!!!!!!!1
                     File directoryConfigXml = job.getConfigFile().getFile().getParentFile();
                     try {
                         Items.load(job.getParent(), directoryConfigXml);
