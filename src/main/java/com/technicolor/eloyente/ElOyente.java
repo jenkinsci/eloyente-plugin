@@ -197,7 +197,7 @@ public class ElOyente extends Trigger<Project> {
      * @param user User from the main configuration
      * @param password Password from the main configuration
      */
-    public boolean connectionOK(String server, String user, String password) {
+    public static synchronized boolean connectionOK(String server, String user, String password) {
 
         try {
             ConnectionConfiguration config = new ConnectionConfiguration(server);
