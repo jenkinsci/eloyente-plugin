@@ -173,7 +173,7 @@ public class ElOyente extends Trigger<Project> {
         }
     }
 
-/**
+    /**
      * Checks if all the parameters from the main configuration are complete.
      *
      * @param server Server from the main configuration
@@ -223,8 +223,8 @@ public class ElOyente extends Trigger<Project> {
         if (!connections.containsKey(project.getName())) {
             ConnectionConfiguration config = new ConnectionConfiguration(server);
             Connection con = new XMPPConnection(config);
-                con.connect();
-                con.login(user, password, project.getName());
+            con.connect();
+            con.login(user, password, project.getName());
             connections.put(project.getName(), con);
             return con;
         } else {
@@ -314,10 +314,6 @@ public class ElOyente extends Trigger<Project> {
             }
         }
     }
-
-
-
-
 
     /**
      * Add listeners to the connections.
@@ -418,11 +414,9 @@ public class ElOyente extends Trigger<Project> {
         //super.stop();
     }
 
-    public void deleteJob(){
-        
+    public void deleteJob() {
     }
-    
-    
+
     /**
      * Retrieves the descriptor for the plugin.
      *
@@ -630,7 +624,6 @@ public class ElOyente extends Trigger<Project> {
             return password;
         }
 
-
         /**
          * Performs on-the-fly validation of the form field 'server'.
          *
@@ -697,52 +690,69 @@ public class ElOyente extends Trigger<Project> {
          * @throws XMPPException
          * @throws InterruptedException
          */
-        public ListBoxModel doFillNodeItems(@QueryParameter("name") String name) throws XMPPException, InterruptedException {
+//        public ListBoxModel doFillNodeItems(@QueryParameter("name") String name) throws XMPPException, InterruptedException {
+//
+//            ListBoxModel items = new ListBoxModel();
+//            ArrayList nodesSubsArray = new ArrayList();
+//            String node;
+//            String pjName = name;
+//            Project pj;
+//            pj = (Project) Jenkins.getInstance().getItem(name);
+//            Object instance = (ElOyente) pj.getTriggers().get(this);
+//
+//            if (instance != null) {
+//
+//                Connection con = connections.get(pjName);
+//                PubSubManager mgr = new PubSubManager(con);
+//
+//                DiscoverItems it = mgr.discoverNodes(null);
+//                Iterator<DiscoverItems.Item> iter = it.getItems();
+//
+//                HashMap<String, Subscription> prueba = new HashMap<String, Subscription>();
+//                List<Subscription> listSubs = mgr.getSubscriptions();
+//
+//                for (int i = 0; i < listSubs.size(); i++) {
+//                    if (listSubs.get(i).getJid().equals(con.getUser())) {
+//                        System.out.println("User: " + listSubs.get(i).getJid() + " equals to: " + con.getUser());
+//                        System.out.println("Subscribed to: " + listSubs.get(i).getNode());
+//                        node = listSubs.get(i).getNode();
+//                        nodesSubsArray.add(node);
+//                    }
+//                }
+//
+//                if (con.isAuthenticated()) {
+//                    while (iter.hasNext()) {
+//                        DiscoverItems.Item i = iter.next();
+//                        if (!nodesSubsArray.contains(i.getNode())) {
+//                            items.add(i.getNode());
+//                            System.out.println("Node shown: " + i.getNode());
+//                        } else {
+//                            System.out.println("Node not shown: " + i.getNode());
+//                        }
+//                    }
+//                    //con.disconnect();
+//                } else {
+//                    items.add("Not connected");
+//                    System.out.println("No logged in");
+//                }
+//            }
+//            return items;
+//        }
+        public ListBoxModel doFillNodeItems() throws XMPPException, InterruptedException {
 
             ListBoxModel items = new ListBoxModel();
-            ArrayList nodesSubsArray = new ArrayList();
-            String node;
-            String pjName = name;
-            Project pj;
-            pj = (Project) Jenkins.getInstance().getItem(name);
-            Object instance = (ElOyente) pj.getTriggers().get(this);
 
-            if (instance != null) {
+            ConnectionConfiguration config = new ConnectionConfiguration(server);
+            Connection con = new XMPPConnection(config);
+            PubSubManager mgr = new PubSubManager(con);
 
-                Connection con = connections.get(pjName);
-                PubSubManager mgr = new PubSubManager(con);
-
-                DiscoverItems it = mgr.discoverNodes(null);
-                Iterator<DiscoverItems.Item> iter = it.getItems();
-
-                HashMap<String, Subscription> prueba = new HashMap<String, Subscription>();
-                List<Subscription> listSubs = mgr.getSubscriptions();
-
-                for (int i = 0; i < listSubs.size(); i++) {
-                    if (listSubs.get(i).getJid().equals(con.getUser())) {
-                        System.out.println("User: " + listSubs.get(i).getJid() + " equals to: " + con.getUser());
-                        System.out.println("Subscribed to: " + listSubs.get(i).getNode());
-                        node = listSubs.get(i).getNode();
-                        nodesSubsArray.add(node);
-                    }
-                }
-
-                if (con.isAuthenticated()) {
-                    while (iter.hasNext()) {
-                        DiscoverItems.Item i = iter.next();
-                        if (!nodesSubsArray.contains(i.getNode())) {
-                            items.add(i.getNode());
-                            System.out.println("Node shown: " + i.getNode());
-                        } else {
-                            System.out.println("Node not shown: " + i.getNode());
-                        }
-                    }
-                    //con.disconnect();
-                } else {
-                    items.add("Not connected");
-                    System.out.println("No logged in");
-                }
+            DiscoverItems discoverNodes = mgr.discoverNodes(null);
+            Iterator<DiscoverItems.Item> it = discoverNodes.getItems();
+            while(it.hasNext()){
+                items.add(it.next().getNode());
             }
+            
+
             return items;
         }
 //        public ListBoxModel doFillNodesSubItems() throws XMPPException, InterruptedException {
