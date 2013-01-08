@@ -48,6 +48,7 @@ import org.jivesoftware.smackx.pubsub.LeafNode;
 import org.jivesoftware.smackx.pubsub.Node;
 import org.jivesoftware.smackx.pubsub.PubSubManager;
 import org.jivesoftware.smackx.pubsub.Subscription;
+import org.jivesoftware.smackx.pubsub.listener.ItemEventListener;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -67,7 +68,7 @@ public class ElOyente extends Trigger<Project> {
      * Array of subscriptions for a job.
      */
     protected SubscriptionProperties[] subscriptions;
-    protected transient Map<String, ItemEventCoordinator> listeners = new HashMap<String, ItemEventCoordinator>();
+    protected transient static Map<String, ItemEventCoordinator> listeners = new HashMap<String, ItemEventCoordinator>();
     /**
      * The project associated to the instance of the trigger.
      */
@@ -346,14 +347,17 @@ public class ElOyente extends Trigger<Project> {
                 }
                 if (nodeExists) {
                     LeafNode node = (LeafNode) mgr.getNode(subscriptions[i].node);
-
-                    if (!listeners.containsKey(node.getId())) {
-                        ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(node.getId(), this);
-                        node.addItemEventListener(itemEventCoordinator);
-                        listeners.put(node.getId(), itemEventCoordinator);
-                        System.out.println("Listener added for node: " + node.getId() + " for project " + project.getName());
-                    } else {
-                        System.err.println("No need to add new listener to node " + node.getId() + " for project " + project.getName());
+                    synchronized (listeners) {
+                        if (!listeners.containsKey(node.getId())) {
+                            ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(node.getId());
+                            itemEventCoordinator.addTrigger(this);
+                            node.addItemEventListener(itemEventCoordinator);
+                            listeners.put(node.getId(), itemEventCoordinator);
+                            System.out.println("Listener added for node: " + node.getId() + " for project " + project.getName());
+                        } else {
+                            listeners.get(node.getId()).addTrigger(this);
+                            System.err.println("No need to add new listener to node " + node.getId() + " for project " + project.getName());
+                        }
                     }
                 }
             }
@@ -403,6 +407,16 @@ public class ElOyente extends Trigger<Project> {
                 LeafNode n = (LeafNode) mgr.getNode(nodeName);
                 n.unsubscribe(con.getUser());
             }
+
+            Iterator it = listeners.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry pairs = (Map.Entry) it.next();
+                ItemEventListener listener = (ItemEventListener) pairs.getValue();
+                listener = null;
+                it.remove(); // avoids a ConcurrentModificationException
+            }
+
+
             con.disconnect();
             connections.remove(project.getName());
         } catch (XMPPException ex) {
@@ -748,10 +762,10 @@ public class ElOyente extends Trigger<Project> {
 
             DiscoverItems discoverNodes = mgr.discoverNodes(null);
             Iterator<DiscoverItems.Item> it = discoverNodes.getItems();
-            while(it.hasNext()){
+            while (it.hasNext()) {
                 items.add(it.next().getNode());
             }
-            
+
 
             return items;
         }

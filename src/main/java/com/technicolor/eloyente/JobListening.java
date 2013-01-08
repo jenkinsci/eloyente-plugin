@@ -97,9 +97,9 @@ public final class JobListening extends ItemListener {
                 try {
                     LeafNode n = (LeafNode) mgr.getNode(s.node);
                     n.unsubscribe(con.getUser());
-
+                    
                 } catch (XMPPException ex) {
-                    System.err.println("The node didn't still existed");
+                    System.err.println("The node didn't exist yet");
                 }
             }
             con.disconnect();
