@@ -62,12 +62,29 @@ public class ElOyente extends Trigger<Project> {
 
     private final static Integer USER_ID = 0;
     private final static Integer RESOURCE_ID = 1;
+    /**
+     * Map of connections to the XMPP server.
+     *
+     * key: Job Name Value: Connection
+     *
+     * Each project/job has its own connection. The id of these connections have
+     * the form: userName/jobName (where "userName" is the name of the user
+     * defined in the main configuration panel.)
+     */
     protected final static Map<String, Connection> connections = new HashMap<String, Connection>();
     /**
      * Array of subscriptions for a job.
      */
     protected SubscriptionProperties[] subscriptions;
-    protected transient Map<String, ItemEventCoordinator> listeners = new HashMap<String, ItemEventCoordinator>();
+    /**
+     * Map of active listeners.
+     *
+     * Key: Node Name Value: Listener
+     *
+     * A node has only one listener (it is inside the listener where we control
+     * the subscriptions and schedule de builds).
+     */
+    protected static transient Map<String, ItemEventCoordinator> listeners = new HashMap<String, ItemEventCoordinator>();
     /**
      * The project associated to the instance of the trigger.
      */
@@ -346,14 +363,17 @@ public class ElOyente extends Trigger<Project> {
                 }
                 if (nodeExists) {
                     LeafNode node = (LeafNode) mgr.getNode(subscriptions[i].node);
-
-                    if (!listeners.containsKey(node.getId())) {
-                        ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(node.getId(), this);
-                        node.addItemEventListener(itemEventCoordinator);
-                        listeners.put(node.getId(), itemEventCoordinator);
-                        System.out.println("Listener added for node: " + node.getId() + " for project " + project.getName());
-                    } else {
-                        System.err.println("No need to add new listener to node " + node.getId() + " for project " + project.getName());
+                    synchronized (listeners) {
+                        if (!listeners.containsKey(node.getId())) {
+                            ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(node.getId());
+                            itemEventCoordinator.addTrigger(this);
+                            node.addItemEventListener(itemEventCoordinator);
+                            listeners.put(node.getId(), itemEventCoordinator);
+                            System.out.println("Listener added for node: " + node.getId() + " for project " + project.getName());
+                        } else {
+                            listeners.get(node.getId()).addTrigger(this);
+                            System.err.println("No need to add new listener to node " + node.getId() + " for project " + project.getName());
+                        }
                     }
                 }
             }
@@ -377,12 +397,14 @@ public class ElOyente extends Trigger<Project> {
      *
      */
     public void runWithEnvironment(EnvVars vars) {
+        Boolean done;
         if (!project.getAllJobs().isEmpty()) {
             Iterator iterator = this.project.getAllJobs().iterator();
             while (iterator.hasNext()) {
                 Project p = ((Project) iterator.next());
-                System.out.println("Build scheduled for project: " + p.getName());
-                p.scheduleBuild(new ElOyenteTriggerCause(vars));
+                System.out.print("Build scheduled for project: " + p.getName());
+                done = p.scheduleBuild(0, new ElOyenteTriggerCause(vars));
+                System.out.println("..." + done);
             }
         }
     }
@@ -399,9 +421,13 @@ public class ElOyente extends Trigger<Project> {
         try {
             Connection con = connections.get(project.getName());
             PubSubManager mgr = new PubSubManager(con);
-            for (String nodeName : listeners.keySet()) {
-                LeafNode n = (LeafNode) mgr.getNode(nodeName);
-                n.unsubscribe(con.getUser());
+            synchronized (listeners) {
+                for (String nodeName : listeners.keySet()) {
+                    LeafNode n = (LeafNode) mgr.getNode(nodeName);
+                    mgr.getNode(nodeName).removeItemEventListener(listeners.get(nodeName));
+                    listeners.remove(nodeName);
+                    n.unsubscribe(con.getUser());
+                }
             }
             con.disconnect();
             connections.remove(project.getName());
@@ -409,7 +435,7 @@ public class ElOyente extends Trigger<Project> {
             System.err.println(ex);
         }
         project = null;
-        listeners = null;
+        //listeners = null;
         subscriptions = null;
         //super.stop();
     }
@@ -523,20 +549,22 @@ public class ElOyente extends Trigger<Project> {
             Iterator it2 = (Jenkins.getInstance().getItems()).iterator();
             while (it2.hasNext()) {
                 AbstractProject job = (AbstractProject) it2.next();
-                if (connections.containsKey(job.getName())) {
-                    ((Connection) connections.get(job.getName())).disconnect();
-                    connections.remove(job.getName());
-                }
-                Object instance = (ElOyente) job.getTriggers().get(this);
+//                if (connections.containsKey(job.getName())) {
+//                    ((Connection) connections.get(job.getName())).disconnect();
+//                    connections.remove(job.getName());
+//                }
+                ElOyente instance = (ElOyente) job.getTriggers().get(this);
                 if (instance != null) {
                     System.out.println("Reloading job: " + job.getName());
                     //START()!!!!!!!!!!!!!!!!!1
                     File directoryConfigXml = job.getConfigFile().getFile().getParentFile();
                     try {
+                        instance.stop();
                         Items.load(job.getParent(), directoryConfigXml);
 
                     } catch (IOException ex) {
                         Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
+                        System.out.println(ex);
                     }
                 }
             }
@@ -684,60 +712,11 @@ public class ElOyente extends Trigger<Project> {
         }
 
         /**
-         * Fill the drop-down called "nodesAvailable" of the config.jelly
+         * Fill the drop-down called "node" of the config.jelly
          *
-         * @param name name of the job
          * @throws XMPPException
          * @throws InterruptedException
          */
-//        public ListBoxModel doFillNodeItems(@QueryParameter("name") String name) throws XMPPException, InterruptedException {
-//
-//            ListBoxModel items = new ListBoxModel();
-//            ArrayList nodesSubsArray = new ArrayList();
-//            String node;
-//            String pjName = name;
-//            Project pj;
-//            pj = (Project) Jenkins.getInstance().getItem(name);
-//            Object instance = (ElOyente) pj.getTriggers().get(this);
-//
-//            if (instance != null) {
-//
-//                Connection con = connections.get(pjName);
-//                PubSubManager mgr = new PubSubManager(con);
-//
-//                DiscoverItems it = mgr.discoverNodes(null);
-//                Iterator<DiscoverItems.Item> iter = it.getItems();
-//
-//                HashMap<String, Subscription> prueba = new HashMap<String, Subscription>();
-//                List<Subscription> listSubs = mgr.getSubscriptions();
-//
-//                for (int i = 0; i < listSubs.size(); i++) {
-//                    if (listSubs.get(i).getJid().equals(con.getUser())) {
-//                        System.out.println("User: " + listSubs.get(i).getJid() + " equals to: " + con.getUser());
-//                        System.out.println("Subscribed to: " + listSubs.get(i).getNode());
-//                        node = listSubs.get(i).getNode();
-//                        nodesSubsArray.add(node);
-//                    }
-//                }
-//
-//                if (con.isAuthenticated()) {
-//                    while (iter.hasNext()) {
-//                        DiscoverItems.Item i = iter.next();
-//                        if (!nodesSubsArray.contains(i.getNode())) {
-//                            items.add(i.getNode());
-//                            System.out.println("Node shown: " + i.getNode());
-//                        } else {
-//                            System.out.println("Node not shown: " + i.getNode());
-//                        }
-//                    }
-//                    //con.disconnect();
-//                } else {
-//                    items.add("Not connected");
-//                    System.out.println("No logged in");
-//                }
-//            }
-//            return items;
-//        }
         public ListBoxModel doFillNodeItems() throws XMPPException, InterruptedException {
 
             ListBoxModel items = new ListBoxModel();
@@ -748,41 +727,11 @@ public class ElOyente extends Trigger<Project> {
 
             DiscoverItems discoverNodes = mgr.discoverNodes(null);
             Iterator<DiscoverItems.Item> it = discoverNodes.getItems();
-            while(it.hasNext()){
+            while (it.hasNext()) {
                 items.add(it.next().getNode());
             }
-            
 
             return items;
         }
-//        public ListBoxModel doFillNodesSubItems() throws XMPPException, InterruptedException {
-//            ListBoxModel items = new ListBoxModel();
-//            String node;
-//            String pj;
-//
-//            if (semaforo == true) {
-//                wait();
-//            } else {
-//                semaforo = true;
-//                pj = ElOyente.DescriptorImpl.getCurNodoEstarentDescriptorByNameUrl();
-//                System.out.println("pj " + pj);
-//                Connection con = connections.get(pj);
-//                //PubSubManager mgr=getPubSubManageNodoEstar();
-//                PubSubManager mgr = new PubSubManager(con);
-//
-//                List<Subscription> listSubs = mgr.getSubscriptions();
-//
-//                for (int i = 0; i < listSubs.size(); i++) {
-//                    if (listSubs.get(i).getJid().equals(con.getUser())) {
-//                        node = listSubs.get(i).getNode();
-//                        items.add(node);
-//                    }
-//                }
-//                 //con.disconnect();
-//                semaforo = false;
-//            }
-//
-//            return items;
-//        }
     }
 }

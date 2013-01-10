@@ -18,6 +18,9 @@ package com.technicolor.eloyente;
 
 import hudson.model.Cause;
 import hudson.EnvVars;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Random;
 
 
 /**
@@ -27,14 +30,18 @@ import hudson.EnvVars;
 public final class ElOyenteTriggerCause extends Cause {
 
 	private EnvVars vars;
+        private Date current;
+        private Random random; 
 
 	public ElOyenteTriggerCause(EnvVars vars) {
-		this.vars = vars;
+		this.vars = vars;      
+                this.current=  Calendar.getInstance().getTime();
+                this.random= new Random();
 	}
 
 	@Override
 	public String getShortDescription() {
-		return new String("El Oyente received an XMPP event");
+                return new String("El Oyente received an XMPP event: "+current+" / "+random );
 	}
 
 	public EnvVars getEnvVars() {
