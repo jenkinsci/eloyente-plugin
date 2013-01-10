@@ -20,16 +20,11 @@ import hudson.model.AbstractProject;
 import hudson.model.Item;
 import hudson.model.Project;
 import hudson.model.listeners.ItemListener;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import jenkins.model.Jenkins;
 import org.jivesoftware.smack.Connection;
-import org.jivesoftware.smack.ConnectionConfiguration;
-import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smackx.pubsub.LeafNode;
 import org.jivesoftware.smackx.pubsub.PubSubManager;
@@ -105,36 +100,5 @@ public final class JobListening extends ItemListener {
             con.disconnect();
             instance.connections.remove(item.getName());
         }
-    }
-
-    @Override
-    public void onLoaded() {
-/////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////
-// WARNING DO NOT TOUCH 
-/////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////
-//        System.out.println("Jobs iniciados\n");
-//
-//        String server;
-//        String user;
-//        String password;
-//
-//        HandleXMPP handler = new HandleXMPP();
-//
-//        for (Item job : Jenkins.getInstance().getAllItems()) {
-//            ElOyente instance = (ElOyente) ((AbstractProject) job).getTrigger(ElOyente.class);
-//            if (instance != null) {
-//                server = instance.getDescriptor().getServer();
-//                user = instance.getDescriptor().getUser();
-//                password = instance.getDescriptor().getPassword();
-//                if (!handler.checkAnyParameterEmpty(server, user, password)) {
-//                    if (handler.connectionOK(server, user, password)) {
-//                        handler.createConnection((Project) job, server, user, password);
-//                        instance.subscribeIfNecessary((Project) job);
-//                    }
-//                }
-//            }
-//        }
     }
 }

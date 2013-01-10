@@ -65,7 +65,7 @@ public class ElOyente extends Trigger<Project> {
     /**
      * Map of connections to the XMPP server.
      *
-     * key: Job Name Value: Connection
+     * (key: Job Name; Value: Connection). 
      *
      * Each project/job has its own connection. The id of these connections have
      * the form: userName/jobName (where "userName" is the name of the user
@@ -79,7 +79,7 @@ public class ElOyente extends Trigger<Project> {
     /**
      * Map of active listeners.
      *
-     * Key: Node Name Value: Listener
+     * (Key: Node Name ; Value: Listener). 
      *
      * A node has only one listener (it is inside the listener where we control
      * the subscriptions and schedule de builds).
@@ -160,7 +160,7 @@ public class ElOyente extends Trigger<Project> {
      * Method used for starting a job.
      *
      * This method is called when the Save or Apply button are pressed in a job
-     * configuration in case this plugin is activated. It is also called when
+     * configuration in case this plugin is activated. It is also called (indirectly with the "load" function) when
      * restarting a connection because of changes in the main configuration.
      *
      * It checks if there is all the information required for an XMPP connection
@@ -191,7 +191,7 @@ public class ElOyente extends Trigger<Project> {
     }
 
     /**
-     * Checks if all the parameters from the main configuration are complete.
+     * Checks if all the parameters from the main configuration are filled.
      *
      * @param server Server from the main configuration
      * @param user User from the main configuration
