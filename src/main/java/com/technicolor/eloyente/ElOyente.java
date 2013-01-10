@@ -48,6 +48,7 @@ import org.jivesoftware.smackx.pubsub.LeafNode;
 import org.jivesoftware.smackx.pubsub.Node;
 import org.jivesoftware.smackx.pubsub.PubSubManager;
 import org.jivesoftware.smackx.pubsub.Subscription;
+import org.jivesoftware.smackx.pubsub.listener.ItemEventListener;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -429,6 +430,16 @@ public class ElOyente extends Trigger<Project> {
                     n.unsubscribe(con.getUser());
                 }
             }
+
+            Iterator it = listeners.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry pairs = (Map.Entry) it.next();
+                ItemEventListener listener = (ItemEventListener) pairs.getValue();
+                listener = null;
+                it.remove(); // avoids a ConcurrentModificationException
+            }
+
+
             con.disconnect();
             connections.remove(project.getName());
         } catch (XMPPException ex) {

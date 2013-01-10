@@ -33,7 +33,7 @@ import org.jivesoftware.smackx.pubsub.PayloadItem;
 import org.jivesoftware.smackx.pubsub.SimplePayload;
 import org.jivesoftware.smackx.pubsub.listener.ItemEventListener;
 
-class ItemEventCoordinator implements ItemEventListener<PayloadItem<SimplePayload>> {
+public class ItemEventCoordinator implements ItemEventListener<PayloadItem<SimplePayload>> {
 
     private final String nodename;
     private final ArrayList<ElOyente> Triggers;
@@ -60,7 +60,6 @@ class ItemEventCoordinator implements ItemEventListener<PayloadItem<SimplePayloa
      * Applying the filter decides whether to trigger the job or not and passes
      * the environment variables if they exist.
      */
-    @Override
     public void handlePublishedItems(ItemPublishEvent<PayloadItem<SimplePayload>> items) {
         for (ElOyente trigger : this.Triggers) {
 
@@ -100,6 +99,7 @@ class ItemEventCoordinator implements ItemEventListener<PayloadItem<SimplePayloa
      */
     private synchronized void print(ItemPublishEvent<PayloadItem<SimplePayload>> items) {
         System.out.println("-----------------------------");
+        System.out.println("El item event coordinator es: " + this);
         System.out.println(nodename + ": Item count: " + items.getItems().size());
         for (PayloadItem<SimplePayload> item : items.getItems()) {
             System.out.println(nodename + ": XML: " + item.toXML());
