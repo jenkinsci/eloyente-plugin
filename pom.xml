@@ -15,98 +15,85 @@
    limitations under the License.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <licenses>
-    <license>
-      <name>The Apache Software License, Version 2.0</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-      <distribution>repo</distribution>
-      <comments>A business-friendly OSS license</comments>
-    </license>
-  </licenses>
-  <developers>
-    <developer>
-      <id>isabelFD</id>
-      <name>Isabel Fern&aacute;ndez D&iacute;az</name>
-      <email>isabel.fd@gmail.com</email>
-    </developer>
-    <developer>
-      <id>pardogonzalezj</id>
-      <name>Juan Luis Pardo Gonz&aacute;lez</name>
-      <email>jlpardo87@gmail.com</email>
-    </developer>
-    <developer>
-      <id>vanderhallenf</id>
-      <name>Frank Vanderhallen</name>
-      <email>frank.vanderhallen@gmail.com</email>
-    </developer>
-  </developers>
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>org.jenkins-ci.plugins</groupId>
-    <artifactId>plugin</artifactId>
-    <version>1.498</version>
-    <!-- which version of Jenkins is this plugin built against? -->
-  </parent>
-  <groupId>com.technicolor</groupId>
-  <artifactId>elOyente</artifactId>
-  <version>1.0</version>
-  <packaging>hpi</packaging>
-  <scm>
-    <connection>scm:git:ssh://github.com/jenkinsci/eloyente-plugin.git</connection>
-    <developerConnection>scm:git:ssh://git@github.com:jenkinsci/eloyente-plugin.git</developerConnection>
-    <url>https://github.com/jenkinsci/eloyente-plugin</url>
-  </scm>
-  <url>https://wiki.jenkins-ci.org/display/JENKINS/El+Oyente+Plugin</url>
-  <dependencies>
-    <dependency>
-      <groupId>org.igniterealtime.smack</groupId>
-      <artifactId>smack</artifactId>
-      <version>3.2.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.igniterealtime.smack</groupId>
-      <artifactId>smackx</artifactId>
-      <version>3.2.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.igniterealtime.smack</groupId>
-      <artifactId>smackx-debug</artifactId>
-      <version>3.2.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.igniterealtime.smack</groupId>
-      <artifactId>smackx-jingle</artifactId>
-      <version>3.2.1</version>
-    </dependency>
-    <dependency>
-      <artifactId>access-modifier-annotation</artifactId>
-      <groupId>org.kohsuke</groupId>
-      <type>jar</type>
-      <version>1.0</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <version>1.9.5</version>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>cobertura-maven-plugin</artifactId>
-        <version>2.5.2</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>clean</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <plugins>
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+            <comments>A business-friendly OSS license</comments>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <id>isabelFD</id>
+            <name>Isabel Fern&aacute;ndez D&iacute;az</name>
+            <email>isabel.fd@gmail.com</email>
+        </developer>
+        <developer>
+            <id>pardogonzalezj</id>
+            <name>Juan Luis Pardo Gonz&aacute;lez</name>
+            <email>jlpardo87@gmail.com</email>
+        </developer>
+        <developer>
+            <id>vanderhallenf</id>
+            <name>Frank Vanderhallen</name>
+            <email>frank.vanderhallen@gmail.com</email>
+        </developer>
+    </developers>
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.jenkins-ci.plugins</groupId>
+        <artifactId>plugin</artifactId>
+        <version>1.492</version>
+        <!-- which version of Jenkins is this plugin built against? -->
+    </parent>
+    <groupId>com.technicolor</groupId>
+    <artifactId>elOyente</artifactId>
+    <version>1.0</version>
+    <packaging>hpi</packaging>
+    <scm>
+        <connection>scm:git:ssh://github.com/jenkinsci/eloyente-plugin.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:jenkinsci/eloyente-plugin.git</developerConnection>
+        <url>https://github.com/jenkinsci/eloyente-plugin</url>
+    </scm>
+    <url>https://wiki.jenkins-ci.org/display/JENKINS/El+Oyente+Plugin</url>
+    <dependencies>
+        <dependency>
+            <groupId>org.igniterealtime.smack</groupId>
+            <artifactId>smack</artifactId>
+            <version>3.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.igniterealtime.smack</groupId>
+            <artifactId>smackx</artifactId>
+            <version>3.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.igniterealtime.smack</groupId>
+            <artifactId>smackx-debug</artifactId>
+            <version>3.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.igniterealtime.smack</groupId>
+            <artifactId>smackx-jingle</artifactId>
+            <version>3.2.1</version>
+        </dependency>
+        <dependency>
+            <artifactId>access-modifier-annotation</artifactId>
+            <groupId>org.kohsuke</groupId>
+            <type>jar</type>
+            <version>1.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>1.9.5</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
