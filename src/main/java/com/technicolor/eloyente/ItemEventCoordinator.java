@@ -13,10 +13,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  */
-/**
- * @author Juan Luis Pardo Gonz&aacute;lez
- * @author Isabel Fern&aacute;ndez D&iacute;az
- */
 package com.technicolor.eloyente;
 
 import hudson.EnvVars;
@@ -33,16 +29,46 @@ import org.jivesoftware.smackx.pubsub.PayloadItem;
 import org.jivesoftware.smackx.pubsub.SimplePayload;
 import org.jivesoftware.smackx.pubsub.listener.ItemEventListener;
 
+/**
+ * @author Juan Luis Pardo Gonz&aacute;lez
+ * @author Isabel Fern&aacute;ndez D&iacute;az
+ */
 public class ItemEventCoordinator implements ItemEventListener<PayloadItem<SimplePayload>> {
 
+    /**
+     * Name of the node that will be listened .
+     */
     private final String nodename;
+    /**
+     * The list of triggers that this ItemEventCoordinator will have to trigger
+     * .
+     *
+     * This list of triggers is set depending on the subscriptions of the
+     * different jobs. When an event is received, this ItemEventCoordinator will
+     * schedule builds for the jobs related to this triggers.
+     */
     private final ArrayList<ElOyente> Triggers;
 
+    /**
+     * Constructor for the ItemEventCoordinator.
+     *
+     * It creates an ItemEventCoordinator for a concrete node.
+     * 
+     * @param s Name of the node to be listened to.
+     */
     ItemEventCoordinator(String nodename) {
         this.nodename = nodename;
         this.Triggers = new ArrayList();
     }
-
+    
+    /**
+     * Adds a trigger to the list.
+     * 
+     * It adds a trigger to the list every time a job requires it, it makes sure
+     * the triggers are not repeated.
+     * 
+     * @param trigger Trigger to be added to the list of triggers.
+     */
     public void addTrigger(ElOyente trigger) {
         boolean add = false;
         for (ElOyente triggerAdded : this.Triggers) {
@@ -59,23 +85,31 @@ public class ItemEventCoordinator implements ItemEventListener<PayloadItem<Simpl
     /**
      * Applying the filter decides whether to trigger the job or not and passes
      * the environment variables if they exist.
-     */
+     * 
+     * It is called for each XMPP event received on a node. It will trigger all the triggers
+     * of the field Triggers, for this, it will get all the subscriptions of each particular job
+     * of each particular trigger in the field Triggers and it will filter based on the filter specified. 
+     * If it passes it will use the method runWithEnvironment(EnvVars) to schedule a build.
+     * 
+     * @param items The XMPP event received.
+     * 
+     */   
     public void handlePublishedItems(ItemPublishEvent<PayloadItem<SimplePayload>> items) {
         for (ElOyente trigger : this.Triggers) {
-
+            
             print(items);
             System.out.println(trigger.listeners.size());
-
+            
             Iterator it2 = trigger.listeners.entrySet().iterator();
             while (it2.hasNext()) {
-               Map.Entry e = (Map.Entry) it2.next();
-                System.out.println("LISTENER: "+e.getKey() + " " + e.getValue());
+                Map.Entry e = (Map.Entry) it2.next();
+                System.out.println("LISTENER: " + e.getKey() + " " + e.getValue());
             }
             // TODO: why only consider the first entry of items, and why use an iterator in that case?
             String xml = items.getItems().iterator().next().toXML();
             List<SubscriptionProperties> subscriptionList = trigger.getNodeSubscriptions(nodename);
             Iterator it = subscriptionList.iterator();
-
+            
             for (SubscriptionProperties subs : subscriptionList) {
                 try {
                     XPathExpressionHandler filter = subs.getFilterXPath();

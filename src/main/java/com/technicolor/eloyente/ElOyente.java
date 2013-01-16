@@ -122,7 +122,7 @@ public class ElOyente extends Trigger<Project> {
      *
      * This method retrieves the information about the different subscriptions
      * filled by the user in the job configuration.
-     *
+     * 
      */
     public List<SubscriptionProperties> getSubscriptions() {
         if (subscriptions == null) {
@@ -140,6 +140,8 @@ public class ElOyente extends Trigger<Project> {
      * specified as parameter.
      *
      * @param node The name of the node. properties for that node.
+     * 
+     * @return subsc The list of subscriptions that a job has in its config.xml.
      */
     public List<SubscriptionProperties> getNodeSubscriptions(String node) {
 
@@ -197,6 +199,7 @@ public class ElOyente extends Trigger<Project> {
      * @param server Server from the main configuration
      * @param user User from the main configuration
      * @param password Password from the main configuration
+     * 
      */
     public boolean checkAnyParameterEmpty(String server, String user, String password) {
         if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
@@ -208,7 +211,7 @@ public class ElOyente extends Trigger<Project> {
     /**
      * Check if it is possible to connect to the XMPP server.
      *
-     * Check if it is possible to connect to the XMPP server with the parameters
+     * Checks if it is possible to connect to the XMPP server with the parameters
      * specified in the main configuration.
      *
      * @param server Server from the main configuration
@@ -230,12 +233,18 @@ public class ElOyente extends Trigger<Project> {
     }
 
     /**
-     *
+     * Creates a connection for a job to the XMPP server.
+     * 
+     * It creates the connection for each job based on the parameters of the main configuration
+     * using the name of the job as resource.
+     * 
      * @param project Project being started
      * @param server Server to which the plugin is connected
      * @param user User for the server
      * @param password Password for the server
      * @throws XMPPException
+     * 
+     * @return Connection The connection created for the job.
      */
     public Connection createConnection(Project project, String server, String user, String password) throws XMPPException {
         if (!connections.containsKey(project.getName())) {
@@ -253,6 +262,8 @@ public class ElOyente extends Trigger<Project> {
     /**
      * Checks if the JID has the form expected and returns a Map with the UserID
      * y el ResourceID
+     * 
+     * @return res The Map that contains the user and the resource.
      */
     protected Map<Integer, String> parseJID(Subscription sub) {
         String JID = sub.getJid();
@@ -277,6 +288,7 @@ public class ElOyente extends Trigger<Project> {
      *
      * @param project The project being started.
      * @throws XMPPException
+     * 
      */
     public void subscribeIfNecessary(Project project) throws XMPPException {
         boolean subscribed = false;
@@ -334,10 +346,12 @@ public class ElOyente extends Trigger<Project> {
     }
 
     /**
-     * Add listeners to the connections.
+     * Adds listeners to the nodes.
      *
-     * This method is in charge of adding listeners to a node to which a job is
-     * subscribed to. This way it will receive events that will trigger it.
+     * It creates listeners for a job to the nodes specified in its subscriptions.
+     * It does this in case the listener for that node doesn't exist yet, otherwise
+     * it just adds the trigger to the array of triggers of that listener.
+     * 
      *
      * @param con - The connection for which the listener will be created.
      * @param project - The project being configured.
@@ -395,7 +409,11 @@ public class ElOyente extends Trigger<Project> {
 
     /**
      * Schedules a build.
+     * 
+     * Called by the run() method it schedules a build using the environment
+     * variables of the subscriptions and setting the Quiet Period to 0.
      *
+     * @param vars The environment variables to be set based on those passed by the user.
      */
     public void runWithEnvironment(EnvVars vars) {
         Boolean done;
@@ -413,8 +431,10 @@ public class ElOyente extends Trigger<Project> {
     /**
      * Called before a Trigger is removed.
      *
-     * This method will be called when the main configuration or a job
-     * configuration are saved.
+     * This method will be called when a job configuration is saved. It will unsubscribe
+     * that job, delete it's connection to the server, remove it's listeners and clean 
+     * the connections and listeners fields. They will be reconstructed by start() with 
+     * the new configuration saved.
      *
      */
     @Override
@@ -449,9 +469,6 @@ public class ElOyente extends Trigger<Project> {
         //listeners = null;
         subscriptions = null;
         //super.stop();
-    }
-
-    public void deleteJob() {
     }
 
     /**
@@ -525,10 +542,7 @@ public class ElOyente extends Trigger<Project> {
          * to reload or not.
          *
          * @param req
-         * @param formData// public void listen(Node node, Trigger trigger) { //
-         * ItemEventCoordinator itemEventCoordinator = new
-         * ItemEventCoordinator(node.getId(), trigger); //
-         * node.addItemEventListener(itemEventCoordinator); // }
+         * @param formData
          * @throws Descriptor.FormException
          */
         @Override
@@ -550,35 +564,18 @@ public class ElOyente extends Trigger<Project> {
          * This method reloads the jobs that are using the trigger applying the
          * new main configuration.
          *
-         * Checks if the parameters username, password and server of the main
-         * configuration have changed, if so it calls the method start() of all
-         * those jobs that are using the trigger in order to connect to the
-         * server with the new credentials and reset the subscriptions.
+         * It calls the method stop() and start() of all the jobs that are using the trigger
+         * in order to connect to the server with the new credentials and reset the subscriptions,
+         * listeners, etc.
          */
         public void reloadJobs() {
+            List<ElOyente> lista = Jenkins.getInstance().getItems(ElOyente.class);
 
-            Iterator it2 = (Jenkins.getInstance().getItems()).iterator();
-            while (it2.hasNext()) {
-                AbstractProject job = (AbstractProject) it2.next();
-//                if (connections.containsKey(job.getName())) {
-//                    ((Connection) connections.get(job.getName())).disconnect();
-//                    connections.remove(job.getName());
-//                }
-                ElOyente instance = (ElOyente) job.getTriggers().get(this);
-                if (instance != null) {
-                    System.out.println("Reloading job: " + job.getName());
-                    //START()!!!!!!!!!!!!!!!!!1
-                    File directoryConfigXml = job.getConfigFile().getFile().getParentFile();
-                    try {
-                        instance.stop();
-                        Items.load(job.getParent(), directoryConfigXml);
+            for (ElOyente oyente : lista) {
 
-                    } catch (IOException ex) {
-                        Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
-                        System.out.println(ex);
-                    }
-                }
-            }
+                oyente.stop();
+                oyente.start(oyente.project, true);
+            }          
         }
 
         /**
@@ -702,6 +699,7 @@ public class ElOyente extends Trigger<Project> {
          *
          * @param user User from the the main configuration.
          * @param password Password from the the main configuration.
+         * 
          */
         public FormValidation doCheckPassword(@QueryParameter String user, @QueryParameter String password, @QueryParameter String server) {
             ConnectionConfiguration config = new ConnectionConfiguration(server);

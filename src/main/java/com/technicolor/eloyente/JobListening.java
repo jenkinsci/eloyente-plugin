@@ -36,6 +36,14 @@ public final class JobListening extends ItemListener {
     private final static Integer USER_ID = 0;
     private final static Integer RESOURCE_ID = 1;
 
+    /**
+     * Used when a job is renamed.
+     * 
+     * It will unsubscribe that job, delete it's connection to the server, 
+     * remove it's listeners and clean the connections and listeners fields.
+     * Then it will redo everything for the new job name.
+     *
+     */
     @Override
     public void onRenamed(Item item, String oldName, String newName) {
 
@@ -61,7 +69,7 @@ public final class JobListening extends ItemListener {
                                 if (jid.get(RESOURCE_ID).equals(oldName) && s.getNode().equals(nodeName) && jid.get(USER_ID).equals(instance.getDescriptor().getUser())) {
                                     LeafNode n = (LeafNode) mgr.getNode(sp.node);
                                     n.unsubscribe(con.getUser());
-                                    ItemEventCoordinator listener = instance.listeners.get(sp.node) ;
+                                    ItemEventCoordinator listener = instance.listeners.get(sp.node);
                                     instance.listeners.remove(sp.node);
                                     listener = null;
                                 }
@@ -79,6 +87,12 @@ public final class JobListening extends ItemListener {
         }
     }
 
+     /**
+     * Used when a job is deleted.
+     *
+     * It will unsubscribe that job, delete it's connection to the server, 
+     * remove it's listeners and clean the connections and listeners fields.
+     */
     @Override
     public void onDeleted(Item item) {
         System.out.println("Job " + item.getName() + " borrado\n");
@@ -92,13 +106,12 @@ public final class JobListening extends ItemListener {
                 try {
                     LeafNode n = (LeafNode) mgr.getNode(s.node);
                     n.unsubscribe(con.getUser());
-                    
+                    instance.stop();
+
                 } catch (XMPPException ex) {
                     System.err.println("The node didn't exist yet");
                 }
             }
-            con.disconnect();
-            instance.connections.remove(item.getName());
         }
     }
 }
