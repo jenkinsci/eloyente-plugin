@@ -41,7 +41,8 @@ public final class ElOyenteTriggerCause extends Cause {
 
 	@Override
 	public String getShortDescription() {
-                return new String("El Oyente received an XMPP event: "+current+" / "+random );
+                //return new String("El Oyente received an XMPP event: "+current+" / "+random );
+                return new String("El Oyente received an XMPP event");
 	}
 
 	public EnvVars getEnvVars() {

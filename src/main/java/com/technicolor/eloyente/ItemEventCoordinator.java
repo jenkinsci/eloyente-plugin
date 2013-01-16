@@ -95,9 +95,8 @@ public class ItemEventCoordinator implements ItemEventListener<PayloadItem<Simpl
      * 
      */   
     public void handlePublishedItems(ItemPublishEvent<PayloadItem<SimplePayload>> items) {
-        for (ElOyente trigger : this.Triggers) {
-            
-            print(items);
+        print(items);
+        for (ElOyente trigger : this.Triggers) {         
             System.out.println(trigger.listeners.size());
             
             Iterator it2 = trigger.listeners.entrySet().iterator();
@@ -118,7 +117,11 @@ public class ItemEventCoordinator implements ItemEventListener<PayloadItem<Simpl
                         for (Variable v : subs.getVariables()) {
                             vars.put(v.getEnvName(), v.resolve(xml));
                         }
-                        trigger.runWithEnvironment(vars);
+                        try {
+                            trigger.runWithEnvironment(vars);
+                        } catch (InterruptedException ex) {
+                            Logger.getLogger(ItemEventCoordinator.class.getName()).log(Level.SEVERE, null, ex);
+                        }
                     }
                 } catch (XPathExpressionException ex) {
                     System.out.println("Exception: " + ex);

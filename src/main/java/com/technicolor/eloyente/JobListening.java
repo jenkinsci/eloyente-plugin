@@ -47,43 +47,11 @@ public final class JobListening extends ItemListener {
     @Override
     public void onRenamed(Item item, String oldName, String newName) {
 
-        List<Subscription> subscriptionList;
         ElOyente instance = (ElOyente) ((AbstractProject) item).getTrigger(ElOyente.class);
 
         if (instance != null) {
-            try {
-                Connection con = instance.connections.get(oldName);             //Saco la conexion
-                PubSubManager mgr = new PubSubManager(con);
-
-                if (instance.subscriptions != null) {
-                    if (instance.subscriptions.length != 0) {
-                        for (SubscriptionProperties sp : instance.subscriptions) {
-                            String nodeName = sp.getNode();
-                            subscriptionList = mgr.getSubscriptions();                      //Saco la lista de suscripciones de la base de datos
-                            for (Subscription s : subscriptionList) {
-
-                                Map<Integer, String> jid = instance.parseJID(s);
-                                if (null == jid || jid.size() < 2) {
-                                    continue;
-                                }
-                                if (jid.get(RESOURCE_ID).equals(oldName) && s.getNode().equals(nodeName) && jid.get(USER_ID).equals(instance.getDescriptor().getUser())) {
-                                    LeafNode n = (LeafNode) mgr.getNode(sp.node);
-                                    n.unsubscribe(con.getUser());
-                                    ItemEventCoordinator listener = instance.listeners.get(sp.node);
-                                    instance.listeners.remove(sp.node);
-                                    listener = null;
-                                }
-                            }
-                        }
-                        con.disconnect();
-                        instance.connections.remove(oldName);
-
-                        instance.start((Project) item, true);
-                    }
-                }
-            } catch (XMPPException ex) {
-                Logger.getLogger(JobListening.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            instance.stopOldJob(oldName);
+            instance.start((Project) item, false);
         }
     }
 
@@ -99,19 +67,7 @@ public final class JobListening extends ItemListener {
 
         ElOyente instance = (ElOyente) ((AbstractProject) item).getTrigger(ElOyente.class);
         if (instance != null) {
-            Connection con = instance.connections.get(item.getName());
-            PubSubManager mgr = new PubSubManager(con);
-
-            for (SubscriptionProperties s : instance.subscriptions) {
-                try {
-                    LeafNode n = (LeafNode) mgr.getNode(s.node);
-                    n.unsubscribe(con.getUser());
-                    instance.stop();
-
-                } catch (XMPPException ex) {
-                    System.err.println("The node didn't exist yet");
-                }
-            }
+            instance.stop();
         }
     }
 }

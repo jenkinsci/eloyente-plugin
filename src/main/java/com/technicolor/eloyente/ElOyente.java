@@ -404,7 +404,11 @@ public class ElOyente extends Trigger<Project> {
      */
     @Override
     public void run() {
-        runWithEnvironment(null);
+        try {
+            runWithEnvironment(null);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     /**
@@ -415,13 +419,17 @@ public class ElOyente extends Trigger<Project> {
      *
      * @param vars The environment variables to be set based on those passed by the user.
      */
-    public void runWithEnvironment(EnvVars vars) {
+    public void runWithEnvironment(EnvVars vars) throws InterruptedException {
         Boolean done;
         if (!project.getAllJobs().isEmpty()) {
             Iterator iterator = this.project.getAllJobs().iterator();
             while (iterator.hasNext()) {
                 Project p = ((Project) iterator.next());
-                System.out.print("Build scheduled for project: " + p.getName());
+                System.out.println("Build scheduled for project: " + p.getName());
+                if (p.isInQueue()) {
+                    Thread.currentThread().sleep(300);
+                    System.out.println("...IS IN THE QUEUE!!");
+                }
                 done = p.scheduleBuild(0, new ElOyenteTriggerCause(vars));
                 System.out.println("..." + done);
             }
@@ -439,36 +447,156 @@ public class ElOyente extends Trigger<Project> {
      */
     @Override
     public void stop() {
-        try {
+
+        if (subscriptions != null && subscriptions.length != 0) {
+            String nodeName;
             Connection con = connections.get(project.getName());
             PubSubManager mgr = new PubSubManager(con);
-            synchronized (listeners) {
-                for (String nodeName : listeners.keySet()) {
-                    LeafNode n = (LeafNode) mgr.getNode(nodeName);
-                    mgr.getNode(nodeName).removeItemEventListener(listeners.get(nodeName));
-                    listeners.remove(nodeName);
-                    n.unsubscribe(con.getUser());
+            List<Subscription> subscriptionList;
+            Iterator it2;
+
+            for (int i = 0; i < subscriptions.length; i++) {
+                try {
+                    nodeName = subscriptions[i].node;
+
+                    DiscoverItems discoverNodes = mgr.discoverNodes(null);
+                    Iterator<DiscoverItems.Item> items = discoverNodes.getItems();
+
+                    boolean nodeExists = false;
+                    while (items.hasNext()) {
+                        if (((DiscoverItems.Item) items.next()).getNode().equals(nodeName)) {
+                            nodeExists = true;
+                            break;
+                        }
+                    }
+                    if (nodeExists) {
+
+                        LeafNode n = (LeafNode) mgr.getNode(nodeName);
+
+                        //Remove listener
+                        if (listeners.containsKey(nodeName)) {
+                            ArrayList<ElOyente> a = listeners.get(nodeName).Triggers;
+                            if (a.contains(this)) {
+                                a.remove(this);
+                            }
+
+                            if (a.isEmpty()) {
+                                try {
+                                    mgr.getNode(nodeName).removeItemEventListener(listeners.get(nodeName));
+                                    listeners.put(nodeName, null);
+                                    listeners.remove(nodeName);
+                                    System.out.println("The Listener of the node has been removed");
+
+                                } catch (XMPPException ex) {
+                                    Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
+                                }
+                            }
+                        }
+
+                        //Unsubscribe
+                        subscriptionList = mgr.getSubscriptions();
+
+                        it2 = subscriptionList.iterator();
+
+                        while (it2.hasNext()) {
+                            Subscription sub = (Subscription) it2.next();
+
+                            Map<Integer, String> jid = parseJID(sub);
+                            if (null == jid || jid.size() < 2) {
+                                continue;
+                            }
+
+                            if (jid.get(RESOURCE_ID).equals(project.getName()) && sub.getNode().equals(nodeName) && jid.get(USER_ID).equals(getDescriptor().user)) {
+                                n.unsubscribe(con.getUser());
+                                break;
+                            }
+                        }
+                    } else {
+                        System.out.println("The old node doesn't exixt!!");
+                    }
+                } catch (XMPPException ex) {
+                    Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-
-            Iterator it = listeners.entrySet().iterator();
-            while (it.hasNext()) {
-                Map.Entry pairs = (Map.Entry) it.next();
-                ItemEventListener listener = (ItemEventListener) pairs.getValue();
-                listener = null;
-                it.remove(); // avoids a ConcurrentModificationException
-            }
-
-
-            con.disconnect();
             connections.remove(project.getName());
-        } catch (XMPPException ex) {
-            System.err.println(ex);
+            con.disconnect();
         }
-        project = null;
-        //listeners = null;
-        subscriptions = null;
-        //super.stop();
+    }
+
+    public void stopOldJob(String oldName) {
+
+        if (subscriptions != null && subscriptions.length != 0) {
+            String nodeName;
+            Connection con = connections.get(oldName);
+            PubSubManager mgr = new PubSubManager(con);
+            List<Subscription> subscriptionList;
+            Iterator it2;
+
+            for (int i = 0; i < subscriptions.length; i++) {
+                try {
+                    nodeName = subscriptions[i].node;
+
+                    DiscoverItems discoverNodes = mgr.discoverNodes(null);
+                    Iterator<DiscoverItems.Item> items = discoverNodes.getItems();
+
+                    boolean nodeExists = false;
+                    while (items.hasNext()) {
+                        if (((DiscoverItems.Item) items.next()).getNode().equals(nodeName)) {
+                            nodeExists = true;
+                            break;
+                        }
+                    }
+                    if (nodeExists) {
+
+                        LeafNode n = (LeafNode) mgr.getNode(nodeName);
+
+                        //Remove listener
+                        if (listeners.containsKey(nodeName)) {
+                            ArrayList<ElOyente> a = listeners.get(nodeName).Triggers;
+                            if (a.contains(this)) {
+                                a.remove(this);
+                            }
+
+                            if (a.isEmpty()) {
+                                try {
+
+                                    mgr.getNode(nodeName).removeItemEventListener(listeners.get(nodeName));
+                                    System.out.println("The Listener of the node has been removed");
+
+                                } catch (XMPPException ex) {
+                                    Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
+                                }
+                            }
+                        }
+
+                        //Unsubscribe
+                        subscriptionList = mgr.getSubscriptions();
+
+                        it2 = subscriptionList.iterator();
+
+                        while (it2.hasNext()) {
+                            Subscription sub = (Subscription) it2.next();
+
+                            Map<Integer, String> jid = parseJID(sub);
+                            if (null == jid || jid.size() < 2) {
+                                continue;
+                            }
+
+                            if (jid.get(RESOURCE_ID).equals(oldName) && sub.getNode().equals(nodeName) && jid.get(USER_ID).equals(getDescriptor().user)) {
+                                n.unsubscribe(con.getUser());
+                                break;
+                            }
+                        }
+                    } else {
+                        System.out.println("The old node doesn't exixt!!");
+                    }
+                } catch (XMPPException ex) {
+                    Logger.getLogger(oldName).log(Level.SEVERE, null, ex);
+                }
+            }
+            connections.remove(oldName);
+            con.disconnect();
+        }
     }
 
     /**
@@ -571,11 +699,13 @@ public class ElOyente extends Trigger<Project> {
         public void reloadJobs() {
             List<ElOyente> lista = Jenkins.getInstance().getItems(ElOyente.class);
 
+            List<ElOyente> lista = Jenkins.getInstance().getItems(ElOyente.class);
+
             for (ElOyente oyente : lista) {
 
                 oyente.stop();
                 oyente.start(oyente.project, true);
-            }          
+            }
         }
 
         /**
