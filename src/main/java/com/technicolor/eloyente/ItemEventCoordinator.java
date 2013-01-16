@@ -36,7 +36,7 @@ import org.jivesoftware.smackx.pubsub.listener.ItemEventListener;
 class ItemEventCoordinator implements ItemEventListener<PayloadItem<SimplePayload>> {
 
     private final String nodename;
-    private final ArrayList<ElOyente> Triggers;
+    protected final ArrayList<ElOyente> Triggers;
 
     ItemEventCoordinator(String nodename) {
         this.nodename = nodename;
@@ -62,9 +62,8 @@ class ItemEventCoordinator implements ItemEventListener<PayloadItem<SimplePayloa
      */
     @Override
     public void handlePublishedItems(ItemPublishEvent<PayloadItem<SimplePayload>> items) {
-        for (ElOyente trigger : this.Triggers) {
-
-            print(items);
+        print(items);
+        for (ElOyente trigger : this.Triggers) {         
             System.out.println(trigger.listeners.size());
 
             Iterator it2 = trigger.listeners.entrySet().iterator();
@@ -85,7 +84,11 @@ class ItemEventCoordinator implements ItemEventListener<PayloadItem<SimplePayloa
                         for (Variable v : subs.getVariables()) {
                             vars.put(v.getEnvName(), v.resolve(xml));
                         }
-                        trigger.runWithEnvironment(vars);
+                        try {
+                            trigger.runWithEnvironment(vars);
+                        } catch (InterruptedException ex) {
+                            Logger.getLogger(ItemEventCoordinator.class.getName()).log(Level.SEVERE, null, ex);
+                        }
                     }
                 } catch (XPathExpressionException ex) {
                     System.out.println("Exception: " + ex);
