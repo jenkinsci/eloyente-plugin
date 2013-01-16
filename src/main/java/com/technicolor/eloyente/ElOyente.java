@@ -699,8 +699,6 @@ public class ElOyente extends Trigger<Project> {
         public void reloadJobs() {
             List<ElOyente> lista = Jenkins.getInstance().getItems(ElOyente.class);
 
-            List<ElOyente> lista = Jenkins.getInstance().getItems(ElOyente.class);
-
             for (ElOyente oyente : lista) {
 
                 oyente.stop();

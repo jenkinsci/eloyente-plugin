@@ -20,21 +20,9 @@ import hudson.model.AbstractProject;
 import hudson.model.Item;
 import hudson.model.Project;
 import hudson.model.listeners.ItemListener;
-import java.util.List;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.jivesoftware.smack.Connection;
-import org.jivesoftware.smack.XMPPException;
-import org.jivesoftware.smackx.pubsub.LeafNode;
-import org.jivesoftware.smackx.pubsub.PubSubManager;
-import org.jivesoftware.smackx.pubsub.Subscription;
 
 @Extension
 public final class JobListening extends ItemListener {
-
-    private final static Integer USER_ID = 0;
-    private final static Integer RESOURCE_ID = 1;
 
     /**
      * Used when a job is renamed.

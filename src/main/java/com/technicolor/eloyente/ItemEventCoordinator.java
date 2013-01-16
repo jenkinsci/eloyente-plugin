@@ -47,7 +47,7 @@ public class ItemEventCoordinator implements ItemEventListener<PayloadItem<Simpl
      * different jobs. When an event is received, this ItemEventCoordinator will
      * schedule builds for the jobs related to this triggers.
      */
-    private final ArrayList<ElOyente> Triggers;
+    protected final ArrayList<ElOyente> Triggers;
 
     /**
      * Constructor for the ItemEventCoordinator.
