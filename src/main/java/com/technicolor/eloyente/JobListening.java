@@ -32,16 +32,16 @@ public final class JobListening extends ItemListener {
      * Then it will redo everything for the new job name.
      *
      */
-    @Override
-    public void onRenamed(Item item, String oldName, String newName) {
-
-        ElOyente instance = (ElOyente) ((AbstractProject) item).getTrigger(ElOyente.class);
-
-        if (instance != null) {
-            instance.stopOldJob(oldName);
-            instance.start((Project) item, false);
-        }
-    }
+//    @Override
+//    public void onRenamed(Item item, String oldName, String newName) {
+//
+//        ElOyente instance = (ElOyente) ((AbstractProject) item).getTrigger(ElOyente.class);
+//
+//        if (instance != null) {
+//            instance.stop();
+//            instance.start((Project) item, false);
+//        }
+//    }
 
      /**
      * Used when a job is deleted.

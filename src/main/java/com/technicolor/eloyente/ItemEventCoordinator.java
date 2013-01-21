@@ -53,20 +53,20 @@ public class ItemEventCoordinator implements ItemEventListener<PayloadItem<Simpl
      * Constructor for the ItemEventCoordinator.
      *
      * It creates an ItemEventCoordinator for a concrete node.
-     * 
+     *
      * @param s Name of the node to be listened to.
      */
     ItemEventCoordinator(String nodename) {
         this.nodename = nodename;
         this.Triggers = new ArrayList();
     }
-    
+
     /**
      * Adds a trigger to the list.
-     * 
+     *
      * It adds a trigger to the list every time a job requires it, it makes sure
      * the triggers are not repeated.
-     * 
+     *
      * @param trigger Trigger to be added to the list of triggers.
      */
     public void addTrigger(ElOyente trigger) {
@@ -85,55 +85,61 @@ public class ItemEventCoordinator implements ItemEventListener<PayloadItem<Simpl
     /**
      * Applying the filter decides whether to trigger the job or not and passes
      * the environment variables if they exist.
-     * 
-     * It is called for each XMPP event received on a node. It will trigger all the triggers
-     * of the field Triggers, for this, it will get all the subscriptions of each particular job
-     * of each particular trigger in the field Triggers and it will filter based on the filter specified. 
-     * If it passes it will use the method runWithEnvironment(EnvVars) to schedule a build.
-     * 
+     *
+     * It is called for each XMPP event received on a node. It will trigger all
+     * the triggers of the field Triggers, for this, it will get all the
+     * subscriptions of each particular job of each particular trigger in the
+     * field Triggers and it will filter based on the filter specified. If it
+     * passes it will use the method runWithEnvironment(EnvVars) to schedule a
+     * build.
+     *
      * @param items The XMPP event received.
-     * 
-     */   
+     *
+     */
     public void handlePublishedItems(ItemPublishEvent<PayloadItem<SimplePayload>> items) {
         print(items);
-        for (ElOyente trigger : this.Triggers) {         
-            System.out.println(trigger.listeners.size());
-            
-            Iterator it2 = trigger.listeners.entrySet().iterator();
-            while (it2.hasNext()) {
-                Map.Entry e = (Map.Entry) it2.next();
-                System.out.println("LISTENER: " + e.getKey() + " " + e.getValue());
-            }
-            // TODO: why only consider the first entry of items, and why use an iterator in that case?
-            String xml = items.getItems().iterator().next().toXML();
-            List<SubscriptionProperties> subscriptionList = trigger.getNodeSubscriptions(nodename);
-            Iterator it = subscriptionList.iterator();
-            
-            for (SubscriptionProperties subs : subscriptionList) {
-                try {
-                    XPathExpressionHandler filter = subs.getFilterXPath();
-                    if (filter.test(xml)) {
-                        EnvVars vars = new EnvVars();
-                        for (Variable v : subs.getVariables()) {
-                            vars.put(v.getEnvName(), v.resolve(xml));
-                        }
-                        try {
-                            trigger.runWithEnvironment(vars);
-                        } catch (InterruptedException ex) {
-                            Logger.getLogger(ItemEventCoordinator.class.getName()).log(Level.SEVERE, null, ex);
-                        }
+        for (ElOyente trigger : this.Triggers) {
+            synchronized (trigger.listeners) {
+                {
+                    System.out.println(trigger.listeners.size());
+
+                    Iterator it2 = trigger.listeners.entrySet().iterator();
+                    while (it2.hasNext()) {
+                        Map.Entry e = (Map.Entry) it2.next();
+                        System.out.println("LISTENER: " + e.getKey() + " " + e.getValue());
                     }
-                } catch (XPathExpressionException ex) {
-                    System.out.println("Exception: " + ex);
-                    Logger.getLogger(ItemEventCoordinator.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                // TODO: why only consider the first entry of items, and why use an iterator in that case?
+                String xml = items.getItems().iterator().next().toXML();
+                List<SubscriptionProperties> subscriptionList = trigger.getNodeSubscriptions(nodename);
+                Iterator it = subscriptionList.iterator();
+
+                for (SubscriptionProperties subs : subscriptionList) {
+                    try {
+                        XPathExpressionHandler filter = subs.getFilterXPath();
+                        if (filter.test(xml)) {
+                            EnvVars vars = new EnvVars();
+                            for (Variable v : subs.getVariables()) {
+                                vars.put(v.getEnvName(), v.resolve(xml));
+                            }
+                            try {
+                                trigger.runWithEnvironment(vars);
+                            } catch (InterruptedException ex) {
+                                Logger.getLogger(ItemEventCoordinator.class.getName()).log(Level.SEVERE, null, ex);
+                            }
+                        }
+                    } catch (XPathExpressionException ex) {
+                        System.out.println("Exception: " + ex);
+                        Logger.getLogger(ItemEventCoordinator.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }
             }
         }
     }
 
-    /**
-     * Prints the message of the XMPP event received.
-     */
+        /**
+         * Prints the message of the XMPP event received.
+         */
     private synchronized void print(ItemPublishEvent<PayloadItem<SimplePayload>> items) {
         System.out.println("-----------------------------");
         System.out.println("El item event coordinator es: " + this);

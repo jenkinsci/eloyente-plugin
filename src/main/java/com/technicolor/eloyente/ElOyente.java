@@ -29,6 +29,7 @@ import hudson.util.ListBoxModel;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectStreamException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -47,6 +48,7 @@ import org.jivesoftware.smackx.packet.DiscoverItems;
 import org.jivesoftware.smackx.pubsub.LeafNode;
 import org.jivesoftware.smackx.pubsub.Node;
 import org.jivesoftware.smackx.pubsub.PubSubManager;
+import org.jivesoftware.smackx.pubsub.SubscribeForm;
 import org.jivesoftware.smackx.pubsub.Subscription;
 import org.jivesoftware.smackx.pubsub.listener.ItemEventListener;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -66,7 +68,7 @@ public class ElOyente extends Trigger<Project> {
     /**
      * Map of connections to the XMPP server.
      *
-     * (key: Job Name; Value: Connection). 
+     * (key: Job Name; Value: Connection).
      *
      * Each project/job has its own connection. The id of these connections have
      * the form: userName/jobName (where "userName" is the name of the user
@@ -80,7 +82,7 @@ public class ElOyente extends Trigger<Project> {
     /**
      * Map of active listeners.
      *
-     * (Key: Node Name ; Value: Listener). 
+     * (Key: Node Name ; Value: Listener).
      *
      * A node has only one listener (it is inside the listener where we control
      * the subscriptions and schedule de builds).
@@ -90,6 +92,7 @@ public class ElOyente extends Trigger<Project> {
      * The project associated to the instance of the trigger.
      */
     protected transient Project project;
+    // protected static transient XMPPConnection xmppCon;
 
     /**
      * Constructor for the trigger.
@@ -122,7 +125,7 @@ public class ElOyente extends Trigger<Project> {
      *
      * This method retrieves the information about the different subscriptions
      * filled by the user in the job configuration.
-     * 
+     *
      */
     public List<SubscriptionProperties> getSubscriptions() {
         if (subscriptions == null) {
@@ -140,7 +143,7 @@ public class ElOyente extends Trigger<Project> {
      * specified as parameter.
      *
      * @param node The name of the node. properties for that node.
-     * 
+     *
      * @return subsc The list of subscriptions that a job has in its config.xml.
      */
     public List<SubscriptionProperties> getNodeSubscriptions(String node) {
@@ -163,8 +166,9 @@ public class ElOyente extends Trigger<Project> {
      * Method used for starting a job.
      *
      * This method is called when the Save or Apply button are pressed in a job
-     * configuration in case this plugin is activated. It is also called (indirectly with the "load" function) when
-     * restarting a connection because of changes in the main configuration.
+     * configuration in case this plugin is activated. It is also called
+     * (indirectly with the "load" function) when restarting a connection
+     * because of changes in the main configuration.
      *
      * It checks if there is all the information required for an XMPP connection
      * in the main configuration and creates the connection, subscribes when
@@ -182,10 +186,11 @@ public class ElOyente extends Trigger<Project> {
 
         try {
             if (!checkAnyParameterEmpty(server, user, password)) {
-                if (connectionOK(server, user, password)) {
-                    Connection con = createConnection(project, server, user, password);
+//                if (connectionOK(server, user, password)) {
+//                    Connection con = createConnection(project, server, user, password);
+                if (this.getDescriptor().xmppCon.isConnected() && this.getDescriptor().xmppCon.isAuthenticated()) {
+                    addListeners(this.getDescriptor().xmppCon, user);
                     subscribeIfNecessary(project);
-                    addListeners(con, user);
                 }
             }
         } catch (XMPPException ex) {
@@ -199,7 +204,7 @@ public class ElOyente extends Trigger<Project> {
      * @param server Server from the main configuration
      * @param user User from the main configuration
      * @param password Password from the main configuration
-     * 
+     *
      */
     public boolean checkAnyParameterEmpty(String server, String user, String password) {
         if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
@@ -211,8 +216,8 @@ public class ElOyente extends Trigger<Project> {
     /**
      * Check if it is possible to connect to the XMPP server.
      *
-     * Checks if it is possible to connect to the XMPP server with the parameters
-     * specified in the main configuration.
+     * Checks if it is possible to connect to the XMPP server with the
+     * parameters specified in the main configuration.
      *
      * @param server Server from the main configuration
      * @param user User from the main configuration
@@ -234,16 +239,16 @@ public class ElOyente extends Trigger<Project> {
 
     /**
      * Creates a connection for a job to the XMPP server.
-     * 
-     * It creates the connection for each job based on the parameters of the main configuration
-     * using the name of the job as resource.
-     * 
+     *
+     * It creates the connection for each job based on the parameters of the
+     * main configuration using the name of the job as resource.
+     *
      * @param project Project being started
      * @param server Server to which the plugin is connected
      * @param user User for the server
      * @param password Password for the server
      * @throws XMPPException
-     * 
+     *
      * @return Connection The connection created for the job.
      */
     public Connection createConnection(Project project, String server, String user, String password) throws XMPPException {
@@ -262,7 +267,7 @@ public class ElOyente extends Trigger<Project> {
     /**
      * Checks if the JID has the form expected and returns a Map with the UserID
      * y el ResourceID
-     * 
+     *
      * @return res The Map that contains the user and the resource.
      */
     protected Map<Integer, String> parseJID(Subscription sub) {
@@ -288,13 +293,13 @@ public class ElOyente extends Trigger<Project> {
      *
      * @param project The project being started.
      * @throws XMPPException
-     * 
+     *
      */
-    public void subscribeIfNecessary(Project project) throws XMPPException {
+    public synchronized void subscribeIfNecessary(Project project) throws XMPPException {
         boolean subscribed = false;
         String nodeName;
-        Connection con = connections.get(project.getName());
-        PubSubManager mgr = new PubSubManager(con);
+        Connection con = this.getDescriptor().xmppCon;
+        PubSubManager mgr = this.getDescriptor().psm;
         if (mgr.discoverNodes(null).getItems().hasNext()) {
 
             List<Subscription> subscriptionList;
@@ -313,7 +318,7 @@ public class ElOyente extends Trigger<Project> {
                                 continue;
                             }
 
-                            if (jid.get(RESOURCE_ID).equals(project.getName()) && sub.getNode().equals(nodeName) && jid.get(USER_ID).equals(getDescriptor().user)) {
+                            if (sub.getNode().equals(nodeName) && jid.get(USER_ID).equals(getDescriptor().user)) {
                                 subscribed = true;
                                 break;
                             }
@@ -348,17 +353,22 @@ public class ElOyente extends Trigger<Project> {
     /**
      * Adds listeners to the nodes.
      *
-     * It creates listeners for a job to the nodes specified in its subscriptions.
-     * It does this in case the listener for that node doesn't exist yet, otherwise
-     * it just adds the trigger to the array of triggers of that listener.
-     * 
+     * It creates listeners for a job to the nodes specified in its
+     * subscriptions. It does this in case the listener for that node doesn't
+     * exist yet, otherwise it just adds the trigger to the array of triggers of
+     * that listener.
+     *
      *
      * @param con - The connection for which the listener will be created.
      * @param project - The project being configured.
      * @throws XMPPException
      */
-    public void addListeners(Connection con, String user) throws XMPPException {
-        PubSubManager mgr = new PubSubManager(con);
+    public synchronized void addListeners(Connection con, String user) throws XMPPException {
+
+        System.out.println("Esta conectado: " + con.isConnected());
+        System.out.println("Esta conectado: " + con.getUser());
+        PubSubManager mgr = this.getDescriptor().psm;
+
 
         if (subscriptions != null) {
             for (int i = 0; i < subscriptions.length; i++) {
@@ -413,11 +423,12 @@ public class ElOyente extends Trigger<Project> {
 
     /**
      * Schedules a build.
-     * 
+     *
      * Called by the run() method it schedules a build using the environment
      * variables of the subscriptions and setting the Quiet Period to 0.
      *
-     * @param vars The environment variables to be set based on those passed by the user.
+     * @param vars The environment variables to be set based on those passed by
+     * the user.
      */
     public void runWithEnvironment(EnvVars vars) throws InterruptedException {
         Boolean done;
@@ -439,10 +450,10 @@ public class ElOyente extends Trigger<Project> {
     /**
      * Called before a Trigger is removed.
      *
-     * This method will be called when a job configuration is saved. It will unsubscribe
-     * that job, delete it's connection to the server, remove it's listeners and clean 
-     * the connections and listeners fields. They will be reconstructed by start() with 
-     * the new configuration saved.
+     * This method will be called when a job configuration is saved. It will
+     * unsubscribe that job, delete it's connection to the server, remove it's
+     * listeners and clean the connections and listeners fields. They will be
+     * reconstructed by start() with the new configuration saved.
      *
      */
     @Override
@@ -450,8 +461,8 @@ public class ElOyente extends Trigger<Project> {
 
         if (subscriptions != null && subscriptions.length != 0) {
             String nodeName;
-            Connection con = connections.get(project.getName());
-            PubSubManager mgr = new PubSubManager(con);
+            Connection con = this.getDescriptor().xmppCon;
+            PubSubManager mgr = this.getDescriptor().psm;
             List<Subscription> subscriptionList;
             Iterator it2;
 
@@ -474,43 +485,45 @@ public class ElOyente extends Trigger<Project> {
                         LeafNode n = (LeafNode) mgr.getNode(nodeName);
 
                         //Remove listener
-                        if (listeners.containsKey(nodeName)) {
-                            ArrayList<ElOyente> a = listeners.get(nodeName).Triggers;
-                            if (a.contains(this)) {
-                                a.remove(this);
-                            }
+                        synchronized (listeners) {
+                            if (listeners.containsKey(nodeName)) {
+                                ArrayList<ElOyente> a = listeners.get(nodeName).Triggers;
+                                if (a.contains(this)) {
+                                    a.remove(this);
+                                }
 
-                            if (a.isEmpty()) {
-                                try {
-                                    mgr.getNode(nodeName).removeItemEventListener(listeners.get(nodeName));
-                                    listeners.put(nodeName, null);
-                                    listeners.remove(nodeName);
-                                    System.out.println("The Listener of the node has been removed");
+                                if (a.isEmpty()) {
+                                    try {
+                                        mgr.getNode(nodeName).removeItemEventListener(listeners.get(nodeName));
+                                        listeners.put(nodeName, null);
+                                        listeners.remove(nodeName);
+                                        System.out.println("The Listener of the node has been removed");
 
-                                } catch (XMPPException ex) {
-                                    Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
+                                        //Unsubscribe
+                                        subscriptionList = mgr.getSubscriptions();
+
+                                        it2 = subscriptionList.iterator();
+
+                                        while (it2.hasNext()) {
+                                            Subscription sub = (Subscription) it2.next();
+
+                                            if (sub.getNode().equals(nodeName) && sub.getJid().equals(con.getUser())) {
+                                                System.out.println(sub.getNode()+"="+nodeName);
+                                                System.out.println(sub.getJid()+"="+con.getUser());
+                                                
+                                                n.unsubscribe(con.getUser(), sub.getId());
+                                                break;
+                                            }
+                                        }
+
+                                    } catch (XMPPException ex) {
+                                        Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
+                                    }
                                 }
                             }
                         }
 
-                        //Unsubscribe
-                        subscriptionList = mgr.getSubscriptions();
 
-                        it2 = subscriptionList.iterator();
-
-                        while (it2.hasNext()) {
-                            Subscription sub = (Subscription) it2.next();
-
-                            Map<Integer, String> jid = parseJID(sub);
-                            if (null == jid || jid.size() < 2) {
-                                continue;
-                            }
-
-                            if (jid.get(RESOURCE_ID).equals(project.getName()) && sub.getNode().equals(nodeName) && jid.get(USER_ID).equals(getDescriptor().user)) {
-                                n.unsubscribe(con.getUser());
-                                break;
-                            }
-                        }
                     } else {
                         System.out.println("The old node doesn't exixt!!");
                     }
@@ -519,7 +532,7 @@ public class ElOyente extends Trigger<Project> {
                 }
             }
             connections.remove(project.getName());
-            con.disconnect();
+            //con.disconnect();
         }
     }
 
@@ -551,24 +564,25 @@ public class ElOyente extends Trigger<Project> {
                         LeafNode n = (LeafNode) mgr.getNode(nodeName);
 
                         //Remove listener
-                        if (listeners.containsKey(nodeName)) {
-                            ArrayList<ElOyente> a = listeners.get(nodeName).Triggers;
-                            if (a.contains(this)) {
-                                a.remove(this);
-                            }
+                        synchronized (listeners) {
+                            if (listeners.containsKey(nodeName)) {
+                                ArrayList<ElOyente> a = listeners.get(nodeName).Triggers;
+                                if (a.contains(this)) {
+                                    a.remove(this);
+                                }
 
-                            if (a.isEmpty()) {
-                                try {
+                                if (a.isEmpty()) {
+                                    try {
 
-                                    mgr.getNode(nodeName).removeItemEventListener(listeners.get(nodeName));
-                                    System.out.println("The Listener of the node has been removed");
+                                        mgr.getNode(nodeName).removeItemEventListener(listeners.get(nodeName));
+                                        System.out.println("The Listener of the node has been removed");
 
-                                } catch (XMPPException ex) {
-                                    Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
+                                    } catch (XMPPException ex) {
+                                        Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
+                                    }
                                 }
                             }
                         }
-
                         //Unsubscribe
                         subscriptionList = mgr.getSubscriptions();
 
@@ -583,7 +597,7 @@ public class ElOyente extends Trigger<Project> {
                             }
 
                             if (jid.get(RESOURCE_ID).equals(oldName) && sub.getNode().equals(nodeName) && jid.get(USER_ID).equals(getDescriptor().user)) {
-                                n.unsubscribe(con.getUser());
+                                //                          n.unsubscribe(con.getUser());
                                 break;
                             }
                         }
@@ -595,7 +609,7 @@ public class ElOyente extends Trigger<Project> {
                 }
             }
             connections.remove(oldName);
-            con.disconnect();
+            //con.disconnect();
         }
     }
 
@@ -631,6 +645,9 @@ public class ElOyente extends Trigger<Project> {
         private String server;
         private String user;
         private String password;
+        protected transient ConnectionConfiguration config;
+        protected transient XMPPConnection xmppCon;
+        protected transient PubSubManager psm;
 
         /**
          * Brings the persisted configuration in the main configuration.
@@ -638,7 +655,11 @@ public class ElOyente extends Trigger<Project> {
          * Brings the persisted configuration in the main configuration.
          */
         public DescriptorImpl() {
+
             load();
+            System.out.println("Server: " + server + " User: " + user + " Password: " + password);
+            boolean flag = connectXMPP();
+            System.out.println("status: " + flag);
         }
 
         /**
@@ -677,13 +698,15 @@ public class ElOyente extends Trigger<Project> {
         public boolean configure(StaplerRequest req, JSONObject formData) throws Descriptor.FormException {
             // To persist global configuration information,
             // set that to properties and call save().
+
+            stopJobs();
+            
             server = formData.getString("server");
             user = formData.getString("user");
             password = formData.getString("password");
 
-            //report();
             save();
-            reloadJobs();
+            startJobs();
 
             return super.configure(req, formData);
         }
@@ -692,69 +715,38 @@ public class ElOyente extends Trigger<Project> {
          * This method reloads the jobs that are using the trigger applying the
          * new main configuration.
          *
-         * It calls the method stop() and start() of all the jobs that are using the trigger
-         * in order to connect to the server with the new credentials and reset the subscriptions,
-         * listeners, etc.
+         * It calls the method stop() and start() of all the jobs that are using
+         * the trigger in order to connect to the server with the new
+         * credentials and reset the subscriptions, listeners, etc.
          */
-        public void reloadJobs() {
-            List<ElOyente> lista = Jenkins.getInstance().getItems(ElOyente.class);
-
-            for (ElOyente oyente : lista) {
-
-                oyente.stop();
-                oyente.start(oyente.project, true);
+        public void stopJobs() {
+            if (xmppCon.isConnected() && xmppCon.isAuthenticated()) {
+                Iterator it2 = (Jenkins.getInstance().getItems()).iterator();
+                while (it2.hasNext()) {
+                    Project job = (Project) it2.next();
+                    ElOyente instance = (ElOyente) job.getTriggers().get(this);
+                    if (instance != null) {
+                        System.out.println("Stopping job: " + job.getName());
+                        instance.stop();
+                    }
+                }
+                xmppCon.disconnect();
             }
         }
 
-        /**
-         * Used for logging to the log file.
-         *
-         * This method reports information related to XMPPadmin events like
-         * "Available Nodes", connection information, etc. It creates a
-         * connection to take the required data for reporting and it closes it
-         * after. It is used in the main configuration every time the Save or
-         * Apply buttons are pressed.
-         *
-         */
-        public void report() {
-            Logger logger = Logger.getLogger("com.technicolor.eloyente");
-
-            if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
-                try {
-                    //Connection
-                    ConnectionConfiguration config = new ConnectionConfiguration(server);
-                    PubSubManager mgr;
-                    Connection con = new XMPPConnection(config);
-                    con.connect();
-                    logger.log(Level.INFO, "Connection established");
-                    if (con.isConnected()) {
-
-                        //Login
-                        con.login(user, password, "Global");
-                        logger.log(Level.INFO, "JID: {0}", con.getUser());
-                        logger.log(Level.INFO, "{0} has been logged to openfire!", user);
-
-                        //Log the availables nodes
-                        mgr = new PubSubManager(con);
-                        DiscoverItems items = mgr.discoverNodes(null);
-                        Iterator<DiscoverItems.Item> iter = items.getItems();
-
-                        logger.log(Level.INFO, "NODES: ---------------------------------");
-                        while (iter.hasNext()) {
-                            DiscoverItems.Item i = iter.next();
-                            logger.log(Level.INFO, "Node: {0}", i.getNode());
-                        }
-                        logger.log(Level.INFO, "END NODES: -----------------------------");
-
-                        //Disconnection
-                        con.disconnect();
+                public void startJobs() {
+            if (connectXMPP()) {
+                Iterator it2 = (Jenkins.getInstance().getItems()).iterator();
+                while (it2.hasNext()) {
+                    Project job = (Project) it2.next();
+                    ElOyente instance = (ElOyente) job.getTriggers().get(this);
+                    if (instance != null) {
+                        System.out.println("Starting job: " + job.getName());
+                        instance.start(job, true);
                     }
-                } catch (XMPPException ex) {
-                    System.err.println(ex.getXMPPError().getMessage());
                 }
             }
         }
-
         /**
          * This method returns the URL of the XMPP server.
          *
@@ -827,7 +819,7 @@ public class ElOyente extends Trigger<Project> {
          *
          * @param user User from the the main configuration.
          * @param password Password from the the main configuration.
-         * 
+         *
          */
         public FormValidation doCheckPassword(@QueryParameter String user, @QueryParameter String password, @QueryParameter String server) {
             ConnectionConfiguration config = new ConnectionConfiguration(server);
@@ -869,6 +861,39 @@ public class ElOyente extends Trigger<Project> {
             }
 
             return items;
+        }
+
+        private synchronized boolean connectXMPP() {
+            config = new ConnectionConfiguration(server);
+            xmppCon = new XMPPConnection(config);
+
+            if (!xmppCon.isConnected()) {
+                try {
+                    xmppCon.connect();
+                    if (!xmppCon.isAuthenticated()) {
+                        java.net.InetAddress localMachine;
+                        try {
+                            localMachine = java.net.InetAddress.getLocalHost();
+                            xmppCon.login(user, password, localMachine.toString());
+                        } catch (UnknownHostException ex) {
+                            Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
+                            System.out.println(ex);
+                        }
+                        
+                        psm = new PubSubManager(xmppCon);
+                        return true;
+                    } else {
+                        System.out.println("NO SE LOGEA");
+                        return false;
+                    }
+                } catch (XMPPException ex) {
+                    System.out.println("exception intentando conectar!!!!!!!!!!!!!!!!!!!!");
+                    return false;
+                }
+            } else {
+                System.out.println("ya estaba conectado!");
+                return true;
+            }
         }
     }
 }
