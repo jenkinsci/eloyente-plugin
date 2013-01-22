@@ -24,30 +24,10 @@ import hudson.model.listeners.ItemListener;
 @Extension
 public final class JobListening extends ItemListener {
 
-    /**
-     * Used when a job is renamed.
-     * 
-     * It will unsubscribe that job, delete it's connection to the server, 
-     * remove it's listeners and clean the connections and listeners fields.
-     * Then it will redo everything for the new job name.
-     *
-     */
-//    @Override
-//    public void onRenamed(Item item, String oldName, String newName) {
-//
-//        ElOyente instance = (ElOyente) ((AbstractProject) item).getTrigger(ElOyente.class);
-//
-//        if (instance != null) {
-//            instance.stop();
-//            instance.start((Project) item, false);
-//        }
-//    }
-
      /**
      * Used when a job is deleted.
      *
-     * It will unsubscribe that job, delete it's connection to the server, 
-     * remove it's listeners and clean the connections and listeners fields.
+     * It will just call the stop for the job if it uses ElOyente.
      */
     @Override
     public void onDeleted(Item item) {
