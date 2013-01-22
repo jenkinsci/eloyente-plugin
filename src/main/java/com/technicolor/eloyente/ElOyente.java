@@ -63,18 +63,6 @@ import org.kohsuke.stapler.StaplerRequest;
  */
 public class ElOyente extends Trigger<Project> {
 
-    private final static Integer USER_ID = 0;
-    private final static Integer RESOURCE_ID = 1;
-    /**
-     * Map of connections to the XMPP server.
-     *
-     * (key: Job Name; Value: Connection).
-     *
-     * Each project/job has its own connection. The id of these connections have
-     * the form: userName/jobName (where "userName" is the name of the user
-     * defined in the main configuration panel.)
-     */
-    protected final static Map<String, Connection> connections = new HashMap<String, Connection>();
     /**
      * Array of subscriptions for a job.
      */
@@ -186,8 +174,6 @@ public class ElOyente extends Trigger<Project> {
 
         try {
             if (!checkAnyParameterEmpty(server, user, password)) {
-//                if (connectionOK(server, user, password)) {
-//                    Connection con = createConnection(project, server, user, password);
                 if (this.getDescriptor().xmppCon.isConnected() && this.getDescriptor().xmppCon.isAuthenticated()) {
                     addListeners(this.getDescriptor().xmppCon, user);
                     subscribeIfNecessary(project);
@@ -214,77 +200,6 @@ public class ElOyente extends Trigger<Project> {
     }
 
     /**
-     * Check if it is possible to connect to the XMPP server.
-     *
-     * Checks if it is possible to connect to the XMPP server with the
-     * parameters specified in the main configuration.
-     *
-     * @param server Server from the main configuration
-     * @param user User from the main configuration
-     * @param password Password from the main configuration
-     */
-    public static synchronized boolean connectionOK(String server, String user, String password) {
-
-        try {
-            ConnectionConfiguration config = new ConnectionConfiguration(server);
-            Connection con = new XMPPConnection(config);
-            con.connect();
-            con.login(user, password);
-            con.disconnect();
-            return true;
-        } catch (XMPPException ex) {
-            return false;
-        }
-    }
-
-    /**
-     * Creates a connection for a job to the XMPP server.
-     *
-     * It creates the connection for each job based on the parameters of the
-     * main configuration using the name of the job as resource.
-     *
-     * @param project Project being started
-     * @param server Server to which the plugin is connected
-     * @param user User for the server
-     * @param password Password for the server
-     * @throws XMPPException
-     *
-     * @return Connection The connection created for the job.
-     */
-    public Connection createConnection(Project project, String server, String user, String password) throws XMPPException {
-        if (!connections.containsKey(project.getName())) {
-            ConnectionConfiguration config = new ConnectionConfiguration(server);
-            Connection con = new XMPPConnection(config);
-            con.connect();
-            con.login(user, password, project.getName());
-            connections.put(project.getName(), con);
-            return con;
-        } else {
-            return connections.get(project.getName());
-        }
-    }
-
-    /**
-     * Checks if the JID has the form expected and returns a Map with the UserID
-     * y el ResourceID
-     *
-     * @return res The Map that contains the user and the resource.
-     */
-    protected Map<Integer, String> parseJID(Subscription sub) {
-        String JID = sub.getJid();
-
-        int atPos = JID.indexOf('@');
-        int slashPos = JID.indexOf('/');
-        if (atPos == -1 || slashPos == -1) {
-            return null;
-        }
-        HashMap<Integer, String> res = new HashMap<Integer, String>();
-        res.put(USER_ID, JID.substring(0, atPos));
-        res.put(RESOURCE_ID, JID.substring(slashPos + 1));
-        return res;
-    }
-
-    /**
      *
      * Method for subscribing a job to the nodes in the XMPP server.
      *
@@ -296,55 +211,26 @@ public class ElOyente extends Trigger<Project> {
      *
      */
     public synchronized void subscribeIfNecessary(Project project) throws XMPPException {
-        boolean subscribed = false;
+
         String nodeName;
         Connection con = this.getDescriptor().xmppCon;
         PubSubManager mgr = this.getDescriptor().psm;
         if (mgr.discoverNodes(null).getItems().hasNext()) {
 
-            List<Subscription> subscriptionList;
-            Iterator it2;
             if (subscriptions != null) {
                 if (subscriptions.length != 0) {
                     for (int i = 0; i < subscriptions.length; i++) {
                         nodeName = subscriptions[i].getNode();
-                        subscriptionList = mgr.getSubscriptions();
-                        it2 = subscriptionList.iterator();
 
-                        while (it2.hasNext()) {
-                            Subscription sub = (Subscription) it2.next();
-                            Map<Integer, String> jid = parseJID(sub);
-                            if (null == jid || jid.size() < 2) {
-                                continue;
-                            }
-
-                            if (sub.getNode().equals(nodeName) && jid.get(USER_ID).equals(getDescriptor().user)) {
-                                subscribed = true;
-                                break;
-                            }
-                        }
-
-                        if (!subscribed && !nodeName.equals("")) {
-                            DiscoverItems discoverNodes = mgr.discoverNodes(null);
-                            Iterator<DiscoverItems.Item> items = discoverNodes.getItems();
-
-                            boolean nodeExists = false;
-                            while (items.hasNext()) {
-                                if (((DiscoverItems.Item) items.next()).getNode().equals(nodeName)) {
-                                    nodeExists = true;
-                                    break;
-                                }
-                            }
-                            if (nodeExists) {
+                        if (!isSubscribed(nodeName) && !nodeName.equals("")) {
+                            if (existsNode(nodeName)) {
                                 Node node = mgr.getNode(nodeName);
                                 String JID = con.getUser();
                                 mgr.getNode(nodeName).subscribe(JID);
                                 System.out.println("Project " + project.getName() + " subscribed to node " + node.getId());
                             }
                         }
-                        subscribed = false;
                     }
-
                 }
             }
         }
@@ -365,28 +251,13 @@ public class ElOyente extends Trigger<Project> {
      */
     public synchronized void addListeners(Connection con, String user) throws XMPPException {
 
-        System.out.println("Esta conectado: " + con.isConnected());
-        System.out.println("Esta conectado: " + con.getUser());
         PubSubManager mgr = this.getDescriptor().psm;
-
 
         if (subscriptions != null) {
             for (int i = 0; i < subscriptions.length; i++) {
 
                 //Checking if the node exist before creating the listener
-                String key = subscriptions[i].node;
-
-                DiscoverItems discoverNodes = mgr.discoverNodes(null);
-                Iterator<DiscoverItems.Item> items = discoverNodes.getItems();
-
-                boolean nodeExists = false;
-                while (items.hasNext()) {
-                    if (((DiscoverItems.Item) items.next()).getNode().equals(key)) {
-                        nodeExists = true;
-                        break;
-                    }
-                }
-                if (nodeExists) {
+                if (existsNode(subscriptions[i].node)) {
                     LeafNode node = (LeafNode) mgr.getNode(subscriptions[i].node);
                     synchronized (listeners) {
                         if (!listeners.containsKey(node.getId())) {
@@ -469,18 +340,7 @@ public class ElOyente extends Trigger<Project> {
             for (int i = 0; i < subscriptions.length; i++) {
                 try {
                     nodeName = subscriptions[i].node;
-
-                    DiscoverItems discoverNodes = mgr.discoverNodes(null);
-                    Iterator<DiscoverItems.Item> items = discoverNodes.getItems();
-
-                    boolean nodeExists = false;
-                    while (items.hasNext()) {
-                        if (((DiscoverItems.Item) items.next()).getNode().equals(nodeName)) {
-                            nodeExists = true;
-                            break;
-                        }
-                    }
-                    if (nodeExists) {
+                    if (existsNode(nodeName)) {
 
                         LeafNode n = (LeafNode) mgr.getNode(nodeName);
 
@@ -508,9 +368,8 @@ public class ElOyente extends Trigger<Project> {
                                             Subscription sub = (Subscription) it2.next();
 
                                             if (sub.getNode().equals(nodeName) && sub.getJid().equals(con.getUser())) {
-                                                System.out.println(sub.getNode()+"="+nodeName);
-                                                System.out.println(sub.getJid()+"="+con.getUser());
-                                                
+                                                System.out.println(sub.getNode() + "=" + nodeName);
+                                                System.out.println(sub.getJid() + "=" + con.getUser());
                                                 n.unsubscribe(con.getUser(), sub.getId());
                                                 break;
                                             }
@@ -523,7 +382,6 @@ public class ElOyente extends Trigger<Project> {
                             }
                         }
 
-
                     } else {
                         System.out.println("The old node doesn't exixt!!");
                     }
@@ -531,84 +389,6 @@ public class ElOyente extends Trigger<Project> {
                     Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-            connections.remove(project.getName());
-            //con.disconnect();
-        }
-    }
-
-    public void stopOldJob(String oldName) {
-
-        if (subscriptions != null && subscriptions.length != 0) {
-            String nodeName;
-            Connection con = connections.get(oldName);
-            PubSubManager mgr = new PubSubManager(con);
-            List<Subscription> subscriptionList;
-            Iterator it2;
-
-            for (int i = 0; i < subscriptions.length; i++) {
-                try {
-                    nodeName = subscriptions[i].node;
-
-                    DiscoverItems discoverNodes = mgr.discoverNodes(null);
-                    Iterator<DiscoverItems.Item> items = discoverNodes.getItems();
-
-                    boolean nodeExists = false;
-                    while (items.hasNext()) {
-                        if (((DiscoverItems.Item) items.next()).getNode().equals(nodeName)) {
-                            nodeExists = true;
-                            break;
-                        }
-                    }
-                    if (nodeExists) {
-
-                        LeafNode n = (LeafNode) mgr.getNode(nodeName);
-
-                        //Remove listener
-                        synchronized (listeners) {
-                            if (listeners.containsKey(nodeName)) {
-                                ArrayList<ElOyente> a = listeners.get(nodeName).Triggers;
-                                if (a.contains(this)) {
-                                    a.remove(this);
-                                }
-
-                                if (a.isEmpty()) {
-                                    try {
-
-                                        mgr.getNode(nodeName).removeItemEventListener(listeners.get(nodeName));
-                                        System.out.println("The Listener of the node has been removed");
-
-                                    } catch (XMPPException ex) {
-                                        Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
-                                    }
-                                }
-                            }
-                        }
-                        //Unsubscribe
-                        subscriptionList = mgr.getSubscriptions();
-
-                        it2 = subscriptionList.iterator();
-
-                        while (it2.hasNext()) {
-                            Subscription sub = (Subscription) it2.next();
-
-                            Map<Integer, String> jid = parseJID(sub);
-                            if (null == jid || jid.size() < 2) {
-                                continue;
-                            }
-
-                            if (jid.get(RESOURCE_ID).equals(oldName) && sub.getNode().equals(nodeName) && jid.get(USER_ID).equals(getDescriptor().user)) {
-                                //                          n.unsubscribe(con.getUser());
-                                break;
-                            }
-                        }
-                    } else {
-                        System.out.println("The old node doesn't exixt!!");
-                    }
-                } catch (XMPPException ex) {
-                    Logger.getLogger(oldName).log(Level.SEVERE, null, ex);
-                }
-            }
-            connections.remove(oldName);
             //con.disconnect();
         }
     }
@@ -623,6 +403,40 @@ public class ElOyente extends Trigger<Project> {
     @Override
     public final DescriptorImpl getDescriptor() {
         return (DescriptorImpl) super.getDescriptor();
+    }
+
+    public boolean existsNode(String key) throws XMPPException {
+
+        boolean nodeExists = false;
+        DiscoverItems discoverNodes = this.getDescriptor().psm.discoverNodes(null);
+        Iterator<DiscoverItems.Item> items = discoverNodes.getItems();
+
+        while (items.hasNext()) {
+            if (((DiscoverItems.Item) items.next()).getNode().equals(key)) {
+                nodeExists = true;
+                break;
+            }
+        }
+        return nodeExists;
+    }
+
+    public boolean isSubscribed(String nodeName) throws XMPPException {
+        Connection con = this.getDescriptor().xmppCon;
+        PubSubManager mgr = this.getDescriptor().psm;
+        List<Subscription> subscriptionList;
+        Iterator it2;
+
+        subscriptionList = mgr.getSubscriptions();
+        it2 = subscriptionList.iterator();
+
+        while (it2.hasNext()) {
+            Subscription sub = (Subscription) it2.next();
+
+            if (sub.getNode().equals(nodeName) && sub.getJid().equals(con.getUser())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -700,7 +514,7 @@ public class ElOyente extends Trigger<Project> {
             // set that to properties and call save().
 
             stopJobs();
-            
+
             server = formData.getString("server");
             user = formData.getString("user");
             password = formData.getString("password");
@@ -720,7 +534,7 @@ public class ElOyente extends Trigger<Project> {
          * credentials and reset the subscriptions, listeners, etc.
          */
         public void stopJobs() {
-            if (xmppCon.isConnected() && xmppCon.isAuthenticated()) {
+            if (xmppCon != null && xmppCon.isConnected() && xmppCon.isAuthenticated()) {
                 Iterator it2 = (Jenkins.getInstance().getItems()).iterator();
                 while (it2.hasNext()) {
                     Project job = (Project) it2.next();
@@ -734,7 +548,7 @@ public class ElOyente extends Trigger<Project> {
             }
         }
 
-                public void startJobs() {
+        public void startJobs() {
             if (connectXMPP()) {
                 Iterator it2 = (Jenkins.getInstance().getItems()).iterator();
                 while (it2.hasNext()) {
@@ -747,6 +561,7 @@ public class ElOyente extends Trigger<Project> {
                 }
             }
         }
+
         /**
          * This method returns the URL of the XMPP server.
          *
@@ -864,35 +679,42 @@ public class ElOyente extends Trigger<Project> {
         }
 
         private synchronized boolean connectXMPP() {
-            config = new ConnectionConfiguration(server);
-            xmppCon = new XMPPConnection(config);
+            if (!"".equals(server) && !"".equals(user) & !"".equals(password)) {
+                config = new ConnectionConfiguration(server);
+                xmppCon = new XMPPConnection(config);
 
-            if (!xmppCon.isConnected()) {
-                try {
-                    xmppCon.connect();
-                    if (!xmppCon.isAuthenticated()) {
-                        java.net.InetAddress localMachine;
-                        try {
-                            localMachine = java.net.InetAddress.getLocalHost();
-                            xmppCon.login(user, password, localMachine.toString());
-                        } catch (UnknownHostException ex) {
-                            Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
-                            System.out.println(ex);
+                if (!xmppCon.isConnected()) {
+                    try {
+                        xmppCon.connect();
+                        if (!xmppCon.isAuthenticated()) {
+                            java.net.InetAddress localMachine;
+                            try {
+                                localMachine = java.net.InetAddress.getLocalHost();
+                                
+//                                xmppCon.login(user, password, localMachine.toString());
+                                xmppCon.login(user, password, Jenkins.getInstance().getUrlChildPrefix().toString());
+                            } catch (UnknownHostException ex) {
+                                Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
+                                System.out.println(ex);
+                            }
+
+                            psm = new PubSubManager(xmppCon);
+                            return true;
+                        } else {
+                            System.out.println("Not need to loggin!");
+                            return false;
                         }
-                        
-                        psm = new PubSubManager(xmppCon);
-                        return true;
-                    } else {
-                        System.out.println("NO SE LOGEA");
+                    } catch (XMPPException ex) {
+                        System.out.println("Fail trying to connect");
                         return false;
                     }
-                } catch (XMPPException ex) {
-                    System.out.println("exception intentando conectar!!!!!!!!!!!!!!!!!!!!");
-                    return false;
+                } else {
+                    System.out.println("Already connected");
+                    return true;
                 }
             } else {
-                System.out.println("ya estaba conectado!");
-                return true;
+                System.out.println("Empty fields!");
+                return false;
             }
         }
     }
