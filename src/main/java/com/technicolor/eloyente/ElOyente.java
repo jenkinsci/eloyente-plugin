@@ -15,6 +15,7 @@
  */
 package com.technicolor.eloyente;
 
+import com.google.inject.Inject;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -23,6 +24,7 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
+import hudson.model.Hudson;
 import hudson.model.Item;
 import hudson.model.Project;
 import hudson.triggers.Trigger;
@@ -481,6 +483,7 @@ public class ElOyente extends Trigger<Project> {
          *
          * Brings the persisted configuration in the main configuration.
          */
+        @Inject
         public DescriptorImpl() {
 
             load();
@@ -589,7 +592,7 @@ public class ElOyente extends Trigger<Project> {
          * connection or not.
          */
         private synchronized boolean connectXMPP() {
-            if (!ElOyente.checkAnyParameterEmpty(server, user, password)) {
+            if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
                 config = new ConnectionConfiguration(server);
                 xmppCon = new XMPPConnection(config);
 
@@ -597,7 +600,8 @@ public class ElOyente extends Trigger<Project> {
                     try {
                         xmppCon.connect();
                         if (!xmppCon.isAuthenticated()) {
-                            xmppCon.login(user, password,Jenkins.getInstance().getRootUrl());
+                            String resource = ""+xmppCon;
+                            xmppCon.login(user, password,Jenkins.SESSION_HASH);
                             psm = new PubSubManager(xmppCon);
                             return true;
                         } else {
