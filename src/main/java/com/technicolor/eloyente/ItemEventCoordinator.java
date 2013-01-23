@@ -96,6 +96,8 @@ public class ItemEventCoordinator implements ItemEventListener<PayloadItem<Simpl
      * @param items The XMPP event received.
      *
      */
+    
+    
     public void handlePublishedItems(ItemPublishEvent<PayloadItem<SimplePayload>> items) {
         print(items);
         for (ElOyente trigger : this.Triggers) {
@@ -112,7 +114,7 @@ public class ItemEventCoordinator implements ItemEventListener<PayloadItem<Simpl
                 // TODO: why only consider the first entry of items, and why use an iterator in that case?
                 String xml = items.getItems().iterator().next().toXML();
                 List<SubscriptionProperties> subscriptionList = trigger.getNodeSubscriptions(nodename);
-                Iterator it = subscriptionList.iterator();
+
 
                 for (SubscriptionProperties subs : subscriptionList) {
                     try {

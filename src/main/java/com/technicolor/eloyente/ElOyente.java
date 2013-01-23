@@ -175,7 +175,11 @@ public class ElOyente extends Trigger<Project> {
             if (!checkAnyParameterEmpty(server, user, password)) {
                 if (this.getDescriptor().xmppCon.isConnected() && this.getDescriptor().xmppCon.isAuthenticated()) {
                     addListeners(this.getDescriptor().xmppCon, user);
-                    subscribeIfNecessary(project);
+                    try {
+                        subscribeIfNecessary(project);
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }
             }
         } catch (XMPPException ex) {
@@ -210,7 +214,7 @@ public class ElOyente extends Trigger<Project> {
      * @throws XMPPException
      *
      */
-    public synchronized void subscribeIfNecessary(Project project) throws XMPPException {
+    public synchronized void subscribeIfNecessary(Project project) throws XMPPException, InterruptedException {
 
         String nodeName;
         Connection con = this.getDescriptor().xmppCon;
@@ -299,19 +303,32 @@ public class ElOyente extends Trigger<Project> {
      * @param vars The environment variables to be set based on those passed by
      * the user.
      */
-    public void runWithEnvironment(EnvVars vars) throws InterruptedException {
+    public synchronized void runWithEnvironment(EnvVars vars) throws InterruptedException {
         Boolean done;
+        int n = 0;
+        int m= 0;
         if (!project.getAllJobs().isEmpty()) {
             Iterator iterator = this.project.getAllJobs().iterator();
             while (iterator.hasNext()) {
                 Project p = ((Project) iterator.next());
                 System.out.println("Build scheduled for project: " + p.getName());
                 if (p.isInQueue()) {
-                    Thread.currentThread().sleep(300);
-                    System.out.println(p.getName() + " is in the queue!");
+                    while (m <= 12) {
+                        m=(int) Math.pow(2,n);
+                        Thread.currentThread().sleep(m*1000);
+                        System.out.println(p.getName() + " is in the queue! wait "+ m+" segundos");
+                        done = p.scheduleBuild(0, new ElOyenteTriggerCause(vars));
+                        if(!done){
+                            n++;
+                        }else{
+                            break;
+                        }
+                    }
+                } else {
+                    done = p.scheduleBuild(0, new ElOyenteTriggerCause(vars));
+                    System.out.println(p.getName() + " executed: " + done);
                 }
-                done = p.scheduleBuild(0, new ElOyenteTriggerCause(vars));
-                System.out.println(p.getName() + " executed: " + done);
+                
             }
         }
     }
@@ -434,11 +451,17 @@ public class ElOyente extends Trigger<Project> {
 
         while (it2.hasNext()) {
             Subscription sub = (Subscription) it2.next();
-
+            
             if (sub.getNode().equals(nodeName) && sub.getJid().equals(con.getUser())) {
+                System.out.println(sub.getNode()+" = "+nodeName);
+                System.out.println(sub.getJid()+" = "+con.getUser());
                 return true;
             }
+            else
+                System.out.println(sub.getNode()+" = "+nodeName+"FALSE!!!!!!!!!");
+                 System.out.println(sub.getJid()+" != "+con.getUser() +"FALSE!!!!!!!!!");
         }
+        
         return false;
     }
 
@@ -483,7 +506,6 @@ public class ElOyente extends Trigger<Project> {
          *
          * Brings the persisted configuration in the main configuration.
          */
-        @Inject
         public DescriptorImpl() {
 
             load();
@@ -600,8 +622,14 @@ public class ElOyente extends Trigger<Project> {
                     try {
                         xmppCon.connect();
                         if (!xmppCon.isAuthenticated()) {
-                            String resource = ""+xmppCon;
-                            xmppCon.login(user, password,Jenkins.SESSION_HASH);
+                            String resource = "" + xmppCon;
+                            String pepe = Jenkins.SESSION_HASH;
+                            try {
+                                pepe = Jenkins.getInstance().getRootUrl();
+                            } catch (Exception ex) {
+                                System.out.println("FOLLONERO");
+                            }
+                            xmppCon.login(user, password, pepe);
                             psm = new PubSubManager(xmppCon);
                             return true;
                         } else {
