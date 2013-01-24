@@ -154,9 +154,10 @@ public class ElOyente extends Trigger<Project> {
     /**
      * Method used for starting a job.
      *
-     * This method is called when the Save or Apply button are pressed in a job
-     * configuration in case this plugin is activated. It is also called when
-     * restarting a connection because of changes in the main configuration.
+     * This method is called when: 1) Jenkins starts. 2) When the Save or Apply
+     * button are pressed in a job, after the Stop() configuration in case this
+     * plugin is activated. 3) It is also called when restarting a connection
+     * because of changes in the main configuration, after the Stop()
      *
      * It checks if there is all the information required for an XMPP connection
      * in the main configuration, subscribes when required and adds listeners.
@@ -224,14 +225,8 @@ public class ElOyente extends Trigger<Project> {
             if (subscriptions != null && subscriptions.length != 0) {
                 for (int i = 0; i < subscriptions.length; i++) {
                     nodeName = subscriptions[i].getNode();
-
-                    if (!isSubscribed(nodeName) && !nodeName.equals("")) {
-                        if (existsNode(nodeName)) {
-                            Node node = mgr.getNode(nodeName);
-                            String JID = con.getUser();
-                            mgr.getNode(nodeName).subscribe(JID);
-                            System.out.println("Project " + project.getName() + " subscribed to node " + node.getId());
-                        }
+                    if (existsNode(nodeName)) {
+                        this.getDescriptor().checkAndAddSubscription(nodeName);
                     }
                 }
             }
@@ -306,7 +301,7 @@ public class ElOyente extends Trigger<Project> {
     public synchronized void runWithEnvironment(EnvVars vars) throws InterruptedException {
         Boolean done;
         int n = 0;
-        int m= 0;
+        int m = 0;
         if (!project.getAllJobs().isEmpty()) {
             Iterator iterator = this.project.getAllJobs().iterator();
             while (iterator.hasNext()) {
@@ -314,13 +309,13 @@ public class ElOyente extends Trigger<Project> {
                 System.out.println("Build scheduled for project: " + p.getName());
                 if (p.isInQueue()) {
                     while (m <= 12) {
-                        m=(int) Math.pow(2,n);
-                        Thread.currentThread().sleep(m*1000);
-                        System.out.println(p.getName() + " is in the queue! wait "+ m+" segundos");
+                        m = (int) Math.pow(2, n);
+                        Thread.currentThread().sleep(m * 1000);
+                        System.out.println(p.getName() + " is in the queue! wait " + m + " segundos");
                         done = p.scheduleBuild(0, new ElOyenteTriggerCause(vars));
-                        if(!done){
+                        if (!done) {
                             n++;
-                        }else{
+                        } else {
                             break;
                         }
                     }
@@ -328,7 +323,7 @@ public class ElOyente extends Trigger<Project> {
                     done = p.scheduleBuild(0, new ElOyenteTriggerCause(vars));
                     System.out.println(p.getName() + " executed: " + done);
                 }
-                
+
             }
         }
     }
@@ -431,38 +426,6 @@ public class ElOyente extends Trigger<Project> {
             }
         }
         return nodeExists;
-    }
-
-    /**
-     * Checks if there exists already a subscription to the node specified.
-     *
-     * @param nodeName Name of the node.
-     * @return Boolean that indicates if subscribed.
-     * @throws XMPPException
-     */
-    private boolean isSubscribed(String nodeName) throws XMPPException {
-        Connection con = this.getDescriptor().xmppCon;
-        PubSubManager mgr = this.getDescriptor().psm;
-        List<Subscription> subscriptionList;
-        Iterator it2;
-
-        subscriptionList = mgr.getSubscriptions();
-        it2 = subscriptionList.iterator();
-
-        while (it2.hasNext()) {
-            Subscription sub = (Subscription) it2.next();
-            
-            if (sub.getNode().equals(nodeName) && sub.getJid().equals(con.getUser())) {
-                System.out.println(sub.getNode()+" = "+nodeName);
-                System.out.println(sub.getJid()+" = "+con.getUser());
-                return true;
-            }
-            else
-                System.out.println(sub.getNode()+" = "+nodeName+"FALSE!!!!!!!!!");
-                 System.out.println(sub.getJid()+" != "+con.getUser() +"FALSE!!!!!!!!!");
-        }
-        
-        return false;
     }
 
     /**
@@ -648,6 +611,41 @@ public class ElOyente extends Trigger<Project> {
                 System.out.println("Empty fields in main configuration!");
                 return false;
             }
+        }
+
+        public synchronized void checkAndAddSubscription(String nodeName) throws XMPPException {
+            if (!isSubscribed(nodeName) && !nodeName.equals("")) {
+                Node node = psm.getNode(nodeName);
+                String JID = xmppCon.getUser();
+                psm.getNode(nodeName).subscribe(JID);
+                System.out.println("Project subscribed to node " + node.getId());
+            }
+        }
+
+        /**
+         * Checks if there exists already a subscription to the node specified.
+         *
+         * @param nodeName Name of the node.
+         * @return Boolean that indicates if subscribed.
+         * @throws XMPPException
+         */
+        private boolean isSubscribed(String nodeName) throws XMPPException {
+
+            List<Subscription> subscriptionList;
+            Iterator it2;
+
+            subscriptionList = psm.getSubscriptions();
+            it2 = subscriptionList.iterator();
+
+            while (it2.hasNext()) {
+                Subscription sub = (Subscription) it2.next();
+
+                if (sub.getNode().equals(nodeName) && sub.getJid().equals(xmppCon.getUser())) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /**
