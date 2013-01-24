@@ -16,6 +16,7 @@
 package com.technicolor.eloyente;
 
 import com.google.inject.Inject;
+import com.google.inject.internal.ErrorsException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -154,9 +155,12 @@ public class ElOyente extends Trigger<Project> {
     /**
      * Method used for starting a job.
      *
-     * This method is called when: 1) Jenkins starts. 2) When the Save or Apply
+     * This method is called when: 
+     * 1) Jenkins starts. 
+     * 2) When the Save or Apply
      * button are pressed in a job, after the Stop() configuration in case this
-     * plugin is activated. 3) It is also called when restarting a connection
+     * plug-in is activated. 
+     * 3) It is also called when restarting a connection
      * because of changes in the main configuration, after the Stop()
      *
      * It checks if there is all the information required for an XMPP connection
@@ -195,6 +199,7 @@ public class ElOyente extends Trigger<Project> {
      * @param user User from the main configuration
      * @param password Password from the main configuration
      *
+     * @return true if the one of the parameters is empty, false otherwise. 
      */
     public static boolean checkAnyParameterEmpty(String server, String user, String password) {
         if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
@@ -204,21 +209,17 @@ public class ElOyente extends Trigger<Project> {
     }
 
     /**
-     *
      * Method for subscribing a job to the nodes in the XMPP server.
      *
-     * This method will subscribe a job to the nodes specified in the
-     * subscriptions if it's not already subscribed or there are not any other
-     * nodes already subscribed to that node.
+     * This method will subscribe the connection to the nodes specified in the
+     * subscriptions(job configuration GUI) if it's not already subscribed in the XMPP database.
      *
      * @param project The project being started.
      * @throws XMPPException
      *
      */
-    public synchronized void subscribeIfNecessary(Project project) throws XMPPException, InterruptedException {
-
+    public void subscribeIfNecessary(Project project) throws XMPPException, InterruptedException {
         String nodeName;
-        Connection con = this.getDescriptor().xmppCon;
         PubSubManager mgr = this.getDescriptor().psm;
         if (mgr.discoverNodes(null).getItems().hasNext()) {
 
@@ -234,19 +235,20 @@ public class ElOyente extends Trigger<Project> {
     }
 
     /**
-     * Adds listeners to the nodes.
+     * Adds listener to a node.
      *
-     * It creates listeners for a job to the nodes specified in its
-     * subscriptions. It does this in case the listener for that node doesn't
-     * exist yet, otherwise it just adds the trigger to the array of triggers of
-     * that listener.
+     * It creates and attaches a listener per each different node specified in its
+     * subscriptions(in the job configuration GUI). It does this in case the listener for that node doesn't
+     * exist yet, otherwise it just adds the trigger into a local variable "listeners" where we track the listeners already added, to be more concrete it is added into the array of triggers of
+     * that local listener, because it is removed from the array each time we pass by the stop methode. 
+     * When you loose the connection to the XMPP server the listeners disappear, So each time to start Jenkins a new connection is established and the listeners added. 
      *
      *
      * @param con - The connection for which the listener will be created.
      * @param project - The project being configured.
      * @throws XMPPException
      */
-    public synchronized void addListeners(Connection con, String user) throws XMPPException {
+    public void addListeners(Connection con, String user) throws XMPPException {
 
         PubSubManager mgr = this.getDescriptor().psm;
 
@@ -257,6 +259,7 @@ public class ElOyente extends Trigger<Project> {
                 if (existsNode(subscriptions[i].node)) {
                     LeafNode node = (LeafNode) mgr.getNode(subscriptions[i].node);
                     synchronized (listeners) {
+                        //If it is already in the local variable listeners -> create a new one
                         if (!listeners.containsKey(node.getId())) {
                             ItemEventCoordinator itemEventCoordinator = new ItemEventCoordinator(node.getId());
                             itemEventCoordinator.addTrigger(this);
@@ -307,6 +310,8 @@ public class ElOyente extends Trigger<Project> {
             while (iterator.hasNext()) {
                 Project p = ((Project) iterator.next());
                 System.out.println("Build scheduled for project: " + p.getName());
+                //When the job is already in the queue (penging to be built) we introduce a delay before scheduling the next job.
+                //For some reason this second job is not allways triggered, so we check it and if this was the case we schedule it again adding a bit mor of dealy (max 15 sec).
                 if (p.isInQueue()) {
                     while (m <= 12) {
                         m = (int) Math.pow(2, n);
@@ -329,12 +334,15 @@ public class ElOyente extends Trigger<Project> {
     }
 
     /**
-     * Called before a Trigger is removed.
+     * Stop the XMPP elements of the job (Subscriptions, Listeners).
      *
-     * This method will be called when a job configuration is saved. It will
-     * check the subscriptions for that job, delete the trigger from the
+     * This method is called when:
+     * 1) When the Save or Apply button are pressed in a job configuration GUI
+     * 2) It is also called when restarting a connection because of changes in the main configuration.
+     * 
+     * It will check the subscriptions for that job, delete the trigger from the
      * listeners of the nodes it's listening to (if no more triggers in that
-     * listener it will remove the listener too). In case the trigger is removed
+     * listener it will remove the listener too a). In case the trigger is removed
      * it will unsubscribe from that node. The start(Project, boolean) method
      * will be called after it.
      *
@@ -465,9 +473,9 @@ public class ElOyente extends Trigger<Project> {
         protected transient PubSubManager psm;
 
         /**
-         * Brings the persisted configuration in the main configuration.
+         * Brings the persisted configuration in the main configuration and create the XMPP connection.
          *
-         * Brings the persisted configuration in the main configuration.
+         * Brings the persisted configuration in the main configuration and create the XMPP connection..
          */
         public DescriptorImpl() {
 
@@ -587,11 +595,7 @@ public class ElOyente extends Trigger<Project> {
                         if (!xmppCon.isAuthenticated()) {
                             String resource = "" + xmppCon;
                             String pepe = Jenkins.SESSION_HASH;
-                            try {
-                                pepe = Jenkins.getInstance().getRootUrl();
-                            } catch (Exception ex) {
-                                System.out.println("FOLLONERO");
-                            }
+                            pepe = Jenkins.getInstance().getRootUrl();                     
                             xmppCon.login(user, password, pepe);
                             psm = new PubSubManager(xmppCon);
                             return true;
@@ -612,7 +616,13 @@ public class ElOyente extends Trigger<Project> {
                 return false;
             }
         }
-
+        
+        /**
+         * Check if the the connections has already a subscription for that node and subscribes it if not.
+         *
+         * This method is called in subscribeIfNecessary
+         *
+         */
         public synchronized void checkAndAddSubscription(String nodeName) throws XMPPException {
             if (!isSubscribed(nodeName) && !nodeName.equals("")) {
                 Node node = psm.getNode(nodeName);
