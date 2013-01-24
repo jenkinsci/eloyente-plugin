@@ -585,14 +585,7 @@ public class ElOyente extends Trigger<Project> {
                     try {
                         xmppCon.connect();
                         if (!xmppCon.isAuthenticated()) {
-                            String resource = "" + xmppCon;
-                            String pepe = Jenkins.SESSION_HASH;
-                            try {
-                                pepe = Jenkins.getInstance().getRootUrl();
-                            } catch (Exception ex) {
-                                System.out.println("FOLLONERO");
-                            }
-                            xmppCon.login(user, password, pepe);
+                            xmppCon.login(user, password, "HOLA");
                             psm = new PubSubManager(xmppCon);
                             return true;
                         } else {
