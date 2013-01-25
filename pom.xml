@@ -53,7 +53,7 @@
     <packaging>hpi</packaging>
     <scm>
         <connection>scm:git:ssh://github.com/jenkinsci/eloyente-plugin.git</connection>
-        <developerConnection>scm:git://git@github.com:jenkinsci/eloyente-plugin.git</developerConnection>
+        <developerConnection>scm:git:ssh://git@github.com/jenkinsci/eloyente-plugin.git</developerConnection>
         <url>https://github.com/jenkinsci/eloyente-plugin</url>
     </scm>
     <url>https://wiki.jenkins-ci.org/display/JENKINS/El+Oyente+Plugin</url>
