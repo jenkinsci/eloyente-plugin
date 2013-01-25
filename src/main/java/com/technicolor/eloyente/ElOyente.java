@@ -171,15 +171,28 @@ public class ElOyente extends Trigger<Project> {
      */
     @Override
     public void start(Project project, boolean newInstance) {
-        String server = this.getDescriptor().server;
-        String user = this.getDescriptor().user;
-        String password = this.getDescriptor().password;
+        DescriptorImpl desc= this.getDescriptor();
+        String server = desc.server;
+        String user = desc.user;
+        String password = desc.password;
+        XMPPConnection con = desc.xmppCon;
         this.project = project;
 
         try {
             if (!checkAnyParameterEmpty(server, user, password)) {
-                if (this.getDescriptor().xmppCon.isConnected() && this.getDescriptor().xmppCon.isAuthenticated()) {
-                    addListeners(this.getDescriptor().xmppCon, user);
+                if (!con.isAuthenticated()){
+                    String pepe = Jenkins.getInstance().getRootUrl();
+                    System.out.println("[StesB] ---------------------- delayed login");
+                    con.login(user, password, pepe);
+                    if (con.isAuthenticated()) {
+                        System.out.println("[StesB] ---------------------- Login successfull; logged in with resource == " + pepe);
+                    }
+                    else {
+                        System.out.println("[StesB] ---------------------- ERROR:Login unsuccessfull");
+                    }
+                }
+                if (con.isConnected() && con.isAuthenticated()) {
+                    addListeners(con, user);
                     try {
                         subscribeIfNecessary(project);
                     } catch (InterruptedException ex) {
@@ -218,7 +231,7 @@ public class ElOyente extends Trigger<Project> {
      * @throws XMPPException
      *
      */
-    public void subscribeIfNecessary(Project project) throws XMPPException, InterruptedException {
+    public synchronized void subscribeIfNecessary(Project project) throws XMPPException, InterruptedException {
         String nodeName;
         PubSubManager mgr = this.getDescriptor().psm;
         if (mgr.discoverNodes(null).getItems().hasNext()) {
@@ -248,13 +261,13 @@ public class ElOyente extends Trigger<Project> {
      * @param project - The project being configured.
      * @throws XMPPException
      */
-    public void addListeners(Connection con, String user) throws XMPPException {
+    public synchronized void addListeners(Connection con, String user) throws XMPPException {
 
         PubSubManager mgr = this.getDescriptor().psm;
 
         if (subscriptions != null && subscriptions.length != 0) {
             for (int i = 0; i < subscriptions.length; i++) {
-
+    
                 //Checking if the node exist before creating the listener
                 if (existsNode(subscriptions[i].node)) {
                     LeafNode node = (LeafNode) mgr.getNode(subscriptions[i].node);
@@ -478,9 +491,12 @@ public class ElOyente extends Trigger<Project> {
          * Brings the persisted configuration in the main configuration and create the XMPP connection..
          */
         public DescriptorImpl() {
-
+            System.out.println("[StesB] ---------------------- Start loading configuration");
             load();
+            System.out.println("[StesB] ---------------------- End Of loading configuration");
+            System.out.println("[StesB] ---------------------- Setting up XMPP connection");
             connectXMPP();
+            System.out.println("[StesB] ---------------------- XMPP connection set-up");
         }
 
         /**
@@ -592,17 +608,23 @@ public class ElOyente extends Trigger<Project> {
                 if (!xmppCon.isConnected()) {
                     try {
                         xmppCon.connect();
+                        psm = new PubSubManager(xmppCon);
+                        /*
                         if (!xmppCon.isAuthenticated()) {
+
                             String resource = "" + xmppCon;
                             String pepe = Jenkins.SESSION_HASH;
-                            pepe = Jenkins.getInstance().getRootUrl();                     
+                            //pepe = Jenkins.getInstance().getRootUrlFromRequest();                     
                             xmppCon.login(user, password, pepe);
                             psm = new PubSubManager(xmppCon);
+                            */
                             return true;
+                            /*
                         } else {
                             System.out.println("Not need to login!");
                             return false;
                         }
+                        */
                     } catch (XMPPException ex) {
                         System.out.println("Failed to connect");
                         return false;
