@@ -91,7 +91,12 @@
             <version>1.9.5</version>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.jenkins-ci.main</groupId>
+            <artifactId>jenkins-core</artifactId>
+            <version>1.499</version>
+            <type>jar</type>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

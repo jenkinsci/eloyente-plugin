@@ -155,23 +155,20 @@ public class ElOyente extends Trigger<Project> {
     /**
      * Method used for starting a job.
      *
-     * This method is called when: 
-     * 1) Jenkins starts. 
-     * 2) When the Save or Apply
+     * This method is called when: 1) Jenkins starts. 2) When the Save or Apply
      * button are pressed in a job, after the Stop() configuration in case this
-     * plug-in is activated. 
-     * 3) It is also called when restarting a connection
+     * plug-in is activated. 3) It is also called when restarting a connection
      * because of changes in the main configuration, after the Stop()
      *
-     * It checks if there is all the information required for an XMPP connection
-     * in the main configuration, subscribes when required and adds listeners.
+     * It checks if there is all the information required for an XMPP connection 
+     * in the main configuration, logs in, adds listeners and subscribes when required.
      *
      * @param project The project currently being started
      * @param newInstance
      */
     @Override
     public void start(Project project, boolean newInstance) {
-        DescriptorImpl desc= this.getDescriptor();
+        DescriptorImpl desc = this.getDescriptor();
         String server = desc.server;
         String user = desc.user;
         String password = desc.password;
@@ -180,28 +177,32 @@ public class ElOyente extends Trigger<Project> {
 
         try {
             if (!checkAnyParameterEmpty(server, user, password)) {
-                if (!con.isAuthenticated()){
-                    String pepe = Jenkins.getInstance().getRootUrl();
-                    System.out.println("[StesB] ---------------------- delayed login");
-                    con.login(user, password, pepe);
-                    if (con.isAuthenticated()) {
-                        System.out.println("[StesB] ---------------------- Login successfull; logged in with resource == " + pepe);
-                    }
-                    else {
-                        System.out.println("[StesB] ---------------------- ERROR:Login unsuccessfull");
-                    }
-                }
-                if (con.isConnected() && con.isAuthenticated()) {
-                    addListeners(con, user);
-                    try {
-                        subscribeIfNecessary(project);
-                    } catch (InterruptedException ex) {
-                        Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
+                synchronized (this.getDescriptor().xmppCon) {
+                    if (this.getDescriptor().xmppCon.isConnected()) {
+                        
+                        if (!this.getDescriptor().xmppCon.isAuthenticated()) {
+                            String pepe = Jenkins.getInstance().getRootUrl();
+                            try {
+                                this.getDescriptor().xmppCon.login(user, password, pepe);
+                            } catch (XMPPException ex) {
+                                this.getDescriptor().xmppCon.disconnect();
+                                System.err.println("Autentication failure");
+                            }
+                        }
+
+                        if(this.getDescriptor().xmppCon!=null && this.getDescriptor().xmppCon.isAuthenticated()) {
+                            addListeners(this.getDescriptor().xmppCon, user);
+                            try {
+                                subscribeIfNecessary(project);
+                            } catch (InterruptedException ex) {
+                                Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
+                            }
+                        }
                     }
                 }
             }
         } catch (XMPPException ex) {
-            ex.printStackTrace(System.err);
+            System.err.println();
         }
     }
 
@@ -212,7 +213,7 @@ public class ElOyente extends Trigger<Project> {
      * @param user User from the main configuration
      * @param password Password from the main configuration
      *
-     * @return true if the one of the parameters is empty, false otherwise. 
+     * @return true if the one of the parameters is empty, false otherwise.
      */
     public static boolean checkAnyParameterEmpty(String server, String user, String password) {
         if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
@@ -225,7 +226,8 @@ public class ElOyente extends Trigger<Project> {
      * Method for subscribing a job to the nodes in the XMPP server.
      *
      * This method will subscribe the connection to the nodes specified in the
-     * subscriptions(job configuration GUI) if it's not already subscribed in the XMPP database.
+     * subscriptions(job configuration GUI) if it's not already subscribed in
+     * the XMPP database.
      *
      * @param project The project being started.
      * @throws XMPPException
@@ -250,11 +252,15 @@ public class ElOyente extends Trigger<Project> {
     /**
      * Adds listener to a node.
      *
-     * It creates and attaches a listener per each different node specified in its
-     * subscriptions(in the job configuration GUI). It does this in case the listener for that node doesn't
-     * exist yet, otherwise it just adds the trigger into a local variable "listeners" where we track the listeners already added, to be more concrete it is added into the array of triggers of
-     * that local listener, because it is removed from the array each time we pass by the stop methode. 
-     * When you loose the connection to the XMPP server the listeners disappear, So each time to start Jenkins a new connection is established and the listeners added. 
+     * It creates and attaches a listener per each different node specified in
+     * its subscriptions(in the job configuration GUI). It does this in case the
+     * listener for that node doesn't exist yet, otherwise it just adds the
+     * trigger into a local variable "listeners" where we track the listeners
+     * already added, to be more concrete it is added into the array of triggers
+     * of that local listener, because it is removed from the array each time we
+     * pass by the stop methode. When you loose the connection to the XMPP
+     * server the listeners disappear, So each time to start Jenkins a new
+     * connection is established and the listeners added.
      *
      *
      * @param con - The connection for which the listener will be created.
@@ -267,7 +273,7 @@ public class ElOyente extends Trigger<Project> {
 
         if (subscriptions != null && subscriptions.length != 0) {
             for (int i = 0; i < subscriptions.length; i++) {
-    
+
                 //Checking if the node exist before creating the listener
                 if (existsNode(subscriptions[i].node)) {
                     LeafNode node = (LeafNode) mgr.getNode(subscriptions[i].node);
@@ -349,75 +355,77 @@ public class ElOyente extends Trigger<Project> {
     /**
      * Stop the XMPP elements of the job (Subscriptions, Listeners).
      *
-     * This method is called when:
-     * 1) When the Save or Apply button are pressed in a job configuration GUI
-     * 2) It is also called when restarting a connection because of changes in the main configuration.
-     * 
+     * This method is called when: 1) When the Save or Apply button are pressed
+     * in a job configuration GUI 2) It is also called when restarting a
+     * connection because of changes in the main configuration.
+     *
      * It will check the subscriptions for that job, delete the trigger from the
      * listeners of the nodes it's listening to (if no more triggers in that
-     * listener it will remove the listener too a). In case the trigger is removed
-     * it will unsubscribe from that node. The start(Project, boolean) method
-     * will be called after it.
+     * listener it will remove the listener too a). In case the trigger is
+     * removed it will unsubscribe from that node. The start(Project, boolean)
+     * method will be called after it.
      *
      */
     @Override
     public void stop() {
 
-        if (subscriptions != null && subscriptions.length != 0) {
-            String nodeName;
-            Connection con = this.getDescriptor().xmppCon;
-            PubSubManager mgr = this.getDescriptor().psm;
-            List<Subscription> subscriptionList;
-            Iterator it2;
+        if (this.getDescriptor().xmppCon!=null && this.getDescriptor().xmppCon.isConnected() && this.getDescriptor().xmppCon.isAuthenticated()) {
+            if (subscriptions != null && subscriptions.length != 0) {
+                String nodeName;
+                Connection con = this.getDescriptor().xmppCon;
+                PubSubManager mgr = this.getDescriptor().psm;
+                List<Subscription> subscriptionList;
+                Iterator it2;
 
-            for (int i = 0; i < subscriptions.length; i++) {
-                try {
-                    nodeName = subscriptions[i].node;
-                    if (existsNode(nodeName)) {
+                for (int i = 0; i < subscriptions.length; i++) {
+                    try {
+                        nodeName = subscriptions[i].node;
+                        if (existsNode(nodeName)) {
 
-                        LeafNode n = (LeafNode) mgr.getNode(nodeName);
+                            LeafNode n = (LeafNode) mgr.getNode(nodeName);
 
-                        //Remove listener
-                        synchronized (listeners) {
-                            if (listeners.containsKey(nodeName)) {
-                                ArrayList<ElOyente> a = listeners.get(nodeName).Triggers;
-                                if (a.contains(this)) {
-                                    a.remove(this);
-                                }
+                            //Remove listener
+                            synchronized (listeners) {
+                                if (listeners.containsKey(nodeName)) {
+                                    ArrayList<ElOyente> a = listeners.get(nodeName).Triggers;
+                                    if (a.contains(this)) {
+                                        a.remove(this);
+                                    }
 
-                                if (a.isEmpty()) {
-                                    try {
-                                        mgr.getNode(nodeName).removeItemEventListener(listeners.get(nodeName));
-                                        listeners.put(nodeName, null);
-                                        listeners.remove(nodeName);
-                                        System.out.println("The Listener of the node has been removed");
+                                    if (a.isEmpty()) {
+                                        try {
+                                            mgr.getNode(nodeName).removeItemEventListener(listeners.get(nodeName));
+                                            listeners.put(nodeName, null);
+                                            listeners.remove(nodeName);
+                                            System.out.println("The Listener of the node has been removed");
 
-                                        //Unsubscribe
-                                        subscriptionList = mgr.getSubscriptions();
+                                            //Unsubscribe
+                                            subscriptionList = mgr.getSubscriptions();
 
-                                        it2 = subscriptionList.iterator();
+                                            it2 = subscriptionList.iterator();
 
-                                        while (it2.hasNext()) {
-                                            Subscription sub = (Subscription) it2.next();
+                                            while (it2.hasNext()) {
+                                                Subscription sub = (Subscription) it2.next();
 
-                                            if (sub.getNode().equals(nodeName) && sub.getJid().equals(con.getUser())) {
-                                                n.unsubscribe(con.getUser(), sub.getId());
-                                                break;
+                                                if (sub.getNode().equals(nodeName) && sub.getJid().equals(con.getUser())) {
+                                                    n.unsubscribe(con.getUser(), sub.getId());
+                                                    break;
+                                                }
                                             }
-                                        }
 
-                                    } catch (XMPPException ex) {
-                                        Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
+                                        } catch (XMPPException ex) {
+                                            Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
+                                        }
                                     }
                                 }
                             }
-                        }
 
-                    } else {
-                        System.out.println("The old node doesn't exixt!!");
+                        } else {
+                            System.out.println("The old node doesn't exixt!!");
+                        }
+                    } catch (XMPPException ex) {
+                        Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
                     }
-                } catch (XMPPException ex) {
-                    Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
         }
@@ -486,17 +494,17 @@ public class ElOyente extends Trigger<Project> {
         protected transient PubSubManager psm;
 
         /**
-         * Brings the persisted configuration in the main configuration and create the XMPP connection.
+         * Brings the persisted configuration in the main configuration and
+         * create the XMPP connection.
          *
-         * Brings the persisted configuration in the main configuration and create the XMPP connection..
+         * Brings the persisted configuration in the main configuration and
+         * create the XMPP connection..
          */
         public DescriptorImpl() {
-            System.out.println("[StesB] ---------------------- Start loading configuration");
+
             load();
-            System.out.println("[StesB] ---------------------- End Of loading configuration");
-            System.out.println("[StesB] ---------------------- Setting up XMPP connection");
             connectXMPP();
-            System.out.println("[StesB] ---------------------- XMPP connection set-up");
+
         }
 
         /**
@@ -595,7 +603,7 @@ public class ElOyente extends Trigger<Project> {
          * Used to create the XMPP connection.
          *
          * This method is called when Jenkins is started or when there are
-         * changes in the main configuration
+         * changes in the main configuration. It creates a new XMPP connection.
          *
          * @return Boolean indicating if it was possible to stablish a
          * connection or not.
@@ -609,22 +617,7 @@ public class ElOyente extends Trigger<Project> {
                     try {
                         xmppCon.connect();
                         psm = new PubSubManager(xmppCon);
-                        /*
-                        if (!xmppCon.isAuthenticated()) {
-
-                            String resource = "" + xmppCon;
-                            String pepe = Jenkins.SESSION_HASH;
-                            //pepe = Jenkins.getInstance().getRootUrlFromRequest();                     
-                            xmppCon.login(user, password, pepe);
-                            psm = new PubSubManager(xmppCon);
-                            */
-                            return true;
-                            /*
-                        } else {
-                            System.out.println("Not need to login!");
-                            return false;
-                        }
-                        */
+                        return true;
                     } catch (XMPPException ex) {
                         System.out.println("Failed to connect");
                         return false;
@@ -638,9 +631,10 @@ public class ElOyente extends Trigger<Project> {
                 return false;
             }
         }
-        
+
         /**
-         * Check if the the connections has already a subscription for that node and subscribes it if not.
+         * Check if the the connections has already a subscription for that node
+         * and subscribes it if not.
          *
          * This method is called in subscribeIfNecessary
          *
