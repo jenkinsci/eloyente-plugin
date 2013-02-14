@@ -15,17 +15,9 @@
  */
 package com.technicolor.eloyente;
 
-import com.google.inject.Inject;
-import com.google.inject.internal.ErrorsException;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import hudson.EnvVars;
 import hudson.Extension;
-import hudson.model.Computer;
 import hudson.model.Descriptor;
-import hudson.model.Hudson;
 import hudson.model.Item;
 import hudson.model.Project;
 import hudson.triggers.Trigger;
@@ -33,7 +25,6 @@ import hudson.triggers.TriggerDescriptor;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.ObjectStreamException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -42,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.servlet.http.HttpServletRequest;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.jivesoftware.smack.Connection;
@@ -106,7 +96,11 @@ public class ElOyente extends Trigger<Project> {
     @Override
     public Object readResolve() throws ObjectStreamException {
         super.readResolve();
-        listeners = new HashMap<String, ItemEventCoordinator>();
+        synchronized (listeners) {      // added by StesB
+            if (listeners == null) {    // added by StesB
+                listeners = new HashMap<String, ItemEventCoordinator>();
+            }                           //added by StesB                   
+        }                               //added by StesB
         return this;
     }
 
@@ -215,7 +209,7 @@ public class ElOyente extends Trigger<Project> {
      *
      * @return true if the one of the parameters is empty, false otherwise.
      */
-    public static boolean checkAnyParameterEmpty(String server, String user, String password) {
+    private static boolean checkAnyParameterEmpty(String server, String user, String password) {
         if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
             return false;
         }
@@ -233,7 +227,7 @@ public class ElOyente extends Trigger<Project> {
      * @throws XMPPException
      *
      */
-    public synchronized void subscribeIfNecessary(Project project) throws XMPPException, InterruptedException {
+    private synchronized void subscribeIfNecessary(Project project) throws XMPPException, InterruptedException {
         String nodeName;
         PubSubManager mgr = this.getDescriptor().psm;
         if (mgr.discoverNodes(null).getItems().hasNext()) {
@@ -267,7 +261,7 @@ public class ElOyente extends Trigger<Project> {
      * @param project - The project being configured.
      * @throws XMPPException
      */
-    public synchronized void addListeners(Connection con, String user) throws XMPPException {
+    private synchronized void addListeners(Connection con, String user) throws XMPPException {
 
         PubSubManager mgr = this.getDescriptor().psm;
 
@@ -320,7 +314,7 @@ public class ElOyente extends Trigger<Project> {
      * @param vars The environment variables to be set based on those passed by
      * the user.
      */
-    public synchronized void runWithEnvironment(EnvVars vars) throws InterruptedException {
+    protected synchronized void runWithEnvironment(EnvVars vars) throws InterruptedException {
         Boolean done;
         int n = 0;
         int m = 0;
@@ -421,7 +415,7 @@ public class ElOyente extends Trigger<Project> {
                             }
 
                         } else {
-                            System.out.println("The old node doesn't exixt!!");
+                            System.out.println("The old node doesn't exist!!");
                         }
                     } catch (XMPPException ex) {
                         Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
@@ -545,14 +539,16 @@ public class ElOyente extends Trigger<Project> {
             // To persist global configuration information,
             // set that to properties and call save().
 
-            stopJobs();
+            synchronized (this) {
+                stopJobs();
 
-            server = formData.getString("server");
-            user = formData.getString("user");
-            password = formData.getString("password");
+                server = formData.getString("server");
+                user = formData.getString("user");
+                password = formData.getString("password");
 
-            save();
-            startJobs();
+                save();
+                startJobs();
+            }
 
             return super.configure(req, formData);
         }
@@ -563,7 +559,7 @@ public class ElOyente extends Trigger<Project> {
          * It calls the method stop() of all the jobs that are using the trigger
          * in order to remove the subscriptions, listeners, etc.
          */
-        public void stopJobs() {
+        private void stopJobs() {
             if (xmppCon != null && xmppCon.isConnected() && xmppCon.isAuthenticated()) {
                 Iterator it2 = (Jenkins.getInstance().getItems()).iterator();
                 while (it2.hasNext()) {
@@ -585,7 +581,7 @@ public class ElOyente extends Trigger<Project> {
          * trigger in order to connect to the server with the new credentials
          * and reset the subscriptions, listeners, etc.
          */
-        public void startJobs() {
+        private void startJobs() {
             if (connectXMPP()) {
                 Iterator it2 = (Jenkins.getInstance().getItems()).iterator();
                 while (it2.hasNext()) {
@@ -605,7 +601,7 @@ public class ElOyente extends Trigger<Project> {
          * This method is called when Jenkins is started or when there are
          * changes in the main configuration. It creates a new XMPP connection.
          *
-         * @return Boolean indicating if it was possible to stablish a
+         * @return Boolean indicating if it was possible to establish a
          * connection or not.
          */
         private synchronized boolean connectXMPP() {
@@ -639,7 +635,7 @@ public class ElOyente extends Trigger<Project> {
          * This method is called in subscribeIfNecessary
          *
          */
-        public synchronized void checkAndAddSubscription(String nodeName) throws XMPPException {
+        protected synchronized void checkAndAddSubscription(String nodeName) throws XMPPException {
             if (!isSubscribed(nodeName) && !nodeName.equals("")) {
                 Node node = psm.getNode(nodeName);
                 String JID = xmppCon.getUser();
@@ -681,7 +677,7 @@ public class ElOyente extends Trigger<Project> {
          * global.jelly calls this method to obtain the value of field server.
          *
          */
-        public String getServer() {
+        public synchronized String getServer() {
             return server;
         }
 
@@ -692,7 +688,7 @@ public class ElOyente extends Trigger<Project> {
          * global.jelly calls this method to obtain the value of field user.
          *
          */
-        public String getUser() {
+        public synchronized String getUser() {
             return user;
         }
 
@@ -703,7 +699,7 @@ public class ElOyente extends Trigger<Project> {
          * global.jelly calls this method to obtain the value of field password.
          *
          */
-        public String getPassword() {
+        public synchronized String getPassword() {
             return password;
         }
 
@@ -716,7 +712,7 @@ public class ElOyente extends Trigger<Project> {
          *
          * @param server Server from the the main configuration.
          */
-        public FormValidation doCheckServer(@QueryParameter String server) {
+        public synchronized FormValidation doCheckServer(@QueryParameter String server) {
 
             try {
                 config = new ConnectionConfiguration(server);
@@ -748,7 +744,7 @@ public class ElOyente extends Trigger<Project> {
          * @param password Password from the the main configuration.
          *
          */
-        public FormValidation doCheckPassword(@QueryParameter String user, @QueryParameter String password, @QueryParameter String server) {
+        public synchronized FormValidation doCheckPassword(@QueryParameter String user, @QueryParameter String password, @QueryParameter String server) {
             config = new ConnectionConfiguration(server);
             Connection con = new XMPPConnection(config);
             if ((user.isEmpty() || password.isEmpty()) || server.isEmpty()) {
