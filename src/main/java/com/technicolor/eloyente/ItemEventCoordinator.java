@@ -125,7 +125,7 @@ public class ItemEventCoordinator implements ItemEventListener<PayloadItem<Simpl
                                 vars.put(v.getEnvName(), v.resolve(xml));
                             }
                             try {
-                                trigger.runWithEnvironment(vars);
+                                trigger.runWithEnvironment(xml, filter.getExpression(), vars);
                             } catch (InterruptedException ex) {
                                 Logger.getLogger(ItemEventCoordinator.class.getName()).log(Level.SEVERE, null, ex);
                             }

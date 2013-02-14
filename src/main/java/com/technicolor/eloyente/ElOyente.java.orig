@@ -299,7 +299,7 @@ public class ElOyente extends Trigger<Project> {
     @Override
     public void run() {
         try {
-            runWithEnvironment(null, null, null);
+            runWithEnvironment(null);
         } catch (InterruptedException ex) {
             Logger.getLogger(ElOyente.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -314,7 +314,7 @@ public class ElOyente extends Trigger<Project> {
      * @param vars The environment variables to be set based on those passed by
      * the user.
      */
-    protected synchronized void runWithEnvironment(String event, String filter, EnvVars vars) throws InterruptedException {
+    public synchronized void runWithEnvironment(EnvVars vars) throws InterruptedException {
         Boolean done;
         int n = 0;
         int m = 0;
@@ -330,7 +330,7 @@ public class ElOyente extends Trigger<Project> {
                         m = (int) Math.pow(2, n);
                         Thread.currentThread().sleep(m * 1000);
                         System.out.println(p.getName() + " is in the queue! wait " + m + " segundos");
-                        done = p.scheduleBuild(0, new ElOyenteTriggerCause(event, filter, vars));
+                        done = p.scheduleBuild(0, new ElOyenteTriggerCause(vars));
                         if (!done) {
                             n++;
                         } else {
@@ -338,7 +338,7 @@ public class ElOyente extends Trigger<Project> {
                         }
                     }
                 } else {
-                    done = p.scheduleBuild(0, new ElOyenteTriggerCause(event, filter, vars));
+                    done = p.scheduleBuild(0, new ElOyenteTriggerCause(vars));
                     System.out.println(p.getName() + " executed: " + done);
                 }
 
