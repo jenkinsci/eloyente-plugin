@@ -16,16 +16,13 @@
 
 package com.technicolor.eloyente;
 
-import org.w3c.dom.bootstrap.DOMImplementationRegistry;
-import org.w3c.dom.*;
-import org.w3c.dom.ls.*;
-import org.xml.sax.*;
-import javax.xml.xpath.*;
-import javax.xml.parsers.*;
 import java.io.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.nio.charset.Charset;
+import javax.xml.parsers.*;
+import javax.xml.xpath.*;
+import org.w3c.dom.*;
+import org.w3c.dom.bootstrap.DOMImplementationRegistry;
+import org.w3c.dom.ls.*;
 
 /**
  * This is a convenience class for working with XPath expressions.
@@ -82,7 +79,7 @@ public class XPathExpressionHandler {
 			xmldoc = docBuilder.newDocument();
 			setExpression(expression);
 		} catch (XPathExpressionException e) {
-			throw e;
+			this.expression ="";
 		} catch (Exception e) {
 			/**
 			* If an exception is thrown, there is a problem with the XML parsing
