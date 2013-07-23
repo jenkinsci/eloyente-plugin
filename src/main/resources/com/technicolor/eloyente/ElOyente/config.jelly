@@ -23,7 +23,7 @@
                     <f:textbox value="${s.node}"/>
                 </f:entry>
                 <f:entry title="Filter" field="filter" >
-                    <f:expandableTextbox value="${s.filter}"/>
+                    <f:textbox value="${s.filter}" checkUrl="'${rootURL}/descriptorByName/ElOyente/checkFilter?filter='+this.value"/>
                 </f:entry>
                 <f:entry title="Environment variables" field="envVars">
                     <f:repeatable var="v" add="Add variable" items="${s.variables}">
@@ -32,7 +32,7 @@
                                 <f:textbox value="${v.envName}" style="width:98%"/>
                             </f:entry>
                             <f:entry title="Value selection" field="envExpr">
-                                <f:expandableTextbox value="${v.envExpr}"/>
+                                <f:textbox value="${v.envExpr}" checkUrl="'${rootURL}/descriptorByName/ElOyente/checkEnvExpr?xpathe='+this.value"/>
                             </f:entry>
                             <f:entry>
                                 <div align="right">

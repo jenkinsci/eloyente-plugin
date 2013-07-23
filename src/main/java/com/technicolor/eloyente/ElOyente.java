@@ -17,6 +17,7 @@ package com.technicolor.eloyente;
 
 import hudson.EnvVars;
 import hudson.Extension;
+import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
 import hudson.model.Item;
 import hudson.model.Project;
@@ -33,6 +34,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.jivesoftware.smack.Connection;
@@ -561,9 +565,9 @@ public class ElOyente extends Trigger<Project> {
          */
         private void stopJobs() {
             if (xmppCon != null && xmppCon.isConnected() && xmppCon.isAuthenticated()) {
-                Iterator it2 = (Jenkins.getInstance().getItems()).iterator();
+                Iterator it2 = Jenkins.getInstance().getItems().iterator();
                 while (it2.hasNext()) {
-                    Project job = (Project) it2.next();
+                    AbstractProject job = (AbstractProject) it2.next();
                     ElOyente instance = (ElOyente) job.getTriggers().get(this);
                     if (instance != null) {
                         System.out.println("Stopping job: " + job.getName());
@@ -583,13 +587,13 @@ public class ElOyente extends Trigger<Project> {
          */
         private void startJobs() {
             if (connectXMPP()) {
-                Iterator it2 = (Jenkins.getInstance().getItems()).iterator();
+                Iterator it2 = Jenkins.getInstance().getItems().iterator();
                 while (it2.hasNext()) {
-                    Project job = (Project) it2.next();
+                    AbstractProject job = (AbstractProject) it2.next();
                     ElOyente instance = (ElOyente) job.getTriggers().get(this);
                     if (instance != null) {
                         System.out.println("Starting job: " + job.getName());
-                        instance.start(job, true);
+                        instance.start((Project)job, true);
                     }
                 }
             }
@@ -784,6 +788,53 @@ public class ElOyente extends Trigger<Project> {
             }
 
             return items;
+        }
+        
+                /**
+         * Performs on-the-fly validation of the form field 'Filter'.
+         *
+         * This method checks if the filter is valid. 
+         * It shows a notification describing the status.
+         *
+         * @param filter Filter of the subscription.
+         *
+         */
+        public synchronized FormValidation doCheckFilter(@QueryParameter String filter) {
+            if (!filter.isEmpty()) {
+                XPath xpath = XPathFactory.newInstance().newXPath();
+                try{
+                    xpath.compile(filter);
+                }
+                catch(XPathExpressionException e){
+                     return FormValidation.errorWithMarkup("Invalid filter");
+                }
+                  return FormValidation.ok();
+            }
+            return FormValidation.ok();
+        }
+        
+         /**
+         * Performs on-the-fly validation of the form field 'Value selection'.
+         *
+         * This method checks if the Xpath expression to get the value of the 
+         * environment variable is valid. 
+         * It shows a notification describing the status.
+         *
+         * @param xpathe Value of the environment variable.
+         *
+         */       
+        public synchronized FormValidation doCheckEnvExpr(@QueryParameter String xpathe) {
+            if (!xpathe.isEmpty()) {
+                XPath xpath = XPathFactory.newInstance().newXPath();
+                try{
+                    xpath.compile(xpathe);
+                }
+                catch(XPathExpressionException e){
+                     return FormValidation.errorWithMarkup("Invalid xpath expresion");
+                }
+                  return FormValidation.ok();
+            }
+            return FormValidation.ok();
         }
     }
 }
