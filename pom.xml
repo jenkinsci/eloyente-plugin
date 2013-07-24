@@ -49,7 +49,7 @@
     </parent>
     <groupId>com.technicolor</groupId>
     <artifactId>elOyente</artifactId>
-    <version>1.3</version>
+    <version>1.4-SNAPSHOT</version>
     <packaging>hpi</packaging>
     <scm>
         <connection>scm:git:ssh://github.com/jenkinsci/eloyente-plugin.git</connection>
