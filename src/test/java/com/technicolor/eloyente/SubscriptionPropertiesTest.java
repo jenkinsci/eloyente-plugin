@@ -48,12 +48,6 @@ public class SubscriptionPropertiesTest {
 		assertEquals("BAR", ((Variable)p.getVariables().get(1)).getEnvName());
 		assertEquals("//bar", ((Variable)p.getVariables().get(1)).getEnvExpr());
 	}
-
-	@Test(expected=XPathExpressionException.class)
-	public void constructorExcpetion() throws XPathExpressionException {
-		new SubscriptionProperties("this is an illegal XPath expression!", null, null);
-	}
-
 }
 
 // vim: set tabstop=4 softtabstop=4 shiftwidth=4 noexpandtab :

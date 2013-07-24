@@ -54,12 +54,12 @@ public class XPathExpressionHandlerTest {
 		eh4.setExpression(exp);
 		assertEquals(exp, eh4.getExpression());
 	}
-
+/*
 	@Test(expected=XPathExpressionException.class)
 	public void testConstructorNOK() throws Exception {
 		new XPathExpressionHandler("~this\\could/never/be/legal/xpath");
 	}
-
+*/
 	@Test
 	public void testEmpty() throws Exception {
 		XPathExpressionHandler eh = new XPathExpressionHandler("");
