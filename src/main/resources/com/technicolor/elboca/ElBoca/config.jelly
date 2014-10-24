@@ -1,5 +1,6 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 <!--
-   Copyright 2012 Technicolor
+   Copyright 2014 Technicolor
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -13,20 +14,19 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 -->
+<f:entry title="Publish Event" var="properties">
+    <f:entry title="${%node}" field="node">
+      <f:textbox />
+    </f:entry>
+    <f:entry title="${%element}" field="element">
+      <f:textbox />
+    </f:entry>
 
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    <f:section title="XMPP PubSub Event Listening">
-        <f:entry title="${%Server}" field="server">
-            <f:textbox/>
-        </f:entry>
+    <f:entry title="${%payload}" field="payload">
+      <f:textbox />
+    </f:entry>
 
-        <f:entry title="${%User}" field="user">
-            <f:textbox/>
-        </f:entry>
-
-        <f:entry title="${%Password}" field="password">
-            <f:password/>
-        </f:entry>
-
-    </f:section>
+</f:entry>
 </j:jelly>
+
+<!-- vim: set filetype=xml tabstop=4 softtabstop=4 shiftwidth=4 noexpandtab : -->

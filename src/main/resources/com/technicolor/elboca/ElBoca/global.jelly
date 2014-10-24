@@ -1,5 +1,6 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 <!--
-   Copyright 2012 Technicolor
+   Copyright 2014 Technicolor
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -13,9 +14,17 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 -->
+    <f:section title="XMPP PubSub Event Sending">
+        <f:entry title="${%server}" field="server">
+            <f:textbox />
+        </f:entry>
 
-<div>
-  This plugin allows jobs to be triggered by XMPP Pub/Sub events.
-  And to publish these events.
-  This plugin publishes xmpp PubSub events to an xmpp-server.
-</div>
+        <f:entry title="${%user}" field="user">
+            <f:textbox />
+        </f:entry>
+
+        <f:entry title="${%password}" field="password">
+            <f:password />
+        </f:entry>
+    </f:section>
+</j:jelly>
