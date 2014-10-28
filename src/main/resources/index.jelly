@@ -17,5 +17,4 @@
 <div>
   This plugin allows jobs to be triggered by XMPP Pub/Sub events.
   And to publish these events.
-  This plugin publishes xmpp PubSub events to an xmpp-server.
 </div>

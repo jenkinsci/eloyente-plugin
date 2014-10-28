@@ -1,7 +1,23 @@
+/*
+ Copyright (c) 2014 Technicolor Delivery Technologies SAS
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ */
 package com.technicolor.elboca;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -47,7 +63,6 @@ import jenkins.model.Jenkins;
 import hudson.model.Project;
 import hudson.util.ListBoxModel;
 import hudson.model.Descriptor;
-
 /** 
  * This plug-in allows projects to send pubsub events
  * In combination with the eloyente plugin, it can start
@@ -113,35 +128,30 @@ public class ElBoca extends Builder {
 		// with sending the payload.
 //		XMPPConnection.DEBUG_ENABLED = true;
 		PayloadItem<SimplePayload> item = null;
-		listener.getLogger().println("Connecting to xmppserver " + getDescriptor().getServer() + ".");
+                PrintStream logger = listener.getLogger();
+		logger.println("Connecting to xmppserver " + getDescriptor().getServer() + ".");
 		// Connect to the xmpp-server
-		getDescriptor().connectXMPP();
+		getDescriptor().connectXMPP(listener);
 		// check if the node is already known at xmpp-server side.
 		if ( node != null && !node.isEmpty())
 	 	  try {
 		       checkAndAdd(node);
 		  } catch ( XMPPException e) {
-			listener.getLogger().println("Failed adding node \"" + getNode() + "\".");
+			logger.println("Failed adding node \"" + getNode() + "\".");
 		  }
                 // Create the actual message.
-		listener.getLogger().println("Creating new event.");
-		try {
-		  try {
-		     try {
-		       try {
-			 item = newMessage(listener, getElement(), getPayload());
-		       } catch (ParserConfigurationException e){
-			 listener.getLogger().println("Parser error upon creating new event.");
-		       }
-		     } catch (IOException e) {
-		       listener.getLogger().println("IO error upon creating new event.");
-		     }
-		  } catch (SAXException e) {
-		    listener.getLogger().println("Failed creating new event.");
-		  }
-		} catch ( XMPPException e) {
-		  listener.getLogger().println("Failed creating new event();.");
-		} 
+		logger.println("Creating new event.");
+                try {
+                    item = newMessage(listener, getElement(), getPayload());
+                } catch (ParserConfigurationException e){
+                    logger.println("Parser error upon creating new event.");
+                } catch( IOException e){
+                    logger.println("IO Error upon creating new event.");
+                } catch (SAXException e){
+                    logger.println("Failed creating new event.");
+                } catch (XMPPException e){
+                    logger.println("Failed creating new event.");
+                }
 		// if the message creation fails, exit now.
                 if ( item == null) {
 		  return false;
@@ -151,10 +161,10 @@ public class ElBoca extends Builder {
 		  send(node, item, listener);
 		} catch (XMPPException e){
 		// return false on error.
-		  listener.getLogger().println("Failed sending event.");
+		  logger.println("Failed sending event.");
 		  return false;
                 }
-                listener.getLogger().println("Succesfuly sended event.");
+                logger.println("Succesfuly sended event.");
 	 	return true;    	
 	}
 	/**
@@ -165,11 +175,18 @@ public class ElBoca extends Builder {
 	 * @param password Password from the main configuration.
 	 * @return boolean True if all is ok, false upon error.
 	 */
-	public static boolean checkAnyParameterEmpty(String server, String user, String password){
-		if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()){
-			return false;
+	public static boolean checkAllParametersDefined(String server, String user, String password){
+                boolean result = true;
+		if (server == null && server.isEmpty()){
+                    result = false;
+                }
+                if (user == null && user.isEmpty()){
+                    result = false;
+                }
+                if (password == null && password.isEmpty()){
+		    result =  false;
 		}
-		return true;
+		return result;
 	}
 	/**
 	 * This method checks if the node is already known in the xmpp server.
@@ -197,26 +214,6 @@ public class ElBoca extends Builder {
 	        }
               }
 	}
-	/**
-	 * This method will create a new stanza for signing builds
-	 * This is done using the newMessage() method.
-	 *
-	 * @param listener The logger for the console output.
-	 * @param board The boardname for which the build is started.
-	 * @param version The version name of the build.
-	 * @param fii the FII for the specified build.
-	 * @param fullVersion The full version of the build.
-	 * @param release The release number of the build.
-	 * @param extraTags Additional remarks.
-	 * @throws XMPPException when creating a new stanza failed.
-	 * @return PayloadItem<SimplePayload> the new stanza ready to be sent.
-	 */
-	public PayloadItem<SimplePayload> signingPayload(BuildListener listener, String board, String version, String fii, String fullVersion, String release, String extraTags) throws XMPPException ,SAXException, IOException, ParserConfigurationException {
-		String element = "pubsub:sign";
-		String new_payload = "<sign><board>" + board + "</board><version>" + version + "</version><fullVersion>" + fullVersion + "</fullVersion><FII>" + fii + "</FII><release>" + release + "</release><extra_tags>" + extraTags + "</extra_tags></sign>";
-		PayloadItem<SimplePayload> item = newMessage(listener, element, new_payload);
-	        return(item);
-	}
 	/** 
 	 * The function below should take an xml object (as string? or xml)
 	 * and check the syntax of the xml and return it as a PayloadItem.
@@ -230,6 +227,7 @@ public class ElBoca extends Builder {
 	 * @return PayloadItem<SimplePayload> the new stanza ready to be sent or null on error.
 	 */
 	public PayloadItem<SimplePayload> newMessage(BuildListener listener, String element, String xml_payload) throws XMPPException, SAXException, IOException, ParserConfigurationException{
+                PrintStream logger = listener.getLogger();
 		int i = 0;
                 int start, end;
 		// find the root xml-tag
@@ -250,8 +248,8 @@ public class ElBoca extends Builder {
 		// Remove the jivesoftware prefix
 		String payload_substr = payload_str.substring(54, (payload_str.length()-1));
 		// remove the closing ']' from the string.
-	  	listener.getLogger().println("Payload with id \"" + payload_id + "\" accepted.");
-		listener.getLogger().println(xml_payload);
+	  	logger.println("Payload with id \"" + payload_id + "\" accepted.");
+		logger.println(xml_payload);
 	  	return(payload_item); 
   	}
 
@@ -262,6 +260,7 @@ public class ElBoca extends Builder {
 	 * @throws XMPPException upon failure due to sending event.
 	 */
 	public void send(String nodename, PayloadItem<SimplePayload> item, BuildListener listener) throws XMPPException{
+                PrintStream logger = listener.getLogger();
 		checkAndAdd(nodename);
 		listener.getLogger().println("Sending event as user \"" + getDescriptor().getUser() + "\" to node \"" + getNode() + "\" to server \"" + getDescriptor().getServer() + "\".");
 		// get the node.
@@ -277,18 +276,6 @@ public class ElBoca extends Builder {
 		getDescriptor().con.disconnect();
 	}
 
-	private boolean existsNode(String key) throws XMPPException {
-		boolean nodeExists = false;
-		DiscoverItems discoverNodes = this.getDescriptor().mgr.discoverNodes(null);
-		Iterator<DiscoverItems.Item> items = discoverNodes.getItems();
-		while (items.hasNext()) {
-		  if (((DiscoverItems.Item) items.next()).getNode().equals(key)) {
-		    nodeExists = true;
-		    break;
-	          }
-		}
-		return nodeExists;
-	} 
 	// If your plugin doesn't really define any property on Descriptor,
 	// you don't have to do this.
 	@Override
@@ -408,7 +395,7 @@ public class ElBoca extends Builder {
 	        }
 	        return FormValidation.errorWithMarkup("Couldn't connect");
 	    } catch (XMPPException ex) {
-	        return FormValidation.errorWithMarkup("Couldn't connect");
+	        return FormValidation.errorWithMarkup("Couldn't connect: " + ex.getMessage());
 	    }
 	}
 	/**
@@ -460,28 +447,28 @@ public class ElBoca extends Builder {
 	 * @param user The user-name used to log in into the xmppserver.
 	 * @param password The password used to log in into the xmppserver.
 	 */
-	private synchronized boolean connectXMPP() {
-	      if (getServer() != null && !getServer().isEmpty() && getUser() != null && !getUser().isEmpty() && getPassword() != null && !getPassword().isEmpty()) {
-	   //   if (getDescriptor().getServer() != null && !getDescriptor().getServer().isEmpty() && getDescriptor().getUser() != null && !getDescriptor().getUser().isEmpty() && getDescriptor().getPassword() != null && !getDescriptor().getPassword().isEmpty()) {
+	private synchronized boolean connectXMPP(BuildListener listener) {
+              PrintStream logger = listener.getLogger();
+              if ( checkAllParametersDefined(getServer(), getUser(), getPassword()) == true) { 
 	      	config = new ConnectionConfiguration(getServer());
 	      	con = new XMPPConnection(config);
-	              if (!con.isConnected()) {
-	                  try {
-	                      con.connect();
-			      con.login(getUser(), getPassword());
-	                      mgr = new PubSubManager(con);
-	                      return true;
-	                  } catch (XMPPException ex) {
-	                      System.out.println("Failed to connect");
-	                      return false;
-	                  }
-	              } else {
-	                  System.out.println("Already connected");
-	                  return true;
-	              }
+	        if (!con.isConnected()) {
+	          try {
+	            con.connect();
+		    con.login(getUser(), getPassword());
+	            mgr = new PubSubManager(con);
+	            return true;
+	          } catch (XMPPException ex) {
+	            logger.println("Failed to connect");
+	            return false;
+	          }
+	        } else {
+	           logger.println("Already connected");
+	           return true;
+	        }
 	      } else {
-	              System.out.println("Empty fields in main configuration!");
-	              return false;
+	         logger.println("Empty fields in main configuration!");
+	         return false;
 	      }
 	}
         /**
