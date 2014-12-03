@@ -1,6 +1,6 @@
 El Oyente
 =========
 
-This project delivers a Jenkins plugin which adds job triggering based on
-XMPP events.  See http://xmpp.org/extensions/xep-0060.html for more details
-about the PubSub extension of XMPP.
+This project delivers a Jenkins plugin which adds job triggering based on XMPP events.
+Since version 1.4 it also includes the publisher to send xmpp pubsub events, as a buildstep.
+See http://xmpp.org/extensions/xep-0060.html for more details about the PubSub extension of XMPP.

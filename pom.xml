@@ -39,6 +39,11 @@
             <name>Frank Vanderhallen</name>
             <email>frank.vanderhallen@gmail.com</email>
         </developer>
+        <developer>
+            <id>dnnsjcbs</id>
+            <name>Dennis Jacobs</name>
+            <email>dennis.jacobs@technicolor.com</email>
+        </developer>
     </developers>
     <modelVersion>4.0.0</modelVersion>
     <parent>
@@ -52,9 +57,9 @@
     <version>1.4-SNAPSHOT</version>
     <packaging>hpi</packaging>
     <scm>
-        <connection>scm:git:ssh://github.com/jenkinsci/eloyente-plugin.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/jenkinsci/eloyente-plugin.git</developerConnection>
-        <url>https://github.com/jenkinsci/eloyente-plugin</url>
+        <connection>scm:git:ssh://github.com/dnnsjcbs/eloyente.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/dnnsjcbs/eloyente.git</developerConnection>
+        <url>https://github.com/dnnsjcbs/eloyente</url>
     </scm>
     <url>https://wiki.jenkins-ci.org/display/JENKINS/El+Oyente+Plugin</url>
     <dependencies>
