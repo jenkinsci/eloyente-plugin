@@ -50,6 +50,7 @@
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
         <version>1.499</version>
+        <relativePath></relativePath>
         <!-- which version of Jenkins is this plugin built against? -->
     </parent>
     <groupId>com.technicolor</groupId>
