@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Collection;
+import java.util.Set;
 import java.util.Arrays;
 import java.util.ArrayList;
 
@@ -63,6 +65,7 @@ import jenkins.model.Jenkins;
 import hudson.model.Project;
 import hudson.util.ListBoxModel;
 import hudson.model.Descriptor;
+import hudson.EnvVars;
 /** 
  * This plug-in allows projects to send pubsub events
  * In combination with the eloyente plugin, it can start
@@ -126,9 +129,11 @@ public class ElBoca extends Builder {
 	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener ) {
 		// The line below should be uncommented in case there are some problems
 		// with sending the payload.
-//		XMPPConnection.DEBUG_ENABLED = true;
+		//XMPPConnection.DEBUG_ENABLED = true;
 		PayloadItem<SimplePayload> item = null;
                 PrintStream logger = listener.getLogger();
+		Map<String,String> vars = new HashMap<String, String>();
+		vars = build.getBuildVariables();
 		logger.println("Connecting to xmppserver " + getDescriptor().getServer() + ".");
 		// Connect to the xmpp-server
 		getDescriptor().connectXMPP(listener);
@@ -142,7 +147,7 @@ public class ElBoca extends Builder {
                 // Create the actual message.
 		logger.println("Creating new event.");
                 try {
-                    item = newMessage(listener, getElement(), getPayload());
+                    item = newMessage(listener, getElement(), getPayload(), vars);
                 } catch (ParserConfigurationException e){
                     logger.println("Parser error upon creating new event.");
                 } catch( IOException e){
@@ -226,21 +231,31 @@ public class ElBoca extends Builder {
 	 * @throws ParseConfigurationException Parse configuration error.
 	 * @return PayloadItem<SimplePayload> the new stanza ready to be sent or null on error.
 	 */
-	public PayloadItem<SimplePayload> newMessage(BuildListener listener, String element, String xml_payload) throws XMPPException, SAXException, IOException, ParserConfigurationException{
+	public PayloadItem<SimplePayload> newMessage(BuildListener listener, String element, String xml_payload,Map<String,String> vars) throws XMPPException, SAXException, IOException, ParserConfigurationException{
                 PrintStream logger = listener.getLogger();
 		int i = 0;
+		// replace vars.
+		Set<String> keys = vars.keySet();
+		Collection<String> values = vars.values();
+		int var_count = vars.size();
+		String tmp = xml_payload;
+		i = 0;
+		for (String key :keys){ 
+			tmp = tmp.replaceAll(key, (String)values.toArray()[i]);
+			i++;
+		}
                 int start, end;
 		// find the root xml-tag
-		while (xml_payload.charAt(i) != '<'){
+		while (tmp.charAt(i) != '<'){
 			i++;
                	}
 		start = i+1;
-               	while ( xml_payload.charAt(i) != '>' ){
+               	while ( tmp.charAt(i) != '>' ){
 			i++;
 		}
 		end = i;
-                String rootelem = xml_payload.substring(start, end);
-		SimplePayload payload = new SimplePayload(element, rootelem, xml_payload);
+                String rootelem = tmp.substring(start, end);
+		SimplePayload payload = new SimplePayload(element, rootelem, tmp);
 		String payload_id = "Message_" + System.currentTimeMillis();
 		PayloadItem<SimplePayload> payload_item = new PayloadItem<SimplePayload>(payload_id, payload);
 		// Convert the given payload to a String-type.
@@ -249,7 +264,7 @@ public class ElBoca extends Builder {
 		String payload_substr = payload_str.substring(54, (payload_str.length()-1));
 		// remove the closing ']' from the string.
 	  	logger.println("Payload with id \"" + payload_id + "\" accepted.");
-		logger.println(xml_payload);
+		logger.println(tmp);
 	  	return(payload_item); 
   	}
 
@@ -261,7 +276,6 @@ public class ElBoca extends Builder {
 	 */
 	public void send(String nodename, PayloadItem<SimplePayload> item, BuildListener listener) throws XMPPException{
                 PrintStream logger = listener.getLogger();
-		checkAndAdd(nodename);
 		listener.getLogger().println("Sending event as user \"" + getDescriptor().getUser() + "\" to node \"" + getNode() + "\" to server \"" + getDescriptor().getServer() + "\".");
 		// get the node.
 		LeafNode node = (LeafNode) getDescriptor().mgr.getNode(nodename);
