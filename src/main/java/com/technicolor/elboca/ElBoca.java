@@ -225,6 +225,7 @@ public class ElBoca extends Builder {
 	 * @param listener The logger for the jenkins console output.
 	 * @param element The element name.
 	 * @param xml_payload The payload in xml structure but in string format.
+	 * @param vars The variables which needs to be translated for the build.
 	 * @throws XMMPExceptioni when creatin a new stanza failed.
 	 * @throws SAXException upon a parsing error in the xml_payload.
 	 * @throws IOException IO error when parsing the xml_payload.
@@ -239,12 +240,15 @@ public class ElBoca extends Builder {
 		Collection<String> values = vars.values();
 		int var_count = vars.size();
 		String tmp = xml_payload;
-		i = 0;
 		for (String key :keys){ 
-			tmp = tmp.replaceAll(key, (String)values.toArray()[i]);
+			String tmp_key = "\\$\\{".concat(key).concat("\\}");
+                        if ( tmp.contains(tmp_key) == false ){
+				tmp = tmp.replaceAll(tmp_key, (String)values.toArray()[i]);
+			}
 			i++;
 		}
                 int start, end;
+		i = 0;
 		// find the root xml-tag
 		while (tmp.charAt(i) != '<'){
 			i++;
