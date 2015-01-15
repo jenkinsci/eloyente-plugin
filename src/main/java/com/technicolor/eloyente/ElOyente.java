@@ -759,7 +759,7 @@ public class ElOyente extends Trigger<Project> {
                 con.login(user, password);
                 if (con.isAuthenticated()) {
                     con.disconnect();
-                    return FormValidation.okWithMarkup("Authentication succed");
+                    return FormValidation.okWithMarkup("Authentication succeeded");
                 }
                 return FormValidation.warningWithMarkup("Not authenticated");
             } catch (XMPPException ex) {
