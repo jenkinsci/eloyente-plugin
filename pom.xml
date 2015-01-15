@@ -55,7 +55,7 @@
     </parent>
     <groupId>com.technicolor</groupId>
     <artifactId>elOyente</artifactId>
-    <version>1.7</version>
+    <version>1.8-SNAPSHOT</version>
     <packaging>hpi</packaging>
     <scm>
         <connection>scm:git:ssh://github.com/dnnsjcbs/eloyente.git</connection>
