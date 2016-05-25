@@ -19,7 +19,7 @@
             <f:textbox />
         </f:entry>
         <f:entry title="${%Port}" field="port">
-            <f:textbox default="5222"/>
+            <f:textbox default="${descriptor.defaultPort()}"/>
         </f:entry>
 
         <f:entry title="${%user}" field="user">

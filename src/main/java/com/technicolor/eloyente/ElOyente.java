@@ -487,6 +487,10 @@ public class ElOyente extends Trigger<Project> {
         protected transient XMPPConnection xmppCon;
         protected transient PubSubManager psm;
 
+        public int defaultPort() {
+            return port;
+        }
+
         /**
          * Brings the persisted configuration in the main configuration and
          * create the XMPP connection.

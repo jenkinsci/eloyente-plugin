@@ -33,12 +33,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-/** 
+/**
  * This plug-in allows projects to send pubsub events
  * In combination with the eloyente plugin, it can start
  * builds on a different jenkins server.
- * 
- * @author Dennis Jacobs 
+ *
+ * @author Dennis Jacobs
  */
 public class ElBoca extends Builder {
  	private ConnectionConfiguration config;
@@ -59,7 +59,7 @@ public class ElBoca extends Builder {
 	/**
 	 * This method will return the value entered as nodename
 	 * in the project config.
-	 * 
+	 *
 	 * @return String containing the nodename.
 	 */
 	public String getNode() {
@@ -68,7 +68,7 @@ public class ElBoca extends Builder {
 	/**
 	 * This method with return the value entered as the xml-element
 	 * in the project config.
-	 * 
+	 *
 	 * @return String containing the provided xml-element.
 	 */
 	public String getElement() {
@@ -77,7 +77,7 @@ public class ElBoca extends Builder {
 	/**
 	 * This method with return the value entered as the configured
 	 * payload in the project config.
-	 * 
+	 *
 	 * @return String containing the payload.
 	 */
 	public String getPayload() {
@@ -126,7 +126,7 @@ public class ElBoca extends Builder {
 		  }
 		} catch ( XMPPException e) {
 		  listener.getLogger().println("Failed creating new event();.");
-		} 
+		}
 		// if the message creation fails, exit now.
                 if ( item == null) {
 		  return false;
@@ -140,7 +140,7 @@ public class ElBoca extends Builder {
 		  return false;
                 }
                 listener.getLogger().println("Succesfuly sended event.");
-	 	return true;    	
+	 	return true;
 	}
 	/**
 	 * Checks if all the parameters from the main configuration are filled in.
@@ -202,7 +202,7 @@ public class ElBoca extends Builder {
 		PayloadItem<SimplePayload> item = newMessage(listener, element, new_payload);
 	        return(item);
 	}
-	/** 
+	/**
 	 * The function below should take an xml object (as string? or xml)
 	 * and check the syntax of the xml and return it as a PayloadItem.
 	 * @param listener The logger for the jenkins console output.
@@ -235,7 +235,7 @@ public class ElBoca extends Builder {
 		// remove the closing ']' from the string.
 	  	listener.getLogger().println("Payload with id \"" + payload_id + "\" accepted.");
 		listener.getLogger().println(xml_payload);
-	  	return(payload_item); 
+	  	return(payload_item);
   	}
 
 	/**
@@ -271,7 +271,7 @@ public class ElBoca extends Builder {
 	          }
 		}
 		return nodeExists;
-	} 
+	}
 	// If your plugin doesn't really define any property on Descriptor,
 	// you don't have to do this.
 	@Override
@@ -303,16 +303,19 @@ public class ElBoca extends Builder {
 	protected transient ConnectionConfiguration config;
 	protected transient XMPPConnection con;
 	protected transient PubSubManager mgr;
-	
-	
+
+	public int defaultPort() {
+		return port;
+	}
+
 	/**
-	 * In order to load the persisted global configuration, you have to 
+	 * In order to load the persisted global configuration, you have to
 	 * call load() in the constructor.
 	 */
 	public DescriptorImpl() {
 		load();
 	}
-	
+
 	/**
 	 * Performs on-the-fly validation of the form field 'payload'.
 	 *
@@ -323,7 +326,7 @@ public class ElBoca extends Builder {
 	 * <p>
 	 * Note that returning {@link FormValidation#error(String)} does not
 	 * prevent the form from being saved. It just means that a message
-	 * will be displayed to the user. 
+	 * will be displayed to the user.
 	 */
 	public FormValidation doCheckPayload(@QueryParameter String payload) throws IOException, ServletException, XMPPException, SAXException, ParserConfigurationException {
 		if ( validXmlStruct( payload ) == false ){
@@ -331,12 +334,12 @@ public class ElBoca extends Builder {
 		}
 		return FormValidation.ok("Payload Accepted.");
 	}
-	
+
 	public boolean isApplicable(Class<? extends AbstractProject> aClass) {
-	    // Indicates that this builder can be used with all kinds of project types 
+	    // Indicates that this builder can be used with all kinds of project types
 	    return true;
 	}
-	
+
 	/**
 	 * This human readable name is used in the configuration screen.
 	 */
@@ -364,7 +367,7 @@ public class ElBoca extends Builder {
 	    save();
 	    return super.configure(req, formData);
 	}
-	
+
 	/**
 	 * This method returns the URL of the XMPP server.
 	 * global.jelly calls this method to obtain the value of field server.
@@ -461,8 +464,8 @@ public class ElBoca extends Builder {
 	        return FormValidation.errorWithMarkup("Authentication failed");
 	    }
 	}
-	
-	
+
+
 	/**
 	 * This method will connect to the xmpp server.
 	 */
