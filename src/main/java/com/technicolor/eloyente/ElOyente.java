@@ -25,18 +25,6 @@ import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import java.io.ObjectStreamException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.jivesoftware.smack.Connection;
@@ -48,9 +36,18 @@ import org.jivesoftware.smackx.pubsub.LeafNode;
 import org.jivesoftware.smackx.pubsub.Node;
 import org.jivesoftware.smackx.pubsub.PubSubManager;
 import org.jivesoftware.smackx.pubsub.Subscription;
+import org.jivesoftware.spark.util.DummySSLSocketFactory;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+import java.io.ObjectStreamException;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * This plug-in adds job triggering based on XMPP Pub/Sub events.
@@ -103,7 +100,7 @@ public class ElOyente extends Trigger<Project> {
         synchronized (listeners) {      // added by StesB
             if (listeners == null) {    // added by StesB
                 listeners = new HashMap<String, ItemEventCoordinator>();
-            }                           //added by StesB                   
+            }                           //added by StesB
         }                               //added by StesB
         return this;
     }
@@ -158,7 +155,7 @@ public class ElOyente extends Trigger<Project> {
      * plug-in is activated. 3) It is also called when restarting a connection
      * because of changes in the main configuration, after the Stop()
      *
-     * It checks if there is all the information required for an XMPP connection 
+     * It checks if there is all the information required for an XMPP connection
      * in the main configuration, logs in, adds listeners and subscribes when required.
      *
      * @param project The project currently being started
@@ -177,7 +174,6 @@ public class ElOyente extends Trigger<Project> {
             if (!checkAnyParameterEmpty(server, user, password)) {
                 synchronized (this.getDescriptor().xmppCon) {
                     if (this.getDescriptor().xmppCon.isConnected()) {
-                        
                         if (!this.getDescriptor().xmppCon.isAuthenticated()) {
                             String pepe = Jenkins.getInstance().getRootUrl();
                             try {
@@ -262,7 +258,6 @@ public class ElOyente extends Trigger<Project> {
      *
      *
      * @param con - The connection for which the listener will be created.
-     * @param project - The project being configured.
      * @throws XMPPException
      */
     private synchronized void addListeners(Connection con, String user) throws XMPPException {
@@ -485,6 +480,7 @@ public class ElOyente extends Trigger<Project> {
          * <p> If you don't want fields to be persisted, use <tt>transient</tt>.
          */
         private String server;
+        private int port;
         private String user;
         private String password;
         protected transient ConnectionConfiguration config;
@@ -547,6 +543,7 @@ public class ElOyente extends Trigger<Project> {
                 stopJobs();
 
                 server = formData.getString("server");
+                port = formData.getInt("port");
                 user = formData.getString("user");
                 password = formData.getString("password");
 
@@ -610,7 +607,19 @@ public class ElOyente extends Trigger<Project> {
          */
         private synchronized boolean connectXMPP() {
             if (server != null && !server.isEmpty() && user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
-                config = new ConnectionConfiguration(server);
+				/*
+				 * stream:error (host-unknown) when trying to connect
+				 * https://community.igniterealtime.org/thread/39288
+				 */
+				String serviceName;
+				int at = user.indexOf("@");
+				if (at == -1) {
+					config = new ConnectionConfiguration(server, port);
+				} else {
+					serviceName = user.substring(at + 1);
+					config = new ConnectionConfiguration(server, port, serviceName);
+				}
+				config.setSocketFactory(new DummySSLSocketFactory());
                 xmppCon = new XMPPConnection(config);
 
                 if (!xmppCon.isConnected()) {
@@ -716,10 +725,23 @@ public class ElOyente extends Trigger<Project> {
          *
          * @param server Server from the the main configuration.
          */
-        public synchronized FormValidation doCheckServer(@QueryParameter String server) {
+        public synchronized FormValidation doCheckServer(
+                @QueryParameter String server, @QueryParameter int port, @QueryParameter String user) {
 
             try {
-                config = new ConnectionConfiguration(server);
+				/*
+				 * stream:error (host-unknown) when trying to connect
+				 * https://community.igniterealtime.org/thread/39288
+				 */
+				String serviceName;
+				int at = user.indexOf("@");
+				if (at == -1) {
+					config = new ConnectionConfiguration(server, port);
+				} else {
+					serviceName = user.substring(at + 1);
+					config = new ConnectionConfiguration(server, port, serviceName);
+				}
+                config.setSocketFactory(new DummySSLSocketFactory());
                 Connection con = new XMPPConnection(config);
 
                 if (server.isEmpty()) {
@@ -748,8 +770,22 @@ public class ElOyente extends Trigger<Project> {
          * @param password Password from the the main configuration.
          *
          */
-        public synchronized FormValidation doCheckPassword(@QueryParameter String user, @QueryParameter String password, @QueryParameter String server) {
-            config = new ConnectionConfiguration(server);
+        public synchronized FormValidation doCheckPassword(
+				@QueryParameter String user, @QueryParameter String password,
+				@QueryParameter String server, @QueryParameter int port) {
+			/*
+			 * stream:error (host-unknown) when trying to connect
+			 * https://community.igniterealtime.org/thread/39288
+			 */
+			String serviceName;
+			int at = user.indexOf("@");
+			if (at == -1) {
+				config = new ConnectionConfiguration(server, port);
+			} else {
+				serviceName = user.substring(at + 1);
+				config = new ConnectionConfiguration(server, port, serviceName);
+			}
+			config.setSocketFactory(new DummySSLSocketFactory());
             Connection con = new XMPPConnection(config);
             if ((user.isEmpty() || password.isEmpty()) || server.isEmpty()) {
                 return FormValidation.warningWithMarkup("Not authenticated");
@@ -759,7 +795,7 @@ public class ElOyente extends Trigger<Project> {
                 con.login(user, password);
                 if (con.isAuthenticated()) {
                     con.disconnect();
-                    return FormValidation.okWithMarkup("Authentication succed");
+                    return FormValidation.okWithMarkup("Authentication succeed");
                 }
                 return FormValidation.warningWithMarkup("Not authenticated");
             } catch (XMPPException ex) {
@@ -777,7 +813,19 @@ public class ElOyente extends Trigger<Project> {
 
             ListBoxModel items = new ListBoxModel();
 
-            config = new ConnectionConfiguration(server);
+			/*
+			 * stream:error (host-unknown) when trying to connect
+			 * https://community.igniterealtime.org/thread/39288
+			 */
+			String serviceName;
+			int at = user.indexOf("@");
+			if (at == -1) {
+				config = new ConnectionConfiguration(server, port);
+			} else {
+				serviceName = user.substring(at + 1);
+				config = new ConnectionConfiguration(server, port, serviceName);
+			}
+			config.setSocketFactory(new DummySSLSocketFactory());
             Connection con = new XMPPConnection(config);
             PubSubManager mgr = new PubSubManager(con);
 
@@ -789,11 +837,11 @@ public class ElOyente extends Trigger<Project> {
 
             return items;
         }
-        
+
                 /**
          * Performs on-the-fly validation of the form field 'Filter'.
          *
-         * This method checks if the filter is valid. 
+         * This method checks if the filter is valid.
          * It shows a notification describing the status.
          *
          * @param filter Filter of the subscription.
@@ -812,17 +860,17 @@ public class ElOyente extends Trigger<Project> {
             }
             return FormValidation.ok();
         }
-        
+
          /**
          * Performs on-the-fly validation of the form field 'Value selection'.
          *
-         * This method checks if the Xpath expression to get the value of the 
-         * environment variable is valid. 
+         * This method checks if the Xpath expression to get the value of the
+         * environment variable is valid.
          * It shows a notification describing the status.
          *
          * @param xpathe Value of the environment variable.
          *
-         */       
+         */
         public synchronized FormValidation doCheckEnvExpr(@QueryParameter String xpathe) {
             if (!xpathe.isEmpty()) {
                 XPath xpath = XPathFactory.newInstance().newXPath();

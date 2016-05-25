@@ -1,52 +1,37 @@
 package com.technicolor.elboca;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Arrays;
-import java.util.ArrayList;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletRequest;
-
+import hudson.Extension;
+import hudson.Launcher;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.BuildListener;
+import hudson.model.Descriptor;
+import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.Builder;
+import hudson.util.FormValidation;
 import net.sf.json.JSONObject;
 import org.jivesoftware.smack.Connection;
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
-import org.jivesoftware.smackx.packet.*;
+import org.jivesoftware.smackx.packet.DiscoverItems;
 import org.jivesoftware.smackx.pubsub.*;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
+import org.jivesoftware.spark.util.DummySSLSocketFactory;
 import org.kohsuke.stapler.DataBoundConstructor;
-
-import org.kohsuke.stapler.bind.BoundObjectTable;
-import org.kohsuke.stapler.bind.BoundObjectTable.Table;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
-import hudson.tasks.Builder;
-import hudson.tasks.BuildWrapper;
-import hudson.tasks.BuildStepDescriptor;
-import hudson.Extension;
-import hudson.Launcher;
-import hudson.util.FormValidation;
-import hudson.model.AbstractProject;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
-import hudson.model.Environment;
-import jenkins.model.Jenkins;
-import hudson.model.Project;
-import hudson.util.ListBoxModel;
-import hudson.model.Descriptor;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
+import javax.servlet.ServletException;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 /** 
  * This plug-in allows projects to send pubsub events
@@ -223,10 +208,8 @@ public class ElBoca extends Builder {
 	 * @param listener The logger for the jenkins console output.
 	 * @param element The element name.
 	 * @param xml_payload The payload in xml structure but in string format.
-	 * @throws XMMPExceptioni when creatin a new stanza failed.
 	 * @throws SAXException upon a parsing error in the xml_payload.
 	 * @throws IOException IO error when parsing the xml_payload.
-	 * @throws ParseConfigurationException Parse configuration error.
 	 * @return PayloadItem<SimplePayload> the new stanza ready to be sent or null on error.
 	 */
 	public PayloadItem<SimplePayload> newMessage(BuildListener listener, String element, String xml_payload) throws XMPPException, SAXException, IOException, ParserConfigurationException{
@@ -314,6 +297,7 @@ public class ElBoca extends Builder {
 	 * If you don't want fields to be persisted, use <tt>transient</tt>.
 	 */
 	private String server;
+	private int port;
 	private String user;
 	private String password;
 	protected transient ConnectionConfiguration config;
@@ -374,6 +358,7 @@ public class ElBoca extends Builder {
 	    // To persist global configuration information,
 	    // set that to properties and call save().
 	    server = formData.getString("server");
+	    port = formData.getInt("port");
 	    user = formData.getString("user");
 	    password = formData.getString("password");
 	    save();
@@ -396,7 +381,19 @@ public class ElBoca extends Builder {
 	 */
 	public FormValidation doCheckServer(@QueryParameter String server) {
 	    try {
-	        config = new ConnectionConfiguration(server);
+			/*
+			 * stream:error (host-unknown) when trying to connect
+			 * https://community.igniterealtime.org/thread/39288
+			 */
+			String serviceName;
+			int at = user.indexOf("@");
+			if (at == -1) {
+				config = new ConnectionConfiguration(server, port);
+			} else {
+				serviceName = user.substring(at + 1);
+				config = new ConnectionConfiguration(server, port, serviceName);
+			}
+			config.setSocketFactory(new DummySSLSocketFactory());
 	        Connection con = new XMPPConnection(config);
 	        if (server.isEmpty()) {
 	            return FormValidation.warningWithMarkup("No server specified");
@@ -435,7 +432,19 @@ public class ElBoca extends Builder {
 	 * @param password Password from the the main configuration.
 	 */
 	public FormValidation doCheckPassword(@QueryParameter String user, @QueryParameter String password, @QueryParameter String server) {
-	    config = new ConnectionConfiguration(server);
+		/*
+		 * stream:error (host-unknown) when trying to connect
+		 * https://community.igniterealtime.org/thread/39288
+		 */
+		String serviceName;
+		int at = user.indexOf("@");
+		if (at == -1) {
+			config = new ConnectionConfiguration(server, port);
+		} else {
+			serviceName = user.substring(at + 1);
+			config = new ConnectionConfiguration(server, port, serviceName);
+		}
+		config.setSocketFactory(new DummySSLSocketFactory());
 	    Connection con = new XMPPConnection(config);
 	    if ((user.isEmpty() || password.isEmpty()) || server.isEmpty()) {
 	        return FormValidation.warningWithMarkup("Not authenticated");
@@ -456,14 +465,23 @@ public class ElBoca extends Builder {
 	
 	/**
 	 * This method will connect to the xmpp server.
-	 * @param server the servername
-	 * @param user The user-name used to log in into the xmppserver.
-	 * @param password The password used to log in into the xmppserver.
 	 */
 	private synchronized boolean connectXMPP() {
 	      if (getServer() != null && !getServer().isEmpty() && getUser() != null && !getUser().isEmpty() && getPassword() != null && !getPassword().isEmpty()) {
 	   //   if (getDescriptor().getServer() != null && !getDescriptor().getServer().isEmpty() && getDescriptor().getUser() != null && !getDescriptor().getUser().isEmpty() && getDescriptor().getPassword() != null && !getDescriptor().getPassword().isEmpty()) {
-	      	config = new ConnectionConfiguration(getServer());
+			/*
+			 * stream:error (host-unknown) when trying to connect
+			 * https://community.igniterealtime.org/thread/39288
+			 */
+			String serviceName;
+			int at = user.indexOf("@");
+			if (at == -1) {
+				config = new ConnectionConfiguration(server, port);
+			} else {
+				serviceName = user.substring(at + 1);
+				config = new ConnectionConfiguration(server, port, serviceName);
+			}
+			config.setSocketFactory(new DummySSLSocketFactory());
 	      	con = new XMPPConnection(config);
 	              if (!con.isConnected()) {
 	                  try {
