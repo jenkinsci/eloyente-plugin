@@ -18,6 +18,9 @@
         <f:entry title="${%server}" field="server">
             <f:textbox />
         </f:entry>
+        <f:entry title="${%Port}" field="port">
+            <f:textbox default="${descriptor.defaultPort()}"/>
+        </f:entry>
 
         <f:entry title="${%user}" field="user">
             <f:textbox />
